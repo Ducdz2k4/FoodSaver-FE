@@ -145,3 +145,37 @@ html body[data-scroll-locked] .width-before-scroll-bar {
 .animate-tgtg-ticker:hover {
   animation-play-state: paused;
 }
+
+
+/* =========================================================
+   LIQUID GLASS FROSTED GLASSMORPHISM UTILITIES
+========================================================= */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 97, 95, 0.06),
+    0 1px 3px 0 rgba(0, 0, 0, 0.03),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.95);
+}
+
+.liquid-glass-subtle {
+  background: rgba(249, 243, 240, 0.82);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.02);
+}
+
+.liquid-glass-item {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-glass-item:hover {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 2px 10px 0 rgba(0, 97, 95, 0.08),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+}
