@@ -8,3 +8,4 @@ export * from "./TgtgVisualBanner";
 export * from "./TgtgBusiness";
 export * from "./TgtgCtaBanner";
 export * from "./TgtgFooter";
+export * from "./TgtgIcons";

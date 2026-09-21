@@ -2,31 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  Menu,
-  X,
-  Globe,
-  Store,
-  Smartphone,
-  ChevronDown,
-  Sparkles,
-} from "lucide-react";
+import { Search, Menu, X, Globe, ChevronDown } from "lucide-react";
 
 export function TgtgHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [langOpen, setLangOpen] = useState(false);
-  const [selectedLang, setSelectedLang] = useState("US / EN");
-  const pathname = usePathname();
+  const [selectedLang, setSelectedLang] = useState("en-us");
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -36,80 +23,124 @@ export function TgtgHeader() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-[#18181B]/95 backdrop-blur-md shadow-lg py-3 border-b border-yellow-500/20"
-          : "bg-gradient-to-b from-[#18181B]/90 via-[#18181B]/60 to-transparent py-4 sm:py-5"
+          ? "bg-[#f9f3f0]/95 backdrop-blur-md shadow-sm border-b border-stone-300/40 py-2.5"
+          : "bg-[#f9f3f0]/90 backdrop-blur-md py-3.5"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="size-9 sm:size-10 rounded-full bg-yellow-400 text-stone-950 flex items-center justify-center font-black text-xl shadow-md group-hover:scale-105 transition-transform duration-200">
-            <Sparkles className="size-5 fill-stone-950" />
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+        {/* Left: Search input + Navigation links */}
+        <div className="flex items-center gap-4 lg:gap-6 flex-1 max-w-md">
+          {/* Autocomplete Search */}
+          <div className="relative hidden md:block w-44 lg:w-52">
+            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-stone-200/70 hover:bg-stone-200/90 focus-within:bg-white focus-within:ring-2 focus-within:ring-[#00615f] transition">
+              <Search className="size-4 text-[#00615f] shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Food nearby"
+                className="w-full bg-transparent text-xs font-medium text-[#252d2d] placeholder:text-stone-500 focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-stone-400 hover:text-stone-600 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="font-black text-lg sm:text-xl tracking-tighter text-white uppercase flex items-center gap-1">
-              Food<span className="text-yellow-400">Saver</span>
+
+          {/* Desktop Nav Links */}
+          <nav className="hidden lg:flex items-center gap-5 text-[13px] font-bold text-[#00615f]">
+            <Link
+              href="#about"
+              className="hover:text-[#089184] transition-colors flex items-center gap-1"
+            >
+              <span>About</span>
+            </Link>
+            <Link
+              href="#business"
+              className="hover:text-[#089184] transition-colors flex items-center gap-1"
+            >
+              <span>Business</span>
+            </Link>
+          </nav>
+        </div>
+
+        {/* Center: Brand Logo */}
+        <div className="flex justify-center shrink-0">
+          <Link
+            href="/"
+            className="flex items-center gap-2 group cursor-pointer"
+            aria-label="Too Good To Go Homepage"
+          >
+            <img
+              src="/images/tgtg/asset_7.png"
+              alt="Too Good To Go"
+              className="size-8 sm:size-9 object-contain group-hover:scale-105 transition-transform duration-200"
+            />
+            <span className="font-black text-lg sm:text-xl tracking-tight text-[#00615f] uppercase leading-none select-none">
+              TOO GOOD TO GO
             </span>
-            <span className="text-[9px] uppercase tracking-widest text-yellow-300/80 font-bold -mt-1 hidden sm:block">
-              Save Good Food
+          </Link>
+        </div>
+
+        {/* Right: Actions & CTAs */}
+        <div className="flex items-center justify-end gap-3 sm:gap-4 flex-1">
+          {/* Business links */}
+          <div className="hidden xl:flex items-center gap-2 text-[13px] font-bold text-[#00615f]">
+            <Link
+              href="/register"
+              className="hover:text-[#089184] transition-colors"
+            >
+              Sign up as Business
+            </Link>
+            <span className="text-stone-400" aria-hidden="true">
+              |
             </span>
+            <Link
+              href="/login"
+              className="hover:text-[#089184] transition-colors"
+            >
+              MyStore login
+            </Link>
           </div>
-        </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+          {/* Download app primary CTA button */}
           <Link
-            href="#why-us"
-            className="text-xs lg:text-sm font-semibold text-stone-200 hover:text-yellow-400 transition-colors"
+            href="#download"
+            className="inline-flex items-center justify-center px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm active:scale-98"
           >
-            Tại sao chọn FoodSaver
+            Download app
           </Link>
-          <Link
-            href="#how-it-works"
-            className="text-xs lg:text-sm font-semibold text-stone-200 hover:text-yellow-400 transition-colors"
-          >
-            Cách hoạt động
-          </Link>
-          <Link
-            href="#business"
-            className="text-xs lg:text-sm font-semibold text-stone-200 hover:text-yellow-400 transition-colors flex items-center gap-1.5"
-          >
-            <Store className="size-3.5 text-yellow-400" />
-            <span>Dành cho doanh nghiệp</span>
-          </Link>
-          <Link
-            href="/dashboard"
-            className="text-xs lg:text-sm font-semibold text-stone-200 hover:text-yellow-400 transition-colors"
-          >
-            Dashboard
-          </Link>
-        </nav>
 
-        {/* Right CTAs */}
-        <div className="hidden sm:flex items-center gap-3 lg:gap-4">
-          {/* Language Selector */}
-          <div className="relative">
+          {/* Language selector */}
+          <div className="relative hidden sm:block">
             <button
               type="button"
               onClick={() => setLangOpen(!langOpen)}
-              className="flex items-center gap-1 text-xs font-semibold text-stone-300 hover:text-white px-2.5 py-1.5 rounded-full hover:bg-white/10 transition"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-stone-300 text-xs font-bold text-[#00615f] hover:bg-stone-100 transition"
+              aria-label="Language selector"
             >
-              <Globe className="size-3.5 text-yellow-400" />
-              <span>{selectedLang}</span>
-              <ChevronDown className="size-3 text-stone-400" />
+              <Globe className="size-3.5 text-[#00615f]" />
+              <span className="uppercase">{selectedLang}</span>
+              <ChevronDown className="size-3 text-stone-500" />
             </button>
 
             {langOpen && (
-              <div className="absolute right-0 mt-2 w-32 bg-[#27272A] border border-stone-700 rounded-xl shadow-xl py-1 z-50 text-xs">
-                {["US / EN", "VN / VI", "FR / FR", "DE / DE"].map((l) => (
+              <div className="absolute right-0 mt-2 w-32 bg-white border border-stone-200 rounded-xl shadow-lg py-1 z-50 text-xs">
+                {["en-us", "vi-vn", "fr-fr", "de-de"].map((l) => (
                   <button
                     key={l}
                     onClick={() => {
                       setSelectedLang(l);
                       setLangOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 hover:bg-yellow-400/10 hover:text-yellow-400 transition ${
-                      selectedLang === l ? "text-yellow-400 font-bold" : "text-stone-300"
+                    className={`w-full text-left px-3 py-1.5 uppercase hover:bg-stone-100 transition ${
+                      selectedLang === l ? "text-[#00615f] font-bold bg-[#f9f3f0]" : "text-stone-700"
                     }`}
                   >
                     {l}
@@ -119,92 +150,85 @@ export function TgtgHeader() {
             )}
           </div>
 
-          {/* Business Login Link */}
-          <Link
-            href="/login"
-            className="text-xs font-bold text-stone-300 hover:text-white px-3 py-1.5 rounded-full transition hidden lg:inline-block"
-          >
-            Đăng nhập
-          </Link>
-
-          {/* Download App Primary Yellow Button */}
-          <Link
-            href="#download"
-            className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-yellow-400 hover:bg-yellow-300 text-stone-950 font-extrabold text-xs sm:text-sm shadow-md hover:shadow-yellow-400/20 hover:scale-102 active:scale-98 transition-all duration-200"
-          >
-            <Smartphone className="size-4" />
-            <span>Tải ứng dụng</span>
-          </Link>
-        </div>
-
-        {/* Mobile menu hamburger button */}
-        <div className="flex items-center gap-2 sm:hidden">
-          <Link
-            href="#download"
-            className="px-3 py-1.5 rounded-full bg-yellow-400 text-stone-950 font-extrabold text-xs"
-          >
-            Tải App
-          </Link>
+          {/* Mobile hamburger menu toggle */}
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 text-stone-300 hover:text-white rounded-lg focus:outline-none"
-            aria-label="Toggle menu"
+            className="lg:hidden p-2 text-[#00615f] hover:bg-stone-200/50 rounded-lg focus:outline-none"
+            aria-label="Toggle navigation menu"
           >
-            {mobileOpen ? <X className="size-6 text-yellow-400" /> : <Menu className="size-6" />}
+            {mobileOpen ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="sm:hidden bg-[#18181B] border-b border-stone-800 px-6 py-6 space-y-4 animate-in slide-in-from-top duration-200">
-          <nav className="flex flex-col space-y-3 text-sm font-semibold text-stone-200">
+        <div className="lg:hidden bg-[#f9f3f0] border-b border-stone-300 px-6 py-6 space-y-4 shadow-lg animate-in slide-in-from-top duration-200">
+          {/* Mobile Search */}
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-stone-200/80">
+            <Search className="size-4 text-[#00615f] shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Food nearby"
+              className="w-full bg-transparent text-sm text-[#252d2d] placeholder:text-stone-500 focus:outline-none"
+            />
+          </div>
+
+          <nav className="flex flex-col space-y-3 text-sm font-bold text-[#00615f] pt-2">
+            <Link
+              href="#about"
+              onClick={() => setMobileOpen(false)}
+              className="py-1 hover:text-[#089184]"
+            >
+              About
+            </Link>
             <Link
               href="#why-us"
               onClick={() => setMobileOpen(false)}
-              className="py-1 hover:text-yellow-400"
+              className="py-1 hover:text-[#089184]"
             >
-              Tại sao chọn FoodSaver
+              Why use Too Good To Go
             </Link>
             <Link
               href="#how-it-works"
               onClick={() => setMobileOpen(false)}
-              className="py-1 hover:text-yellow-400"
+              className="py-1 hover:text-[#089184]"
             >
-              Cách hoạt động
+              How to use the app
             </Link>
             <Link
               href="#business"
               onClick={() => setMobileOpen(false)}
-              className="py-1 hover:text-yellow-400 flex items-center gap-2"
+              className="py-1 hover:text-[#089184]"
             >
-              <Store className="size-4 text-yellow-400" />
-              <span>Dành cho doanh nghiệp</span>
+              Business solutions
             </Link>
             <Link
-              href="/dashboard"
+              href="/register"
               onClick={() => setMobileOpen(false)}
-              className="py-1 hover:text-yellow-400"
+              className="py-1 hover:text-[#089184]"
             >
-              Dashboard
+              Sign up as Business
             </Link>
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="py-1 hover:text-yellow-400"
+              className="py-1 hover:text-[#089184]"
             >
-              Đăng nhập tài khoản
+              MyStore login
             </Link>
           </nav>
 
-          <div className="pt-4 border-t border-stone-800 flex flex-col gap-3">
+          <div className="pt-4 border-t border-stone-300 flex flex-col gap-3">
             <Link
               href="#download"
               onClick={() => setMobileOpen(false)}
-              className="w-full text-center py-3 rounded-full bg-yellow-400 text-stone-950 font-bold text-sm shadow-md"
+              className="w-full text-center py-3 rounded-full bg-[#00615f] text-white font-bold text-sm shadow-md"
             >
-              Tải ứng dụng ngay
+              Download app
             </Link>
           </div>
         </div>

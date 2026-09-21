@@ -2,169 +2,185 @@
 
 import React from "react";
 import Link from "next/link";
-import { Sparkles, Instagram, Facebook, Linkedin, Youtube, ShieldCheck } from "lucide-react";
+import {
+  FooterLinkedInIcon,
+  FooterInstagramIcon,
+  FooterFacebookIcon,
+  FooterTikTokIcon,
+  FooterYouTubeIcon,
+  FooterXIcon,
+  TgtgWordmark,
+} from "./TgtgIcons";
 
 export function TgtgFooter() {
   return (
-    <footer className="bg-[#111113] text-stone-400 text-xs border-t border-stone-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12 pb-12 border-b border-stone-800">
-          {/* Brand info */}
-          <div className="col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="size-8 rounded-full bg-yellow-400 text-stone-950 flex items-center justify-center font-black text-base shadow-sm">
-                <Sparkles className="size-4 fill-stone-950" />
-              </div>
-              <span className="font-black text-xl tracking-tight text-white uppercase">
-                Food<span className="text-yellow-400">Saver</span>
-              </span>
-            </Link>
+    <footer className="bg-[#00615f] text-white overflow-hidden select-none">
+      {/* Upper Footer Section */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
+          {/* Logo on the left */}
+          <div className="hidden lg:flex items-center gap-3">
+            <img
+              src="/images/tgtg/asset_7.png"
+              alt="Too Good To Go Logo"
+              className="size-14 object-contain brightness-110"
+              loading="lazy"
+            />
+          </div>
 
-            <p className="text-stone-400 max-w-sm leading-relaxed text-xs">
-              Sứ mệnh của chúng tôi là truyền cảm hứng và trao quyền cho mọi người cùng nhau chống lại lãng phí thực phẩm mỗi ngày.
-            </p>
+          {/* Center: Nav links + Socials + Store Badges */}
+          <div className="flex flex-col items-center gap-8 text-center">
+            {/* Upper Navigation Links */}
+            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm font-black uppercase tracking-widest text-[#f9f3f0]">
+              <Link href="#careers" className="hover:text-[#79e4a7] transition-colors">
+                Careers
+              </Link>
+              <Link href="#press" className="hover:text-[#79e4a7] transition-colors">
+                Press
+              </Link>
+              <Link href="#support" className="hover:text-[#79e4a7] transition-colors">
+                Support
+              </Link>
+              <Link href="/login" className="hover:text-[#79e4a7] transition-colors">
+                Mystore
+              </Link>
+            </div>
 
-            <div className="flex items-center gap-3 pt-2">
+            {/* Social Media SVG Icons */}
+            <div className="flex items-center justify-center gap-5 sm:gap-7 text-[#79e4a7]">
               <a
-                href="https://instagram.com"
+                href="https://www.linkedin.com/company/too-good-to-go"
                 target="_blank"
-                rel="noreferrer"
-                className="size-8 rounded-full bg-stone-900 hover:bg-yellow-400 hover:text-stone-950 flex items-center justify-center text-stone-300 transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="size-4" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                className="size-8 rounded-full bg-stone-900 hover:bg-yellow-400 hover:text-stone-950 flex items-center justify-center text-stone-300 transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="size-4" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer"
-                className="size-8 rounded-full bg-stone-900 hover:bg-yellow-400 hover:text-stone-950 flex items-center justify-center text-stone-300 transition-colors"
+                rel="noopener noreferrer"
                 aria-label="LinkedIn"
+                className="hover:scale-110 hover:text-white transition-all"
               >
-                <Linkedin className="size-4" />
+                <FooterLinkedInIcon className="size-6 sm:size-7" />
               </a>
               <a
-                href="https://youtube.com"
+                href="https://www.instagram.com/toogoodtogo.usa/"
                 target="_blank"
-                rel="noreferrer"
-                className="size-8 rounded-full bg-stone-900 hover:bg-yellow-400 hover:text-stone-950 flex items-center justify-center text-stone-300 transition-colors"
-                aria-label="YouTube"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="hover:scale-110 hover:text-white transition-all"
               >
-                <Youtube className="size-4" />
+                <FooterInstagramIcon className="size-6 sm:size-7" />
+              </a>
+              <a
+                href="https://www.facebook.com/toogoodtogoUSA/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+                className="hover:scale-110 hover:text-white transition-all"
+              >
+                <FooterFacebookIcon className="size-6 sm:size-7" />
+              </a>
+              <a
+                href="https://www.tiktok.com/@toogoodtogo"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+                className="hover:scale-110 hover:text-white transition-all"
+              >
+                <FooterTikTokIcon className="size-6 sm:size-7" />
+              </a>
+              <a
+                href="https://www.youtube.com/channel/UCBonm_44z7UL0OvhHksBCAw"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube"
+                className="hover:scale-110 hover:text-white transition-all"
+              >
+                <FooterYouTubeIcon className="size-6 sm:size-7" />
+              </a>
+              <a
+                href="https://twitter.com/toogoodtogo"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="X (Twitter)"
+                className="hover:scale-110 hover:text-white transition-all"
+              >
+                <FooterXIcon className="size-6 sm:size-7" />
+              </a>
+            </div>
+
+            {/* App Store Badges */}
+            <div className="flex items-center justify-center gap-4">
+              <a
+                href="https://apps.apple.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-105 transition-transform"
+              >
+                <img
+                  src="/images/tgtg/asset_9.png"
+                  alt="Download on the Apple App Store"
+                  className="h-10 w-auto object-contain"
+                  loading="lazy"
+                />
+              </a>
+              <a
+                href="https://play.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:scale-105 transition-transform"
+              >
+                <img
+                  src="/images/tgtg/asset_10.png"
+                  alt="Get it on Google Play"
+                  className="h-10 w-auto object-contain"
+                  loading="lazy"
+                />
               </a>
             </div>
           </div>
 
-          {/* Column 1: Người dùng */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Khám Phá
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="#how-it-works" className="hover:text-yellow-400 transition-colors">
-                  Cách dùng app
-                </Link>
-              </li>
-              <li>
-                <Link href="#why-us" className="hover:text-yellow-400 transition-colors">
-                  Túi Bất Ngờ
-                </Link>
-              </li>
-              <li>
-                <Link href="#download" className="hover:text-yellow-400 transition-colors">
-                  Tải ứng dụng
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="hover:text-yellow-400 transition-colors">
-                  Dashboard tài khoản
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Right Spacer for alignment */}
+          <div className="hidden lg:flex w-14" aria-hidden="true" />
+        </div>
+      </div>
 
-          {/* Column 2: Doanh nghiệp */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Doanh Nghiệp
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="#business" className="hover:text-yellow-400 transition-colors">
-                  Giải pháp cho cửa hàng
-                </Link>
-              </li>
-              <li>
-                <Link href="/register" className="hover:text-yellow-400 transition-colors">
-                  Đăng ký đối tác
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-yellow-400 transition-colors">
-                  Cổng MyStore
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="hover:text-yellow-400 transition-colors">
-                  Quản trị viên
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: Thông tin */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Thông Tin & Pháp Lý
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="#about" className="hover:text-yellow-400 transition-colors">
-                  Về chúng tôi
-                </a>
-              </li>
-              <li>
-                <a href="#careers" className="hover:text-yellow-400 transition-colors">
-                  Cơ hội nghề nghiệp
-                </a>
-              </li>
-              <li>
-                <a href="#terms" className="hover:text-yellow-400 transition-colors">
-                  Điều khoản dịch vụ
-                </a>
-              </li>
-              <li>
-                <a href="#privacy" className="hover:text-yellow-400 transition-colors">
-                  Chính sách bảo mật
-                </a>
-              </li>
-              <li>
-                <a href="#contact" className="hover:text-yellow-400 transition-colors">
-                  Liên hệ hỗ trợ
-                </a>
-              </li>
-            </ul>
-          </div>
+      {/* Massive Giant SVG Wordmark spanning full width */}
+      <div className="w-full bg-[#013d3c] px-4 sm:px-8 py-8 sm:py-12 border-t border-white/10">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-center">
+          <TgtgWordmark className="w-full max-h-24 sm:max-h-32 text-white/95" />
         </div>
 
-        {/* Bottom bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-stone-500">
-          <p>© 2026 FoodSaver ApS. Bản quyền thuộc về FoodSaver. Phong cách cảm hứng từ Too Good To Go.</p>
-          <div className="flex items-center gap-4">
-            <span>Tiêu chuẩn B-Corp Certified</span>
-            <span>•</span>
-            <span>Giảm rác thải thực phẩm toàn cầu</span>
+        {/* Legal Links & Copyright */}
+        <div className="max-w-[1440px] mx-auto pt-8 sm:pt-10 flex flex-col items-center gap-4 text-center text-xs text-[#dee3e3]/75">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] sm:text-xs">
+            <Link href="#legal" className="hover:underline hover:text-white">
+              Legal
+            </Link>
+            <Link href="#privacy" className="hover:underline hover:text-white">
+              Privacy Policy
+            </Link>
+            <Link href="#cookies" className="hover:underline hover:text-white">
+              Cookie Policy
+            </Link>
+            <Link href="#terms" className="hover:underline hover:text-white">
+              Terms &amp; Conditions
+            </Link>
+            <Link href="#contact" className="hover:underline hover:text-white">
+              Contact us
+            </Link>
+            <Link href="#dsa" className="hover:underline hover:text-white">
+              DSA Disclosure
+            </Link>
+            <Link href="#privacy-settings" className="hover:underline hover:text-white">
+              Do Not Sell or Share My Data
+            </Link>
+            <Link href="#sources" className="hover:underline hover:text-white">
+              Food Waste Sources
+            </Link>
+            <Link href="#status" className="hover:underline hover:text-white">
+              Status
+            </Link>
           </div>
+
+          <p className="text-[11px] text-[#dee3e3]/60 pt-2">
+            Copyright © Too Good To Go ApS. All Rights Reserved.
+          </p>
         </div>
       </div>
     </footer>

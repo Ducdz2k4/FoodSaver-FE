@@ -1,87 +1,57 @@
 "use client";
 
 import React from "react";
-import { Utensils, Building2, Users2, Leaf, HeartHandshake } from "lucide-react";
-
-const STATS = [
-  {
-    icon: Utensils,
-    value: "350M+",
-    label: "Bữa ăn được giải cứu",
-    desc: "Món ăn ngon không bị lãng phí",
-  },
-  {
-    icon: Building2,
-    value: "180K+",
-    label: "Cửa hàng đối tác",
-    desc: "Tiệm bánh, quán cafe & siêu thị",
-  },
-  {
-    icon: Users2,
-    value: "100M+",
-    label: "Chiến binh FoodSaver",
-    desc: "Cộng đồng tiêu dùng thông minh",
-  },
-  {
-    icon: Leaf,
-    value: "890K+",
-    label: "Tấn CO2e giảm phát thải",
-    desc: "Bảo vệ môi trường sống bền vững",
-  },
-];
+import Link from "next/link";
 
 export function TgtgMission() {
   return (
-    <section className="py-20 sm:py-28 bg-[#FFFDF5] text-stone-900 border-b border-yellow-200/50 relative overflow-hidden">
-      {/* Decorative yellow background circles */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-300/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+    <section className="py-20 sm:py-28 lg:py-32 bg-[#f9f3f0] text-[#252d2d] relative">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 sm:space-y-8">
+        {/* Mission Statement Headline */}
+        <h2 className="text-2xl sm:text-4xl lg:text-[2.75rem] font-black text-[#00615f] leading-snug sm:leading-tight tracking-tight">
+          Too Good To Go is a social impact company on a mission to inspire and empower everyone to{" "}
+          <Link
+            href="#why-us"
+            className="underline decoration-[#79e4a7] decoration-2 underline-offset-4 hover:text-[#089184] transition-colors"
+          >
+            fight food waste
+          </Link>{" "}
+          together.
+        </h2>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        {/* Mission Statement */}
-        <div className="text-center max-w-3xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-yellow-400/20 text-yellow-800 font-bold text-xs uppercase tracking-wider">
-            <HeartHandshake className="size-4 text-amber-600" />
-            <span>Sứ mệnh vì cộng đồng</span>
-          </div>
+        {/* Supporting Explanation */}
+        <p className="text-base sm:text-lg lg:text-xl text-[#252d2d]/80 leading-relaxed max-w-2xl mx-auto font-normal">
+          Our app is the world&apos;s largest marketplace for surplus food. We help users rescue good food from going to waste, offering great value for money at local stores, cafes and restaurants.
+        </p>
 
-          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-stone-900 tracking-tight leading-snug">
-            FoodSaver là nền tảng kết nối hành động nhằm{" "}
-            <span className="bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent">
-              truyền cảm hứng và trao quyền
-            </span>{" "}
-            cho mọi người cùng chống lãng phí thực phẩm.
-          </h2>
-
-          <p className="text-base sm:text-lg text-stone-600 leading-relaxed max-w-2xl mx-auto">
-            Ứng dụng của chúng tôi là cầu nối giúp hàng triệu người dùng tiếp cận nguồn thực phẩm dư thừa chất lượng cao từ các cửa hàng, quán cà phê và tiệm bánh địa phương với mức giá cực kỳ ưu đãi.
-          </p>
-        </div>
-
-        {/* 4 Impact Stat Cards */}
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {STATS.map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={i}
-                className="p-6 sm:p-7 rounded-3xl bg-white border border-yellow-200/60 shadow-md shadow-yellow-500/5 hover:shadow-xl hover:shadow-yellow-500/10 hover:-translate-y-1 transition-all duration-300 flex flex-col items-center text-center group"
-              >
-                <div className="size-14 rounded-2xl bg-yellow-400/20 text-amber-600 flex items-center justify-center mb-4 group-hover:bg-yellow-400 group-hover:text-stone-950 transition-colors duration-200">
-                  <Icon className="size-7" />
-                </div>
-                <div className="text-3xl sm:text-4xl font-black text-stone-950 tracking-tight">
-                  {stat.value}
-                </div>
-                <div className="text-sm font-bold text-stone-800 mt-1">
-                  {stat.label}
-                </div>
-                <div className="text-xs text-stone-500 mt-1">
-                  {stat.desc}
-                </div>
-              </div>
-            );
-          })}
+        {/* App Store & Google Play Badges */}
+        <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="https://apps.apple.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:scale-105 transition-transform duration-200"
+          >
+            <img
+              src="/images/tgtg/asset_9.png"
+              alt="Download on the Apple App Store"
+              className="h-10 sm:h-11 w-auto object-contain"
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://play.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:scale-105 transition-transform duration-200"
+          >
+            <img
+              src="/images/tgtg/asset_10.png"
+              alt="Get it on Google Play"
+              className="h-10 sm:h-11 w-auto object-contain"
+              loading="lazy"
+            />
+          </a>
         </div>
       </div>
     </section>

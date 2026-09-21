@@ -12,29 +12,29 @@ import {
 
 export default function HomePage() {
   return (
-    <div className="w-full min-h-screen bg-[#FFFDF5] text-stone-900 selection:bg-yellow-300 selection:text-stone-900">
-      {/* 1. Hero Section with Video Background and Download CTAs */}
+    <div className="w-full min-h-screen bg-[#f9f3f0] text-[#252d2d] selection:bg-[#79e4a7] selection:text-[#00615f]">
+      {/* 1. Hero Section: Video Background + Dual CTAs */}
       <TgtgHero />
 
-      {/* 2. Mission Statement and Impact Stats */}
+      {/* 2. Mission Statement: Social Impact + App Badges */}
       <TgtgMission />
 
-      {/* 3. Why Use FoodSaver (4 Value Prop Cards + Surprise Bag Explainer) */}
+      {/* 3. Why Use Too Good To Go: Surprise Bag + 4 Benefit Callouts */}
       <TgtgWhyUs />
 
-      {/* 4. Scrolling Category Ticker */}
+      {/* 4. Infinite Category Ticker: PIZZA, PASTRIES, GROCERIES, etc. */}
       <TgtgTicker />
 
-      {/* 5. How It Works (4 Steps with Interactive Navigation) */}
+      {/* 5. How It Works: Interactive 4-step Carousel + Mockup Images */}
       <TgtgHowItWorks />
 
-      {/* 6. Visual Parallax Food Rescue Showcase Banner */}
+      {/* 6. Full-Width Visual Parallax Banner */}
       <TgtgVisualBanner />
 
-      {/* 7. B2B Enterprise Solutions (Surprise Bags, Platform, Date Labeling) */}
+      {/* 7. Business Solutions: 3 Interactive Tiles + Paired Visual Showcase */}
       <TgtgBusiness />
 
-      {/* 8. Global Community CTA Banner */}
+      {/* 8. Join Over 180,000 Businesses CTA */}
       <TgtgCtaBanner />
     </div>
   );
