@@ -2,26 +2,33 @@ import { baseApi } from "./baseApi";
 import {
   RegisterIn,
   LoginIn,
-  TokenOut,
+  AuthResponseData,
   UserOut,
 } from "@/types/auth";
-import { setCredentials, setUser } from "@/redux/slices/authSlice";
+import { setCredentials, setUser, logOut } from "@/redux/slices/authSlice";
 
 export const authApiSlice = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    login: builder.mutation<TokenOut, LoginIn>({
+    login: builder.mutation<AuthResponseData, LoginIn>({
       query: (credentials) => ({
         url: "/api/v1/auth/login",
         method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ["User"],
+      transformResponse: (response: any) => {
+        return response?.data || response;
+      },
+      invalidatesTags: ["User", "UserProfile"],
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          if (data.access_token) {
-            dispatch(setCredentials({ token: data.access_token }));
-            dispatch(authApiSlice.endpoints.getMe.initiate());
+          const token = data?.accessToken || (data as any)?.access_token;
+          const user = data?.user;
+          if (token) {
+            dispatch(setCredentials({ token, user: user || null }));
+            if (!user) {
+              dispatch(authApiSlice.endpoints.getMe.initiate());
+            }
           }
         } catch {
           // Handled by caller
@@ -29,17 +36,39 @@ export const authApiSlice = baseApi.injectEndpoints({
       },
     }),
 
-    register: builder.mutation<UserOut, RegisterIn>({
+    register: builder.mutation<AuthResponseData, RegisterIn>({
       query: (userData) => ({
         url: "/api/v1/auth/register",
         method: "POST",
-        body: userData,
+        body: {
+          fullName: userData.fullName || userData.full_name,
+          email: userData.email,
+          password: userData.password,
+        },
       }),
+      transformResponse: (response: any) => {
+        return response?.data || response;
+      },
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const token = data?.accessToken || (data as any)?.access_token;
+          const user = data?.user;
+          if (token) {
+            dispatch(setCredentials({ token, user: user || null }));
+          }
+        } catch {
+          // Handled by caller
+        }
+      },
     }),
 
     getMe: builder.query<UserOut, void>({
       query: () => "/api/v1/auth/me",
-      providesTags: ["User"],
+      transformResponse: (response: any) => {
+        return response?.data || response;
+      },
+      providesTags: ["User", "UserProfile"],
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
@@ -49,6 +78,17 @@ export const authApiSlice = baseApi.injectEndpoints({
         } catch {
           // Handled by caller
         }
+      },
+    }),
+
+    logout: builder.mutation<void, void>({
+      query: () => ({
+        url: "/api/v1/auth/logout",
+        method: "POST",
+      }),
+      invalidatesTags: ["User", "UserProfile", "AdminUsers"],
+      async onQueryStarted(_arg, { dispatch }) {
+        dispatch(logOut());
       },
     }),
 
@@ -64,5 +104,6 @@ export const {
   useRegisterMutation,
   useGetMeQuery,
   useLazyGetMeQuery,
+  useLogoutMutation,
   useCheckHealthQuery,
 } = authApiSlice;
