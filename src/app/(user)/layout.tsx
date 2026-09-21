@@ -9,7 +9,7 @@ export default function UserLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="user-root min-h-screen flex flex-col justify-between pt-24">
+    <div className="user-root min-h-screen flex flex-col justify-between">
       <UserToaster />
       <Header />
       <main className="flex-1">{children}</main>
