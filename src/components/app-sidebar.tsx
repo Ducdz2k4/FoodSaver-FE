@@ -29,7 +29,7 @@ import {
 const data = {
   navMain: [
     {
-      title: "Dashboard",
+      title: "Bảng điều khiển",
       url: "/admin",
       icon: <LayoutDashboardIcon />,
     },
@@ -46,7 +46,7 @@ const data = {
   ],
   documents: [
     {
-      name: "Trang người dùng",
+      name: "Trang chủ FoodSaver",
       url: "/",
       icon: <GlobeIcon />,
     },
@@ -68,8 +68,8 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
   const currentUser = {
-    name: user?.full_name || "Admin",
-    email: user?.email || "admin@system.local",
+    name: user?.full_name || "Admin FoodSaver",
+    email: user?.email || "admin@foodsaver.vn",
     avatar: user?.avatar_url || "",
   };
 
@@ -83,8 +83,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/admin">
-                <ShieldCheckIcon className="size-5! text-primary" />
-                <span className="text-base font-semibold">Admin Portal</span>
+                <div className="size-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-black text-xs">
+                  FS
+                </div>
+                <span className="text-base font-bold tracking-tight">FoodSaver Admin</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
