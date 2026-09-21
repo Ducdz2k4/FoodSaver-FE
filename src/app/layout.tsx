@@ -3,8 +3,9 @@ import StoreProvider from "@/redux/StoreProvider";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "FoodSaver | Giải pháp quản lý & tiết kiệm thực phẩm",
-  description: "Nền tảng công nghệ thông minh hỗ trợ tối ưu và giảm lãng phí thực phẩm.",
+  title: "FoodSaver | Good food, in its last golden hours",
+  description:
+    "FoodSaver connects bakeries, convenience stores and neighbours with people nearby who want great food at a fair price, before it expires.",
 };
 
 export default function RootLayout({
