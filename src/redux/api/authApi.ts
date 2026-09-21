@@ -41,9 +41,12 @@ export const authApiSlice = baseApi.injectEndpoints({
         url: "/api/v1/auth/register",
         method: "POST",
         body: {
-          fullName: userData.fullName || userData.full_name,
-          email: userData.email,
+          fullName: (userData.fullName || userData.full_name || "").trim(),
+          email: userData.email.trim(),
           password: userData.password,
+          ...(userData.phone ? { phone: userData.phone.trim() } : {}),
+          role: userData.role || "USER",
+          ...(userData.address ? { address: userData.address.trim() } : {}),
         },
       }),
       transformResponse: (response: any) => {

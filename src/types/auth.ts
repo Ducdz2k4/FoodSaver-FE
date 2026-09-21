@@ -37,6 +37,9 @@ export interface RegisterIn {
   full_name?: string;
   email: string;
   password: string;
+  phone?: string;
+  role?: "USER" | "PARTNER";
+  address?: string;
 }
 
 export interface MessageOut {
