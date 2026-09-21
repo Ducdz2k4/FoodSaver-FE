@@ -1,122 +1,104 @@
 "use client";
 
 import React from "react";
-import { Tag, MapPin, Globe2, Compass, Sparkles, ArrowRight } from "lucide-react";
-import Link from "next/link";
-
-const REASONS = [
-  {
-    icon: Tag,
-    title: "Thưởng thức món ngon với 1/2 giá hoặc rẻ hơn",
-    desc: "Tiết kiệm chi phí mỗi ngày cho bánh ngọt tươi ngon, bữa trưa nóng hổi và đồ uống đặc sắc chỉ vì quán chuẩn bị đóng cửa.",
-    badge: "Tiết kiệm tới 70%",
-    accentColor: "bg-amber-50 border-amber-200 text-amber-900",
-  },
-  {
-    icon: MapPin,
-    title: "Giải cứu đồ ăn ngay gần bạn",
-    desc: "Bản đồ thông minh giúp bạn tìm thấy các tiệm bánh, nhà hàng và quán ăn quen thuộc ngay góc phố chỉ sau vài lần chạm.",
-    badge: "Định vị tức thì",
-    accentColor: "bg-yellow-50 border-yellow-200 text-yellow-900",
-  },
-  {
-    icon: Globe2,
-    title: "Bảo vệ môi trường bằng cách giảm lãng phí",
-    desc: "Thực phẩm bị bỏ phí đóng góp đến 10% lượng khí thải nhà kính toàn cầu. Mỗi túi đồ ăn bạn mua là một hành động xanh thiết thực.",
-    badge: "Tác động tích cực",
-    accentColor: "bg-emerald-50 border-emerald-200 text-emerald-900",
-  },
-  {
-    icon: Compass,
-    title: "Khám phá hương vị mới từ các quán địa phương",
-    desc: "Trải nghiệm 'Túi Bất Ngờ' (Surprise Bag) thú vị — mỗi ngày một điều bất ngờ tươi mới với chi phí cực kỳ mềm.",
-    badge: "Trải nghiệm độc đáo",
-    accentColor: "bg-orange-50 border-orange-200 text-orange-900",
-  },
-];
+import {
+  BagHalfPriceIcon,
+  BagRescueNearYouIcon,
+  BagHelpEnvironmentIcon,
+  BagTrySomethingNewIcon,
+} from "./TgtgIcons";
 
 export function TgtgWhyUs() {
   return (
-    <section id="why-us" className="py-20 sm:py-28 bg-[#FFFBEB] text-stone-900 relative">
+    <section id="why-us" className="pt-16 pb-20 sm:pt-20 sm:pb-28 bg-[#f9f3f0] text-[#00615f] overflow-hidden relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-yellow-400 text-stone-950 font-black text-xs uppercase tracking-wider">
-              <Sparkles className="size-3.5" />
-              <span>Giá trị mang lại</span>
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-black text-stone-950 tracking-tight">
-              Tại sao nên dùng <span className="underline decoration-yellow-400 decoration-4 underline-offset-6">FoodSaver</span>?
-            </h2>
-          </div>
-          <p className="text-stone-600 max-w-md text-sm sm:text-base leading-relaxed">
-            Chúng tôi tin rằng món ăn ngon xứng đáng được thưởng thức thay vì kết thúc trong thùng rác. Dưới đây là 4 lý do bạn sẽ yêu thích FoodSaver.
+        <div className="text-center mb-12 sm:mb-16">
+          <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#00615f]/70 mb-2">
+            Why use
           </p>
+          <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-[#00615f] uppercase select-none">
+            TOO GOOD TO GO
+          </h2>
         </div>
 
-        {/* 4 Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {REASONS.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={index}
-                className="p-8 sm:p-10 rounded-3xl bg-white border border-yellow-200/80 shadow-lg shadow-yellow-500/5 hover:shadow-xl hover:border-yellow-400 transition-all duration-300 flex flex-col justify-between group"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-4 mb-6">
-                    <div className="size-14 rounded-2xl bg-yellow-400 text-stone-950 flex items-center justify-center shadow-md shadow-yellow-400/20 group-hover:scale-110 transition-transform">
-                      <Icon className="size-7" />
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${item.accentColor}`}>
-                      {item.badge}
+        {/* Central Bag Showcase with Surrounding Benefit Callouts */}
+        <div className="relative max-w-5xl mx-auto">
+          {/* Desktop 3-column layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-4 items-center">
+            {/* Left 2 Callouts (aligned right towards bag) */}
+            <div className="space-y-12 sm:space-y-16 lg:text-right flex flex-col items-center lg:items-end">
+              {/* Callout 1 */}
+              <div className="flex flex-col items-center lg:items-end max-w-xs group">
+                <div className="text-[#00615f] mb-3 group-hover:scale-110 transition-transform">
+                  <BagHalfPriceIcon className="size-12 sm:size-14 text-[#00615f]" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-[#00615f] text-center lg:text-right leading-snug">
+                  Enjoy good food at ½ price or less
+                </h3>
+              </div>
+
+              {/* Callout 3 */}
+              <div className="flex flex-col items-center lg:items-end max-w-xs group">
+                <div className="text-[#00615f] mb-3 group-hover:scale-110 transition-transform">
+                  <BagHelpEnvironmentIcon className="size-12 sm:size-14 text-[#00615f]" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-[#00615f] text-center lg:text-right leading-snug">
+                  Help the environment by reducing food waste
+                </h3>
+              </div>
+            </div>
+
+            {/* Center: The Iconic Surprise Bag */}
+            <div className="flex justify-center items-center py-4 my-2 lg:my-0">
+              <div className="relative w-64 sm:w-80 lg:w-96 aspect-square flex items-center justify-center">
+                {/* Ambient glow behind bag */}
+                <div className="absolute inset-0 bg-[#79e4a7]/20 rounded-full blur-3xl pointer-events-none" />
+                
+                {/* Paper grocery bag representation with fresh goods & brand badge */}
+                <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-4">
+                  <img
+                    src="/images/tgtg/asset_16.png"
+                    alt="Too Good To Go Surprise Bag"
+                    className="w-full h-full object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  {/* Floating TGTG logo badge */}
+                  <div className="absolute -bottom-2 bg-white/95 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-md border border-stone-200/80 flex items-center gap-2">
+                    <img
+                      src="/images/tgtg/asset_7.png"
+                      alt="TGTG icon"
+                      className="size-5 object-contain"
+                    />
+                    <span className="text-[11px] font-black text-[#00615f] tracking-wider uppercase">
+                      Surprise Bag
                     </span>
                   </div>
-
-                  <h3 className="text-xl sm:text-2xl font-black text-stone-950 mb-3 group-hover:text-amber-600 transition-colors">
-                    {item.title}
-                  </h3>
-
-                  <p className="text-sm sm:text-base text-stone-600 leading-relaxed">
-                    {item.desc}
-                  </p>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-stone-100 flex items-center justify-between text-xs font-bold text-stone-900">
-                  <span className="text-yellow-600 group-hover:translate-x-1 transition-transform inline-flex items-center gap-1.5">
-                    <span>Tìm hiểu thêm</span>
-                    <ArrowRight className="size-3.5" />
-                  </span>
-                  <span className="text-stone-300 font-mono">0{index + 1}</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* Decorative Highlight Box with Surprise Bag image */}
-        <div className="mt-14 p-8 sm:p-10 rounded-3xl bg-[#18181B] text-white flex flex-col lg:flex-row items-center justify-between gap-8 border border-yellow-400/30 shadow-2xl">
-          <div className="space-y-4 max-w-xl text-center lg:text-left">
-            <span className="px-3 py-1 rounded-full bg-yellow-400 text-stone-950 font-black text-xs uppercase tracking-wider">
-              Khái niệm đặc trưng
-            </span>
-            <h4 className="text-2xl sm:text-3xl font-black text-white">
-              Túi Bất Ngờ (Surprise Bag) là gì?
-            </h4>
-            <p className="text-sm sm:text-base text-stone-300 leading-relaxed">
-              Vì các cửa hàng không thể dự đoán chính xác món nào sẽ còn dư vào cuối ngày, các món ngon sẽ được đóng gói vào chiếc Túi Bất Ngờ. Bạn luôn nhận được đồ ăn tươi với giá trị cao gấp 3 lần số tiền bỏ ra!
-            </p>
-          </div>
+            {/* Right 2 Callouts (aligned left towards bag) */}
+            <div className="space-y-12 sm:space-y-16 lg:text-left flex flex-col items-center lg:items-start">
+              {/* Callout 2 */}
+              <div className="flex flex-col items-center lg:items-start max-w-xs group">
+                <div className="text-[#00615f] mb-3 group-hover:scale-110 transition-transform">
+                  <BagRescueNearYouIcon className="size-12 sm:size-14 text-[#00615f]" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-[#00615f] text-center lg:text-left leading-snug">
+                  Rescue food near you
+                </h3>
+              </div>
 
-          <div className="shrink-0 flex items-center justify-center">
-            <div className="relative">
-              <div className="absolute inset-0 bg-yellow-400/20 rounded-full blur-2xl animate-pulse" />
-              <img
-                src="/images/tgtg/asset_16.png"
-                alt="Surprise Bag FoodSaver"
-                className="relative z-10 w-44 sm:w-56 h-auto drop-shadow-2xl hover:scale-105 transition-transform"
-              />
+              {/* Callout 4 */}
+              <div className="flex flex-col items-center lg:items-start max-w-xs group">
+                <div className="text-[#00615f] mb-3 group-hover:scale-110 transition-transform">
+                  <BagTrySomethingNewIcon className="size-12 sm:size-14 text-[#00615f]" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-[#00615f] text-center lg:text-left leading-snug">
+                  Try something new from local cafes, bakeries or restaurants
+                </h3>
+              </div>
             </div>
           </div>
         </div>
