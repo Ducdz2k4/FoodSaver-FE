@@ -4,7 +4,7 @@ import { ArrowLeft, Clock, CheckCircle2, TrendingUp } from "lucide-react";
 
 export default function UserDashboardPage() {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+    <div className="max-w-6xl mx-auto px-6 pt-28 pb-16 space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-800 mb-2 transition">
@@ -44,3 +44,4 @@ export default function UserDashboardPage() {
     </div>
   );
 }
+

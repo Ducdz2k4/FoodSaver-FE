@@ -1,66 +1,41 @@
-import Link from "next/link";
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Layers } from "lucide-react";
-import styles from "./page.module.css";
+import React from "react";
+import {
+  TgtgHero,
+  TgtgMission,
+  TgtgWhyUs,
+  TgtgTicker,
+  TgtgHowItWorks,
+  TgtgVisualBanner,
+  TgtgBusiness,
+  TgtgCtaBanner,
+} from "@/components/toogoodtogo";
 
 export default function HomePage() {
   return (
-    <div>
-      <section className={styles.hero}>
-        <div className={styles.badge}>
-          <Sparkles className="size-3.5" />
-          <span>Kiến trúc chuẩn Next.js & Redux Toolkit</span>
-        </div>
+    <div className="w-full min-h-screen bg-[#FFFDF5] text-stone-900 selection:bg-yellow-300 selection:text-stone-900">
+      {/* 1. Hero Section with Video Background and Download CTAs */}
+      <TgtgHero />
 
-        <h1 className={styles.title}>
-          Xây dựng ứng dụng hiện đại với trải nghiệm mượt mà
-        </h1>
+      {/* 2. Mission Statement and Impact Stats */}
+      <TgtgMission />
 
-        <p className={styles.subtitle}>
-          Dự án được cấu hình sẵn Tailwind CSS v4, CSS Modules, Redux Toolkit Query, Shadcn UI và phân tách rõ ràng giữa phân hệ User và Admin.
-        </p>
+      {/* 3. Why Use FoodSaver (4 Value Prop Cards + Surprise Bag Explainer) */}
+      <TgtgWhyUs />
 
-        <div className={styles.actions}>
-          <Link href="/dashboard" className={styles.primaryBtn}>
-            <span>Khám phá Dashboard</span>
-            <ArrowRight className="inline-block ml-2 size-4" />
-          </Link>
-          <Link href="/admin" className={styles.secondaryBtn}>
-            <span>Cổng Quản Trị</span>
-          </Link>
-        </div>
-      </section>
+      {/* 4. Scrolling Category Ticker */}
+      <TgtgTicker />
 
-      <section className={styles.grid}>
-        <div className={styles.card}>
-          <div className={styles.cardIcon}>
-            <Zap className="size-5" />
-          </div>
-          <h3 className={styles.cardTitle}>Hiệu Năng & Tối Ưu</h3>
-          <p className={styles.cardDesc}>
-            Sử dụng Next.js App Router kết hợp tối ưu Server & Client Components, CSS Modules và Tailwind v4.
-          </p>
-        </div>
+      {/* 5. How It Works (4 Steps with Interactive Navigation) */}
+      <TgtgHowItWorks />
 
-        <div className={styles.card}>
-          <div className={styles.cardIcon}>
-            <Layers className="size-5" />
-          </div>
-          <h3 className={styles.cardTitle}>Redux Toolkit (RTK)</h3>
-          <p className={styles.cardDesc}>
-            Quản lý Global State và RTK Query API caching mượt mà, cấu hình sẵn Base API và authentication tags.
-          </p>
-        </div>
+      {/* 6. Visual Parallax Food Rescue Showcase Banner */}
+      <TgtgVisualBanner />
 
-        <div className={styles.card}>
-          <div className={styles.cardIcon}>
-            <ShieldCheck className="size-5" />
-          </div>
-          <h3 className={styles.cardTitle}>Phân Quyền User / Admin</h3>
-          <p className={styles.cardDesc}>
-            Route Groups riêng biệt `(user)` và `(admin)` với Layout, Theme globals và Role Guard độc lập.
-          </p>
-        </div>
-      </section>
+      {/* 7. B2B Enterprise Solutions (Surprise Bags, Platform, Date Labeling) */}
+      <TgtgBusiness />
+
+      {/* 8. Global Community CTA Banner */}
+      <TgtgCtaBanner />
     </div>
   );
 }

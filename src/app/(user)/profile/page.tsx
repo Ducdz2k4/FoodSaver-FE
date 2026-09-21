@@ -8,7 +8,7 @@ export default function UserProfilePage() {
   const { user } = useAuth();
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+    <div className="max-w-3xl mx-auto px-6 pt-28 pb-16 space-y-6">
       <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">Hồ Sơ Cá Nhân</h1>
 
       <div className="p-8 rounded-2xl bg-white/80 backdrop-blur-md border border-stone-200 shadow-sm space-y-6">
@@ -41,3 +41,4 @@ export default function UserProfilePage() {
     </div>
   );
 }
+
