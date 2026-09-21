@@ -90,3 +90,21 @@ export function TgtgWordmark({ className = "w-full h-auto text-white/90", ...pro
     </svg>
   );
 }
+export function FoodSaverWordmark({ className = "w-full h-auto text-white/90", ...props }: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 1240 138" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg" {...props}>
+      <text
+        x="50%"
+        y="112"
+        textAnchor="middle"
+        fontFamily="Inter, system-ui, -apple-system, sans-serif"
+        fontWeight="900"
+        fontSize="128"
+        letterSpacing="8"
+        fill="currentColor"
+      >
+        FOODSAVER
+      </text>
+    </svg>
+  );
+}

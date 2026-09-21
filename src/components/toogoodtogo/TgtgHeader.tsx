@@ -2,14 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Menu, X, Globe, ChevronDown } from "lucide-react";
+import { Search, Menu, X, Sparkles, ChevronDown } from "lucide-react";
 
 export function TgtgHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [langOpen, setLangOpen] = useState(false);
-  const [selectedLang, setSelectedLang] = useState("en-us");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,102 +51,72 @@ export function TgtgHeader() {
             </div>
           </div>
 
-          {/* Desktop Nav Links */}
+          {/* Desktop Nav Links: Discover, How it works, For sellers, Impact */}
           <nav className="hidden lg:flex items-center gap-5 text-[13px] font-bold text-[#00615f]">
             <Link
-              href="#about"
-              className="hover:text-[#089184] transition-colors flex items-center gap-1"
+              href="#listings"
+              className="hover:text-[#089184] transition-colors"
             >
-              <span>About</span>
+              Discover
             </Link>
             <Link
-              href="#business"
-              className="hover:text-[#089184] transition-colors flex items-center gap-1"
+              href="#how-it-works"
+              className="hover:text-[#089184] transition-colors"
             >
-              <span>Business</span>
+              How it works
+            </Link>
+            <Link
+              href="#for-sellers"
+              className="hover:text-[#089184] transition-colors"
+            >
+              For sellers
+            </Link>
+            <Link
+              href="#impact"
+              className="hover:text-[#089184] transition-colors"
+            >
+              Impact
             </Link>
           </nav>
         </div>
 
-        {/* Center: Brand Logo */}
+        {/* Center: Brand Logo - FoodSaver */}
         <div className="flex justify-center shrink-0">
           <Link
             href="/"
             className="flex items-center gap-2 group cursor-pointer"
-            aria-label="Too Good To Go Homepage"
+            aria-label="FoodSaver Homepage"
           >
-            <img
-              src="/images/tgtg/asset_7.png"
-              alt="Too Good To Go"
-              className="size-8 sm:size-9 object-contain group-hover:scale-105 transition-transform duration-200"
-            />
+            <div className="size-8 sm:size-9 rounded-full bg-[#00615f] text-white flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-sm">
+              <span className="font-black text-sm text-[#79e4a7]">FS</span>
+            </div>
             <span className="font-black text-lg sm:text-xl tracking-tight text-[#00615f] uppercase leading-none select-none">
-              TOO GOOD TO GO
+              FOODSAVER
             </span>
           </Link>
         </div>
 
-        {/* Right: Actions & CTAs */}
+        {/* Right: Actions (Sign in, Get started) */}
         <div className="flex items-center justify-end gap-3 sm:gap-4 flex-1">
-          {/* Business links */}
-          <div className="hidden xl:flex items-center gap-2 text-[13px] font-bold text-[#00615f]">
-            <Link
-              href="/register"
-              className="hover:text-[#089184] transition-colors"
-            >
-              Sign up as Business
-            </Link>
-            <span className="text-stone-400" aria-hidden="true">
-              |
-            </span>
-            <Link
-              href="/login"
-              className="hover:text-[#089184] transition-colors"
-            >
-              MyStore login
-            </Link>
-          </div>
-
-          {/* Download app primary CTA button */}
+          {/* Sign in text link */}
           <Link
-            href="#download"
-            className="inline-flex items-center justify-center px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm active:scale-98"
+            href="/login"
+            className="hidden sm:inline-block text-[13px] font-bold text-[#00615f] hover:text-[#089184] transition-colors"
           >
-            Download app
+            Sign in
           </Link>
 
-          {/* Language selector */}
-          <div className="relative hidden sm:block">
-            <button
-              type="button"
-              onClick={() => setLangOpen(!langOpen)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-stone-300 text-xs font-bold text-[#00615f] hover:bg-stone-100 transition"
-              aria-label="Language selector"
-            >
-              <Globe className="size-3.5 text-[#00615f]" />
-              <span className="uppercase">{selectedLang}</span>
-              <ChevronDown className="size-3 text-stone-500" />
-            </button>
+          <span className="hidden sm:inline-block text-stone-300" aria-hidden="true">
+            |
+          </span>
 
-            {langOpen && (
-              <div className="absolute right-0 mt-2 w-32 bg-white border border-stone-200 rounded-xl shadow-lg py-1 z-50 text-xs">
-                {["en-us", "vi-vn", "fr-fr", "de-de"].map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => {
-                      setSelectedLang(l);
-                      setLangOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 uppercase hover:bg-stone-100 transition ${
-                      selectedLang === l ? "text-[#00615f] font-bold bg-[#f9f3f0]" : "text-stone-700"
-                    }`}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Get started primary CTA button */}
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-sm active:scale-98"
+          >
+            Get started
+          </Link>
 
           {/* Mobile hamburger menu toggle */}
           <button
@@ -179,56 +147,49 @@ export function TgtgHeader() {
 
           <nav className="flex flex-col space-y-3 text-sm font-bold text-[#00615f] pt-2">
             <Link
-              href="#about"
+              href="#listings"
               onClick={() => setMobileOpen(false)}
               className="py-1 hover:text-[#089184]"
             >
-              About
-            </Link>
-            <Link
-              href="#why-us"
-              onClick={() => setMobileOpen(false)}
-              className="py-1 hover:text-[#089184]"
-            >
-              Why use Too Good To Go
+              Discover
             </Link>
             <Link
               href="#how-it-works"
               onClick={() => setMobileOpen(false)}
               className="py-1 hover:text-[#089184]"
             >
-              How to use the app
+              How it works
             </Link>
             <Link
-              href="#business"
+              href="#for-sellers"
               onClick={() => setMobileOpen(false)}
               className="py-1 hover:text-[#089184]"
             >
-              Business solutions
+              For sellers
             </Link>
             <Link
-              href="/register"
+              href="#impact"
               onClick={() => setMobileOpen(false)}
               className="py-1 hover:text-[#089184]"
             >
-              Sign up as Business
+              Impact
             </Link>
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
               className="py-1 hover:text-[#089184]"
             >
-              MyStore login
+              Sign in
             </Link>
           </nav>
 
           <div className="pt-4 border-t border-stone-300 flex flex-col gap-3">
             <Link
-              href="#download"
+              href="/register"
               onClick={() => setMobileOpen(false)}
               className="w-full text-center py-3 rounded-full bg-[#00615f] text-white font-bold text-sm shadow-md"
             >
-              Download app
+              Get started
             </Link>
           </div>
         </div>

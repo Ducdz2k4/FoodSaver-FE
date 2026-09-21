@@ -5,20 +5,28 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const STEPS = [
   {
-    step: "Step one",
-    description: "Discover Surprise Bags available at stores and restaurants near you.",
+    step: "01 List",
+    title: "Post your surplus food",
+    description:
+      "Sellers post surplus food with exact expiry time, quantity, price and pickup location.",
   },
   {
-    step: "Step two",
-    description: "Confirm your choice, reserve your food, and pay through the app.",
+    step: "02 Countdown",
+    title: "Live countdown tracking",
+    description:
+      "Every listing shows a live countdown and updates its status automatically. Expired listings can't be ordered.",
   },
   {
-    step: "Step three",
-    description: "Head to the shop at the specified pickup time, swipe the app, and enjoy your food.",
+    step: "03 Discover",
+    title: "Find great food nearby",
+    description:
+      "Find food nearby and filter by remaining time, price, distance and category.",
   },
   {
-    step: "Step four",
-    description: "You've rescued good food from going to waste and done something good for the planet!",
+    step: "04 Collect",
+    title: "Pick up & enjoy",
+    description:
+      "Order, get notified, and pick up before it expires.",
   },
 ];
 
@@ -44,18 +52,23 @@ export function TgtgHowItWorks() {
           <div className="space-y-6 sm:space-y-8 flex flex-col justify-center">
             {/* Pre-title */}
             <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#79e4a7]">
-              How to use the app
+              Simple &amp; transparent process
             </p>
 
             {/* Step Heading */}
-            <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-[#f9f3f0] capitalize select-none transition-all duration-300">
+            <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-[#f9f3f0] select-none transition-all duration-300">
               {STEPS[currentStep].step}
             </h2>
 
-            {/* Step Description */}
-            <p className="text-lg sm:text-2xl text-[#dee3e3] leading-relaxed max-w-lg min-h-[4.5rem]">
-              {STEPS[currentStep].description}
-            </p>
+            {/* Step Title & Description */}
+            <div className="space-y-2">
+              <h3 className="text-xl sm:text-2xl font-bold text-[#79e4a7]">
+                {STEPS[currentStep].title}
+              </h3>
+              <p className="text-lg sm:text-2xl text-[#dee3e3] leading-relaxed max-w-lg min-h-[4.5rem]">
+                {STEPS[currentStep].description}
+              </p>
+            </div>
 
             {/* Carousel Navigation: Prev button + Dots + Next button */}
             <div className="pt-4 flex items-center gap-6">
@@ -81,7 +94,7 @@ export function TgtgHowItWorks() {
                     key={idx}
                     type="button"
                     onClick={() => setCurrentStep(idx)}
-                    aria-label={`Go to ${STEPS[idx].step}`}
+                    aria-label={`Go to step ${idx + 1}`}
                     className={`h-2.5 rounded-full transition-all duration-300 ${
                       currentStep === idx
                         ? "w-8 bg-[#79e4a7]"
@@ -115,7 +128,7 @@ export function TgtgHowItWorks() {
               <div className="relative w-[85%] sm:w-[88%] aspect-square ml-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10">
                 <img
                   src="/images/tgtg/asset_11.jpg"
-                  alt="A person holding a phone showing Surprise Bags on the map"
+                  alt="A user discovering nearby surplus food listings with expiry countdowns on FoodSaver"
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
@@ -125,7 +138,7 @@ export function TgtgHowItWorks() {
               <div className="absolute -bottom-6 -left-4 sm:-bottom-8 sm:-left-6 w-44 sm:w-56 aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-[#00615f] bg-[#013d3c]">
                 <img
                   src="/images/tgtg/asset_16.png"
-                  alt="A baker in an apron with freshly baked bread"
+                  alt="A local baker with fresh artisan bread ready for pickup before closing"
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />

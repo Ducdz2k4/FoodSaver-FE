@@ -9,7 +9,7 @@ export function TgtgVisualBanner() {
         className="w-full h-full bg-cover bg-center bg-no-repeat bg-fixed"
         style={{ backgroundImage: "url(/images/tgtg/asset_20.jpg)" }}
         role="img"
-        aria-label="Fresh food rescued from going to waste"
+        aria-label="Fresh bakery, bread and safe surplus food rescued with FoodSaver"
       />
     </section>
   );

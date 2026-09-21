@@ -2,27 +2,25 @@
 
 import React from "react";
 
-const TICKER_ITEMS = [
-  "PIZZA",
-  "PASTRIES",
-  "GROCERIES",
-  "SANDWICHES",
-  "SUSHI",
-  "MUFFINS",
-  "BURGERS",
-  "SANDWICH",
-  "POKE",
-  "BURRITO",
-  "SALADS",
-  "DONUTS",
+const FOODSAVER_CATEGORIES = [
+  "BUTTER CROISSANTS",
+  "GRILLED PORK BÁNH MÌ",
+  "SOURDOUGH BREAD",
+  "ARTISAN PASTRIES",
+  "FRESH FRUIT YOGURT",
+  "PACKAGED SANDWICHES",
+  "ORGANIC SALADS",
+  "NEIGHBOURHOOD BAKERIES",
+  "CONVENIENCE STORES",
+  "HOT MEALS",
+  "ZERO FOOD WASTE",
 ];
 
 export function TgtgTicker() {
   return (
     <section className="relative py-7 sm:py-9 bg-[#00615f] overflow-hidden select-none border-y border-[#014d4b]">
       <div className="flex w-max animate-tgtg-ticker items-center">
-        {/* Render multiple sets to ensure seamless infinite looping */}
-        {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map(
+        {[...FOODSAVER_CATEGORIES, ...FOODSAVER_CATEGORIES, ...FOODSAVER_CATEGORIES, ...FOODSAVER_CATEGORIES].map(
           (item, idx) => (
             <div
               key={idx}
