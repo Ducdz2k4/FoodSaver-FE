@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Lock, Mail, ArrowRight, Loader2, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Lock, Mail, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,16 +34,15 @@ export default function LoginPage() {
       const res = await login({ email: email.trim(), password });
       toast.success("Đăng nhập thành công!");
 
-      // Smart redirect: if redirect param exists -> go there, else if admin -> /admin, else -> /
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else if (res.user?.role?.toUpperCase() === "ADMIN") {
-        router.push("/admin");
-      } else {
-        router.push("/");
-      }
+      const target =
+        redirectUrl ||
+        (res.user?.role?.toUpperCase() === "ADMIN" ? "/admin" : "/");
+
+      router.push(target);
+      router.refresh();
     } catch (err: any) {
-      const msg = err?.data?.message || err?.message || "Email hoặc mật khẩu không chính xác";
+      const msg =
+        err?.data?.message || err?.message || "Email hoặc mật khẩu không chính xác";
       setErrorMessage(msg);
       toast.error(msg);
     } finally {
@@ -51,7 +50,6 @@ export default function LoginPage() {
     }
   };
 
-  // Quick fill demo credentials
   const fillDemo = (demoEmail: string) => {
     setEmail(demoEmail);
     setPassword("Admin@123456");
@@ -85,7 +83,7 @@ export default function LoginPage() {
         </div>
       )}
 
-      {/* Main Login Form */}
+      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         <div className="space-y-1.5">
           <label className="font-bold text-foreground block">Email đăng nhập</label>
@@ -95,7 +93,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@foodsaver.vn"
+              placeholder="admin@foodsaver.vn"
               required
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-200/90 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f] text-xs transition bg-white"
             />
@@ -140,7 +138,7 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {/* Demo Credentials Quick-Fill Chips */}
+      {/* Demo Quick-Fill */}
       <div className="pt-2 border-t border-stone-200/70 space-y-2">
         <p className="text-[11px] font-semibold text-muted-foreground text-center">
           Tài khoản mẫu thử nghiệm (Click để điền nhanh):
@@ -149,21 +147,21 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => fillDemo("admin@foodsaver.vn")}
-            className="p-1.5 rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 font-bold transition text-center"
+            className="p-1.5 rounded-lg border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 font-bold transition text-center cursor-pointer"
           >
             Quản trị (Admin)
           </button>
           <button
             type="button"
             onClick={() => fillDemo("partner@foodsaver.vn")}
-            className="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 font-bold transition text-center"
+            className="p-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 font-bold transition text-center cursor-pointer"
           >
             Đối tác (Store)
           </button>
           <button
             type="button"
             onClick={() => fillDemo("user@foodsaver.vn")}
-            className="p-1.5 rounded-lg border border-stone-200 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold transition text-center"
+            className="p-1.5 rounded-lg border border-stone-200 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold transition text-center cursor-pointer"
           >
             Khách hàng (User)
           </button>
@@ -177,5 +175,19 @@ export default function LoginPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full max-w-md p-8 text-center text-xs text-muted-foreground">
+          Đang tải trang đăng nhập...
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
