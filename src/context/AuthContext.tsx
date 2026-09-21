@@ -2,8 +2,20 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { UserOut, LoginIn, RegisterIn, TokenOut } from "@/types/auth";
-import { authApi } from "@/services/authApi";
-import { getStoredToken } from "@/services/apiClient";
+import {
+  useLoginMutation,
+  useRegisterMutation,
+  useLazyGetMeQuery,
+  useLogoutMutation,
+} from "@/redux/api/authApi";
+import {
+  selectCurrentUser,
+  selectCurrentToken,
+  selectIsAuthenticated,
+  setUser,
+  logOut,
+} from "@/redux/slices/authSlice";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
 interface AuthContextType {
   user: UserOut | null;
@@ -20,63 +32,75 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserOut | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectCurrentUser);
+  const token = useAppSelector(selectCurrentToken);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  const [loginMutation] = useLoginMutation();
+  const [registerMutation] = useRegisterMutation();
+  const [triggerGetMe, { isFetching: isFetchingMe }] = useLazyGetMeQuery();
+  const [logoutMutation] = useLogoutMutation();
+
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const refreshUser = useCallback(async (): Promise<UserOut | null> => {
-    const storedToken = getStoredToken();
+    const storedToken =
+      token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+
     if (!storedToken) {
-      setUser(null);
-      setToken(null);
-      setIsLoading(false);
+      setInitialLoading(false);
       return null;
     }
 
     try {
-      setToken(storedToken);
-      const profile = await authApi.getMe();
-      setUser(profile);
+      const profile = await triggerGetMe().unwrap();
+      dispatch(setUser(profile));
       return profile;
     } catch {
-      authApi.logout();
-      setUser(null);
-      setToken(null);
+      dispatch(logOut());
       return null;
     } finally {
-      setIsLoading(false);
+      setInitialLoading(false);
     }
-  }, []);
+  }, [token, triggerGetMe, dispatch]);
 
   useEffect(() => {
     refreshUser();
   }, [refreshUser]);
 
   const login = async (payload: LoginIn): Promise<TokenOut> => {
-    const res = await authApi.login(payload);
-    setToken(res.access_token);
-    try {
-      const profile = await authApi.getMe();
-      setUser(profile);
-    } catch {
-      // Ignored
+    const res = await loginMutation(payload).unwrap();
+    const accessToken = res.accessToken || (res as any).access_token;
+    const userData = res.user;
+    if (accessToken && !userData) {
+      try {
+        await triggerGetMe().unwrap();
+      } catch {
+        // Ignored
+      }
     }
-    return res;
+    return {
+      access_token: accessToken,
+      accessToken,
+      user: userData || undefined,
+    };
   };
 
   const register = async (payload: RegisterIn): Promise<UserOut> => {
-    const res = await authApi.register(payload);
-    return res;
+    const res = await registerMutation(payload).unwrap();
+    return res.user;
   };
 
   const updateUserLocal = (updated: Partial<UserOut>) => {
-    setUser((prev) => (prev ? { ...prev, ...updated } : null));
+    if (user) {
+      dispatch(setUser({ ...user, ...updated }));
+    }
   };
 
   const logout = () => {
-    authApi.logout();
-    setUser(null);
-    setToken(null);
+    logoutMutation().catch(() => {});
+    dispatch(logOut());
   };
 
   return (
@@ -84,8 +108,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
-        isLoading,
-        isAuthenticated: !!user,
+        isLoading: initialLoading || isFetchingMe,
+        isAuthenticated,
         login,
         register,
         updateUserLocal,
