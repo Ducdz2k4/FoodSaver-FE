@@ -55,6 +55,11 @@ const data = {
       url: "/admin/reports",
       icon: <BarChart3 />,
     },
+    {
+      title: "Giám sát hệ thống",
+      url: "/admin/health",
+      icon: <ActivityIcon />,
+    },
   ],
   documents: [
     {
@@ -110,4 +115,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+
 

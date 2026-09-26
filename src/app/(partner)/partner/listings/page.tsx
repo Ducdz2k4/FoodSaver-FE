@@ -145,6 +145,13 @@ export default function PartnerListingsPage() {
 
                   <td className="p-4 pr-6 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/partner/listings/${item.id}/edit`}
+                        className="p-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 transition"
+                        title="Chỉnh sửa món"
+                      >
+                        <Edit3 className="size-3.5" />
+                      </Link>
                       <button
                         type="button"
                         onClick={() => toggleStatus(item.id)}
@@ -168,3 +175,4 @@ export default function PartnerListingsPage() {
     </div>
   );
 }
+
