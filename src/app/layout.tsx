@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import StoreProvider from "@/redux/StoreProvider";
 import { AuthProvider } from "@/context/AuthContext";
-import { DevRoleSwitcher } from "@/components/common/DevRoleSwitcher";
+import { GlobalClientProviders } from "@/components/common/GlobalClientProviders";
 
 export const metadata: Metadata = {
   title: "FoodSaver | Good food, in its last golden hours",
@@ -20,7 +20,7 @@ export default function RootLayout({
         <StoreProvider>
           <AuthProvider>
             {children}
-            <DevRoleSwitcher />
+            <GlobalClientProviders />
           </AuthProvider>
         </StoreProvider>
       </body>
