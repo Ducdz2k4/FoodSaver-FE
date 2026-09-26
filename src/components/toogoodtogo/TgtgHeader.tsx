@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck } from "lucide-react";
+import { useAppSelector } from "@/redux/hooks";
 
 export function TgtgHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const currentUser = useAppSelector((state) => state.auth.user);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,14 +21,14 @@ export function TgtgHeader() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         scrolled
           ? "liquid-glass-subtle py-2.5 shadow-sm"
-          : "bg-[#f9f3f0]/75 backdrop-blur-lg border-b border-white/40 py-3 sm:py-3.5"
+          : "bg-[#f9f3f0]/85 backdrop-blur-lg border-b border-stone-200/50 py-3 sm:py-3.5"
       }`}
     >
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-        {/* Left: Brand Logo (anchored to the left) */}
+        {/* Left: Brand Logo */}
         <div className="flex items-center shrink-0">
           <Link
             href="/"
@@ -42,18 +44,18 @@ export function TgtgHeader() {
           </Link>
         </div>
 
-        {/* Center: Liquid Glass Nav Menu with integrated search capsule */}
+        {/* Center: Search & Navigation */}
         <div className="hidden lg:flex items-center justify-center flex-1">
-          <nav className="liquid-glass flex items-center gap-2 p-1.5 rounded-full">
+          <nav className="liquid-glass flex items-center gap-2 p-1.5 rounded-full border border-stone-200/60 bg-white/70 shadow-sm">
             {/* Integrated Search Capsule */}
-            <div className="relative w-44 xl:w-52">
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f9f3f0]/80 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-[#00615f]/20 border border-stone-200/50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-200">
+            <div className="relative w-44 xl:w-56">
+              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f9f3f0]/80 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-[#00615f]/20 border border-stone-200/50 transition-all duration-200">
                 <Search className="size-3.5 text-[#00615f] shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Food nearby"
+                  placeholder="Tìm món ngon gần bạn..."
                   className="w-full bg-transparent text-xs font-medium text-[#252d2d] placeholder:text-stone-500 focus:outline-none"
                 />
                 {searchQuery && (
@@ -69,55 +71,124 @@ export function TgtgHeader() {
               </div>
             </div>
 
-            {/* Liquid Glass Nav Links */}
+            {/* Nav Links */}
             <div className="flex items-center gap-1">
               <Link
-                href="#listings"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] active:scale-95"
+                href="/#listings"
+                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
-                Discover
+                Khám phá
               </Link>
               <Link
-                href="#how-it-works"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] active:scale-95"
+                href="/search"
+                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
-                How it works
+                Tìm kiếm
               </Link>
               <Link
-                href="#for-sellers"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] active:scale-95"
+                href="/#how-it-works"
+                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
-                For sellers
+                Cách hoạt động
               </Link>
               <Link
-                href="#impact"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] active:scale-95"
+                href="/orders"
+                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
-                Impact
+                Đơn của tôi
               </Link>
             </div>
           </nav>
         </div>
 
-        {/* Right: Actions (Sign in, Get started - anchored to the right) */}
-        <div className="flex items-center justify-end gap-3 sm:gap-4 shrink-0">
-          <Link
-            href="/login"
-            className="hidden sm:inline-block text-xs sm:text-[13px] font-bold text-[#00615f] hover:text-[#089184] px-3.5 py-1.5 rounded-full hover:bg-white/60 transition"
-          >
-            Sign in
-          </Link>
+        {/* Right: Dynamic Capability Navigation based on user role */}
+        <div className="flex items-center justify-end gap-2.5 sm:gap-3 shrink-0">
+          {currentUser ? (
+            <>
+              {/* 1. Admin Portal */}
+              {currentUser.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-md transition"
+                >
+                  <ShieldAlert className="size-3.5" />
+                  <span>Admin Portal</span>
+                </Link>
+              )}
 
-          <span className="hidden sm:inline-block text-stone-300" aria-hidden="true">
-            |
-          </span>
+              {/* 2. Partner Center (Verified) */}
+              {currentUser.partnerCapability === "VERIFIED" && (
+                <Link
+                  href="/partner/dashboard"
+                  className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition"
+                >
+                  <Store className="size-3.5" />
+                  <span>Partner Center</span>
+                </Link>
+              )}
 
-          <Link
-            href="/register"
-            className="inline-flex items-center justify-center px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-xs sm:text-sm shadow-[0_2px_8px_rgba(0,97,95,0.25)] hover:shadow-[0_4px_14px_rgba(0,97,95,0.35)] transition-all duration-200 active:scale-98"
-          >
-            Get started
-          </Link>
+              {/* 3. Partner Pending */}
+              {currentUser.partnerCapability === "PENDING" && (
+                <Link
+                  href="/partner/apply/pending"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300 font-bold text-xs shadow-sm hover:bg-amber-100 transition"
+                >
+                  <Clock className="size-3.5" />
+                  <span>Hồ sơ đang duyệt</span>
+                </Link>
+              )}
+
+              {/* 4. Partner Rejected */}
+              {currentUser.partnerCapability === "REJECTED" && (
+                <Link
+                  href="/partner/apply"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 font-bold text-xs shadow-sm hover:bg-rose-100 transition"
+                >
+                  <span>✕ Hồ sơ từ chối (Nộp lại)</span>
+                </Link>
+              )}
+
+              {/* 5. Customer -> Button to Become a Partner */}
+              {currentUser.partnerCapability === "NONE" && currentUser.role !== "ADMIN" && (
+                <Link
+                  href="/partner/apply"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-emerald-50 text-[#00615f] border border-[#00615f]/40 font-bold text-xs shadow-sm transition"
+                >
+                  <Store className="size-3.5" />
+                  <span>Trở thành Đối tác</span>
+                </Link>
+              )}
+
+              {/* Profile Avatar / Name */}
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 p-1.5 pl-2 sm:pl-3 rounded-full bg-white/80 hover:bg-white border border-stone-200/60 shadow-sm transition"
+              >
+                <span className="text-xs font-bold text-stone-800 hidden sm:inline-block max-w-[120px] truncate">
+                  {currentUser.fullName}
+                </span>
+                <div className="size-7 rounded-full bg-[#00615f] text-white flex items-center justify-center font-bold text-xs">
+                  {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : "U"}
+                </div>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-xs sm:text-[13px] font-bold text-[#00615f] hover:text-[#089184] px-3.5 py-1.5 rounded-full hover:bg-white/60 transition"
+              >
+                Đăng nhập
+              </Link>
+
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center px-4 sm:px-5 py-2 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+              >
+                Đăng ký
+              </Link>
+            </>
+          )}
 
           {/* Mobile hamburger menu toggle */}
           <button
@@ -131,68 +202,65 @@ export function TgtgHeader() {
         </div>
       </div>
 
-      {/* Mobile Liquid Glass Drawer */}
+      {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="lg:hidden liquid-glass mx-4 mt-2 px-6 py-6 space-y-4 rounded-3xl shadow-xl animate-in slide-in-from-top duration-200">
-          {/* Mobile Search */}
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#f9f3f0] border border-stone-200">
-            <Search className="size-4 text-[#00615f] shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Food nearby"
-              className="w-full bg-transparent text-sm text-[#252d2d] placeholder:text-stone-500 focus:outline-none"
-            />
-          </div>
-
+        <div className="lg:hidden liquid-glass mx-4 mt-2 px-6 py-6 space-y-4 rounded-3xl shadow-xl border border-stone-200 bg-white/95 backdrop-blur-md animate-in slide-in-from-top duration-200">
           <nav className="flex flex-col space-y-2 text-sm font-bold text-[#00615f] pt-1">
             <Link
-              href="#listings"
+              href="/#listings"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-white transition"
+              className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
             >
-              Discover
+              Khám phá
             </Link>
             <Link
-              href="#how-it-works"
+              href="/search"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-white transition"
+              className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
             >
-              How it works
+              Tìm kiếm
             </Link>
             <Link
-              href="#for-sellers"
+              href="/orders"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-white transition"
+              className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
             >
-              For sellers
+              Đơn hàng của tôi
             </Link>
-            <Link
-              href="#impact"
-              onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-white transition"
-            >
-              Impact
-            </Link>
-            <Link
-              href="/login"
-              onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-white transition"
-            >
-              Sign in
-            </Link>
-          </nav>
 
-          <div className="pt-3 border-t border-stone-200/60 flex flex-col gap-3">
-            <Link
-              href="/register"
-              onClick={() => setMobileOpen(false)}
-              className="w-full text-center py-3 rounded-full bg-[#00615f] text-white font-bold text-sm shadow-md"
-            >
-              Get started
-            </Link>
-          </div>
+            {currentUser && currentUser.partnerCapability === "NONE" && (
+              <Link
+                href="/partner/apply"
+                onClick={() => setMobileOpen(false)}
+                className="px-3 py-2 rounded-xl hover:bg-emerald-50 text-emerald-700 font-bold transition flex items-center gap-2"
+              >
+                <Store className="size-4" />
+                <span>Đăng ký làm Đối tác F&B</span>
+              </Link>
+            )}
+
+            {currentUser && currentUser.partnerCapability === "VERIFIED" && (
+              <Link
+                href="/partner/dashboard"
+                onClick={() => setMobileOpen(false)}
+                className="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold transition flex items-center gap-2"
+              >
+                <Store className="size-4" />
+                <span>Partner Center</span>
+              </Link>
+            )}
+
+            {currentUser && currentUser.role === "ADMIN" && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="px-3 py-2 rounded-xl bg-purple-700 text-white font-bold transition flex items-center gap-2"
+              >
+                <ShieldAlert className="size-4" />
+                <span>Admin Portal</span>
+              </Link>
+            )}
+          </nav>
         </div>
       )}
     </header>
