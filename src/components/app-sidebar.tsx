@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
+import * as React from "react";
+import Link from "next/link";
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
-import { useAuth } from "@/context/AuthContext"
+import { NavDocuments } from "@/components/nav-documents";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
+import { useAuth } from "@/context/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -16,7 +16,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 import {
   LayoutDashboardIcon,
   UsersIcon,
@@ -24,7 +24,9 @@ import {
   ShieldCheckIcon,
   GlobeIcon,
   ActivityIcon,
-} from "lucide-react"
+  UtensilsCrossed,
+  BarChart3,
+} from "lucide-react";
 
 const data = {
   navMain: [
@@ -34,14 +36,24 @@ const data = {
       icon: <LayoutDashboardIcon />,
     },
     {
+      title: "Duyệt đối tác F&B",
+      url: "/admin/partners/pending",
+      icon: <ShieldCheckIcon />,
+    },
+    {
+      title: "Kiểm duyệt món ăn",
+      url: "/admin/listings",
+      icon: <UtensilsCrossed />,
+    },
+    {
       title: "Quản lý người dùng",
       url: "/admin/users",
       icon: <UsersIcon />,
     },
     {
-      title: "Cài đặt hệ thống",
-      url: "/admin/settings",
-      icon: <Settings2Icon />,
+      title: "Báo cáo phát triển (ESG)",
+      url: "/admin/reports",
+      icon: <BarChart3 />,
     },
   ],
   documents: [
@@ -50,20 +62,15 @@ const data = {
       url: "/",
       icon: <GlobeIcon />,
     },
-    {
-      name: "Dashboard người dùng",
-      url: "/dashboard",
-      icon: <ActivityIcon />,
-    },
   ],
   navSecondary: [
     {
-      title: "Cài đặt",
+      title: "Cài đặt hệ thống",
       url: "/admin/settings",
       icon: <Settings2Icon />,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
@@ -103,3 +110,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
+

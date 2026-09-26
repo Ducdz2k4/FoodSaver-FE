@@ -13,8 +13,21 @@ const getInitialToken = (): string | null => {
   return localStorage.getItem("token");
 };
 
+const getInitialUser = (): UserOut | null => {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem("mock_user");
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
 const initialState: AuthState = {
-  user: null,
+  user: getInitialUser(),
   token: getInitialToken(),
   isAuthenticated: !!getInitialToken(),
   isLoading: false,
@@ -36,6 +49,9 @@ export const authSlice = createSlice({
       }
       if (typeof window !== "undefined") {
         localStorage.setItem("token", token);
+        if (user) {
+          localStorage.setItem("mock_user", JSON.stringify(user));
+        }
         document.cookie = `token=${encodeURIComponent(
           token
         )}; path=/; max-age=604800; SameSite=Lax`;
@@ -44,6 +60,9 @@ export const authSlice = createSlice({
     setUser: (state, action: PayloadAction<UserOut | null>) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
+      if (typeof window !== "undefined" && action.payload) {
+        localStorage.setItem("mock_user", JSON.stringify(action.payload));
+      }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
@@ -55,6 +74,7 @@ export const authSlice = createSlice({
       state.isLoading = false;
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
+        localStorage.removeItem("mock_user");
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       }
     },

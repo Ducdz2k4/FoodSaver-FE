@@ -53,6 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
+    // Nếu là mock token của DevRoleSwitcher -> không gọi BE /auth/me để tránh bị 401 rồi tự logout
+    if (storedToken.startsWith("mock-")) {
+      setInitialLoading(false);
+      return user;
+    }
+
     try {
       const profile = await triggerGetMe().unwrap();
       dispatch(setUser(profile));
@@ -63,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setInitialLoading(false);
     }
-  }, [token, triggerGetMe, dispatch]);
+  }, [token, triggerGetMe, dispatch, user]);
 
   useEffect(() => {
     refreshUser();

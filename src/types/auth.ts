@@ -1,3 +1,5 @@
+export type PartnerCapability = 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 export interface UserOut {
   id?: string;
   user_id?: number | string;
@@ -11,6 +13,8 @@ export interface UserOut {
   avatar_url?: string | null;
   address?: string | null;
   bio?: string | null;
+  partnerCapability?: PartnerCapability;
+  partnerProfileId?: string;
 }
 
 export interface AuthResponseData {
@@ -44,21 +48,4 @@ export interface RegisterIn {
 
 export interface MessageOut {
   message: string;
-}
-
-export interface ValidationErrorItem {
-  loc: (string | number)[];
-  msg: string;
-  type: string;
-}
-
-export interface ApiErrorResponse {
-  detail?: string | ValidationErrorItem[];
-  message?: string;
-}
-
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message?: string;
-  data: T;
 }
