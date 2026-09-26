@@ -80,6 +80,12 @@ export function TgtgHeader() {
                 Khám phá
               </Link>
               <Link
+                href="/map"
+                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
+              >
+                Bản đồ
+              </Link>
+              <Link
                 href="/search"
                 className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
@@ -266,3 +272,4 @@ export function TgtgHeader() {
     </header>
   );
 }
+
