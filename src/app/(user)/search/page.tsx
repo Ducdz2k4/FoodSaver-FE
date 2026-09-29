@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { Search, MapPin, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import React, { useState } from "react";
+import { Search, MapPin, ArrowUpDown, Loader2 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ListingCard } from "@/components/common/ListingCard";
 import { FoodCategory } from "@/types/contract";
+import { useGetListingsQuery } from "@/redux/api/listingApi";
 
 const CATEGORIES: { label: string; value: FoodCategory | "ALL" }[] = [
   { label: "Tất cả", value: "ALL" },
@@ -19,38 +20,22 @@ export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | "ALL">("ALL");
   const [maxDistance, setMaxDistance] = useState<number>(5);
-  const [sortBy, setSortBy] = useState<"EXPIRY" | "PRICE_ASC" | "DISTANCE">("EXPIRY");
+  const [sortBy, setSortBy] = useState<"EXPIRY" | "PRICE_ASC" | "PRICE_DESC" | "URGENCY">("EXPIRY");
 
-  const filteredListings = useMemo(() => {
-    return MOCK_LISTINGS.filter((item) => {
-      // 1. Text search
-      const matchesSearch =
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.partnerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase());
+  // Call real RTK Query
+  const { data: realListings, isLoading, isFetching } = useGetListingsQuery({
+    search: searchTerm || undefined,
+    category: selectedCategory !== "ALL" ? selectedCategory : undefined,
+    radiusKm: maxDistance,
+    sortBy,
+  });
 
-      // 2. Category
-      const matchesCategory =
-        selectedCategory === "ALL" || item.category === selectedCategory;
-
-      // 3. Distance
-      const matchesDistance =
-        item.distanceKm === undefined || item.distanceKm <= maxDistance;
-
-      return matchesSearch && matchesCategory && matchesDistance;
-    }).sort((a, b) => {
-      if (sortBy === "EXPIRY") {
-        return new Date(a.expiryAt).getTime() - new Date(b.expiryAt).getTime();
-      }
-      if (sortBy === "PRICE_ASC") {
-        return a.discountPrice - b.discountPrice;
-      }
-      if (sortBy === "DISTANCE") {
-        return (a.distanceKm || 0) - (b.distanceKm || 0);
-      }
-      return 0;
-    });
-  }, [searchTerm, selectedCategory, maxDistance, sortBy]);
+  const listings =
+    realListings && realListings.length > 0
+      ? realListings
+      : !searchTerm && selectedCategory === "ALL"
+      ? MOCK_LISTINGS
+      : [];
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
@@ -78,6 +63,7 @@ export default function SearchPage() {
               />
               {searchTerm && (
                 <button
+                  type="button"
                   onClick={() => setSearchTerm("")}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600"
                 >
@@ -95,8 +81,9 @@ export default function SearchPage() {
                 className="bg-transparent text-xs sm:text-sm font-bold text-stone-800 focus:outline-none cursor-pointer"
               >
                 <option value="EXPIRY">Sắp hết hạn trước</option>
+                <option value="URGENCY">Điểm cấp bách Jev AI</option>
                 <option value="PRICE_ASC">Giá rẻ nhất trước</option>
-                <option value="DISTANCE">Gần bạn nhất</option>
+                <option value="PRICE_DESC">Giá cao nhất trước</option>
               </select>
             </div>
           </div>
@@ -157,14 +144,17 @@ export default function SearchPage() {
         {/* Kết quả tìm kiếm */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-bold text-stone-700">
-              Tìm thấy <strong className="text-[#00615f]">{filteredListings.length}</strong> món ăn phù hợp
+            <span className="text-sm font-bold text-stone-700 flex items-center gap-2">
+              <span>
+                Tìm thấy <strong className="text-[#00615f]">{listings.length}</strong> món ăn phù hợp
+              </span>
+              {(isLoading || isFetching) && <Loader2 className="size-4 animate-spin text-[#00615f]" />}
             </span>
           </div>
 
-          {filteredListings.length > 0 ? (
+          {listings.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredListings.map((listing) => (
+              {listings.map((listing) => (
                 <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>

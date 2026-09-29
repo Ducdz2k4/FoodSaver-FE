@@ -13,6 +13,7 @@ import {
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingDTO, FoodCategory } from "@/types/contract";
+import { useGetListingsQuery } from "@/redux/api/listingApi";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -29,7 +30,15 @@ export default function FoodMapPage() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  const filteredListings = MOCK_LISTINGS.filter((item) => {
+  const { data: realListings } = useGetListingsQuery({
+    radiusKm,
+    category: categoryFilter !== "ALL" ? categoryFilter : undefined,
+    urgentOnly,
+  });
+
+  const allListings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+
+  const filteredListings = allListings.filter((item) => {
     if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
     if (item.distanceKm && item.distanceKm > radiusKm) return false;
     if (urgentOnly && item.status !== "EXPIRING_SOON") return false;
@@ -322,3 +331,4 @@ export default function FoodMapPage() {
     </div>
   );
 }
+
