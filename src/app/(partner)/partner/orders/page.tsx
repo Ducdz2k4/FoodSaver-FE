@@ -1,29 +1,44 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle2, XCircle, Clock, Phone, MapPin } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Phone, MapPin, Loader2 } from "lucide-react";
 import { MOCK_ORDERS } from "@/mocks/mockData";
 import { OrderDTO } from "@/types/contract";
+import { useGetPartnerOrdersQuery, useUpdatePartnerOrderStatusMutation } from "@/redux/api/orderApi";
+import { toast } from "sonner";
 
 export default function PartnerOrdersPage() {
-  const [orders, setOrders] = useState<OrderDTO[]>(MOCK_ORDERS);
+  const { data: realOrders, isLoading, isFetching } = useGetPartnerOrdersQuery();
+  const [updateStatusMutation] = useUpdatePartnerOrderStatusMutation();
 
-  const updateStatus = (id: string, newStatus: OrderDTO["status"]) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o))
-    );
-    alert(`Đã cập nhật đơn hàng sang: ${newStatus}`);
+  const orders = realOrders && realOrders.length > 0 ? realOrders : MOCK_ORDERS;
+
+  const updateStatus = async (id: string, newStatus: "ACCEPTED" | "REJECTED" | "COMPLETED") => {
+    try {
+      await updateStatusMutation({ id, status: newStatus }).unwrap();
+      const statusMap = {
+        ACCEPTED: "Đã xác nhận chuẩn bị món",
+        REJECTED: "Đã từ chối đơn hàng",
+        COMPLETED: "Đã bàn giao đơn hàng thành công",
+      };
+      toast.success(statusMap[newStatus] || `Đã cập nhật đơn sang: ${newStatus}`);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Cập nhật trạng thái thất bại");
+    }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#00615f] tracking-tight">
-          Đơn hàng cứu trợ từ khách
-        </h1>
-        <p className="text-xs sm:text-sm text-stone-500">
-          Xác nhận tiếp nhận đơn và bàn giao khi khách mang mã QR đến lấy.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-[#00615f] tracking-tight">
+            Đơn hàng cứu trợ từ khách
+          </h1>
+          <p className="text-xs sm:text-sm text-stone-500">
+            Xác nhận tiếp nhận đơn và bàn giao khi khách mang mã QR đến lấy.
+          </p>
+        </div>
+        {(isLoading || isFetching) && <Loader2 className="size-5 animate-spin text-[#00615f]" />}
       </div>
 
       <div className="space-y-4">
@@ -49,6 +64,8 @@ export default function PartnerOrdersPage() {
                     ? "bg-amber-100 text-amber-800"
                     : order.status === "ACCEPTED"
                     ? "bg-emerald-100 text-emerald-800"
+                    : order.status === "COMPLETED"
+                    ? "bg-blue-100 text-blue-800"
                     : "bg-stone-100 text-stone-600"
                 }`}
               >
@@ -56,6 +73,7 @@ export default function PartnerOrdersPage() {
                 {order.status === "ACCEPTED" && "Đã nhận chuẩn bị"}
                 {order.status === "COMPLETED" && "Đã giao thành công"}
                 {order.status === "REJECTED" && "Đã từ chối"}
+                {order.status === "CANCELLED" && "Khách đã hủy"}
               </span>
             </div>
 
@@ -65,8 +83,12 @@ export default function PartnerOrdersPage() {
                   {order.listingTitle} ({order.quantity} suất)
                 </h3>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500">
-                  <span>Khách: <strong className="text-stone-700">{order.customerName}</strong></span>
-                  <span>SĐT: <strong className="text-stone-700">{order.customerPhone}</strong></span>
+                  <span>
+                    Khách: <strong className="text-stone-700">{order.customerName}</strong>
+                  </span>
+                  <span>
+                    SĐT: <strong className="text-stone-700">{order.customerPhone}</strong>
+                  </span>
                   <span className="flex items-center gap-1 text-[#00615f] font-bold">
                     <Clock className="size-3.5" /> Hẹn lấy: {order.pickupTimeWindow}
                   </span>

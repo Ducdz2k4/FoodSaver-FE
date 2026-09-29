@@ -10,21 +10,24 @@ import {
   AlertCircle,
   FileCheck2,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { setCredentials } from "@/redux/slices/authSlice";
+import { useAppSelector } from "@/redux/hooks";
+import { useApplyPartnerMutation } from "@/redux/api/partnerApi";
+import { BusinessType } from "@/types/contract";
+import { toast } from "sonner";
 
 export default function PartnerApplyPage() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const currentUser = useAppSelector((state) => state.auth.user);
+  const [applyPartnerMutation, { isLoading: isSubmitting }] = useApplyPartnerMutation();
 
   const [businessName, setBusinessName] = useState("Tiệm Bánh Mì Artisan Bakery");
   const [businessLicenseNo, setBusinessLicenseNo] = useState("0314892019");
-  const [businessType, setBusinessType] = useState("BAKERY");
+  const [businessType, setBusinessType] = useState<BusinessType>("BAKERY");
   const [address, setAddress] = useState("128 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP.HCM");
-  const [lat, setLat] = useState("10.7712");
-  const [lng, setLng] = useState("106.6908");
+  const [lat, setLat] = useState(10.7712);
+  const [lng, setLng] = useState(106.6908);
   const [phone, setPhone] = useState(currentUser?.phone || "0934567890");
   const [businessLicenseUrl, setBusinessLicenseUrl] = useState(
     "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800"
@@ -33,7 +36,6 @@ export default function PartnerApplyPage() {
     "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800"
   );
   const [hasAgreed, setHasAgreed] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isRejected = currentUser?.partnerCapability === "REJECTED";
 
@@ -41,38 +43,47 @@ export default function PartnerApplyPage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setLat(pos.coords.latitude.toFixed(6));
-          setLng(pos.coords.longitude.toFixed(6));
-          alert("Đã lấy tọa độ GPS thành công!");
+          setLat(Number(pos.coords.latitude.toFixed(6)));
+          setLng(Number(pos.coords.longitude.toFixed(6)));
+          toast.success("Đã lấy tọa độ GPS cửa hàng thành công!");
         },
-        () => alert("Không thể truy cập GPS, sử dụng tọa độ mặc định.")
+        () => toast.error("Không thể truy cập GPS, đang dùng tọa độ mặc định.")
       );
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hasAgreed) {
-      alert("Vui lòng tích vào cam kết vệ sinh an toàn thực phẩm.");
+
+    if (!currentUser) {
+      toast.error("Vui lòng đăng nhập trước khi nộp hồ sơ đối tác!");
+      router.push("/login?redirect=/partner/apply");
       return;
     }
 
-    setIsSubmitting(true);
-    setTimeout(() => {
-      // Cập nhật mock state sang PENDING
-      if (currentUser) {
-        dispatch(
-          setCredentials({
-            user: {
-              ...currentUser,
-              partnerCapability: "PENDING",
-            },
-            token: "mock-token-pending",
-          })
-        );
-      }
+    if (!hasAgreed) {
+      toast.error("Vui lòng tích vào cam kết vệ sinh an toàn thực phẩm.");
+      return;
+    }
+
+    try {
+      await applyPartnerMutation({
+        businessName,
+        businessLicenseNo,
+        businessLicenseUrl,
+        foodSafetyCertUrl,
+        businessType,
+        address,
+        lat,
+        lng,
+        phone,
+      }).unwrap();
+
+      toast.success("Nộp hồ sơ đối tác F&B thành công!");
       router.push("/partner/apply/pending");
-    }, 700);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Nộp hồ sơ thất bại. Vui lòng kiểm tra lại thông tin.");
+    }
   };
 
   return (
@@ -149,7 +160,7 @@ export default function PartnerApplyPage() {
                 </label>
                 <select
                   value={businessType}
-                  onChange={(e) => setBusinessType(e.target.value)}
+                  onChange={(e) => setBusinessType(e.target.value as any)}
                   className="w-full px-4 py-2.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs sm:text-sm font-bold text-stone-800 focus:outline-none cursor-pointer"
                 >
                   <option value="BAKERY">Tiệm bánh (Bakery)</option>
@@ -157,6 +168,7 @@ export default function PartnerApplyPage() {
                   <option value="CONVENIENCE_STORE">Cửa hàng tiện lợi</option>
                   <option value="RESTAURANT">Nhà hàng</option>
                   <option value="SUPERMARKET">Siêu thị thực phẩm</option>
+                  <option value="OTHER">Khác</option>
                 </select>
               </div>
 
@@ -197,7 +209,7 @@ export default function PartnerApplyPage() {
                   className="w-full py-2.5 px-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-xs font-bold text-stone-700 flex items-center justify-center gap-1.5 transition border border-stone-200"
                 >
                   <MapPin className="size-3.5 text-[#00615f]" />
-                  <span>Cập nhật vị trí hiện tại</span>
+                  <span>Cập nhật vị trí hiện tại ({lat}, {lng})</span>
                 </button>
               </div>
             </div>
@@ -272,7 +284,10 @@ export default function PartnerApplyPage() {
             className="w-full py-4 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transition-all active:scale-98 disabled:opacity-60"
           >
             {isSubmitting ? (
-              <span>Đang gửi hồ sơ...</span>
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-5 animate-spin" />
+                <span>Đang gửi hồ sơ xét duyệt...</span>
+              </span>
             ) : (
               <>
                 <CheckCircle2 className="size-5" />

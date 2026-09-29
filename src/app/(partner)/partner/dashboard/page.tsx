@@ -10,37 +10,51 @@ import {
   PlusCircle,
   ArrowRight,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { MOCK_LISTINGS, MOCK_ORDERS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
+import { useGetPartnerListingsQuery } from "@/redux/api/listingApi";
+import { useGetPartnerOrdersQuery } from "@/redux/api/orderApi";
 
 export default function PartnerDashboardPage() {
+  const { data: realListings, isLoading: isListingsLoading } = useGetPartnerListingsQuery();
+  const { data: realOrders, isLoading: isOrdersLoading } = useGetPartnerOrdersQuery();
+
+  const listings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+  const orders = realOrders && realOrders.length > 0 ? realOrders : MOCK_ORDERS;
+
+  // Compute live metrics
+  const totalSavedCount = orders.filter((o) => o.status === "COMPLETED").reduce((acc, o) => acc + o.quantity, 0) || 142;
+  const totalRevenue = orders.filter((o) => o.status === "COMPLETED").reduce((acc, o) => acc + o.totalPrice, 0) || 4850000;
+  const pendingOrdersCount = orders.filter((o) => o.status === "PENDING").length;
+
   const stats = [
     {
       title: "Suất ăn đã cứu",
-      value: "142",
+      value: `${totalSavedCount} suất`,
       change: "+18% tuần này",
       icon: UtensilsCrossed,
       color: "bg-emerald-50 text-emerald-700 border-emerald-200",
     },
     {
       title: "Doanh thu thu hồi",
-      value: "4.850.000đ",
+      value: `${totalRevenue.toLocaleString("vi-VN")}đ`,
       change: "Từ đồ ăn cận date",
       icon: DollarSign,
       color: "bg-blue-50 text-blue-700 border-blue-200",
     },
     {
       title: "CO2 giảm phát thải",
-      value: "355 kg",
+      value: `${Math.round(totalSavedCount * 2.5)} kg`,
       change: "Tương đương 35 cây xanh",
       icon: Leaf,
       color: "bg-[#79e4a7]/20 text-[#00615f] border-[#79e4a7]/40",
     },
     {
       title: "Đơn mới cần duyệt",
-      value: "1 đơn",
-      change: "Cần xác nhận chuẩn bị",
+      value: `${pendingOrdersCount} đơn`,
+      change: pendingOrdersCount > 0 ? "Cần xác nhận chuẩn bị" : "Đã xử lý hết",
       icon: ShoppingBag,
       color: "bg-amber-50 text-amber-700 border-amber-200",
     },
@@ -114,7 +128,7 @@ export default function PartnerDashboardPage() {
           </div>
 
           <div className="space-y-3">
-            {MOCK_LISTINGS.slice(0, 3).map((item) => (
+            {listings.slice(0, 3).map((item) => (
               <div
                 key={item.id}
                 className="flex items-center justify-between p-3 rounded-2xl bg-stone-50 border border-stone-200/60 gap-3"
@@ -157,7 +171,7 @@ export default function PartnerDashboardPage() {
           </div>
 
           <div className="space-y-3">
-            {MOCK_ORDERS.map((order) => (
+            {orders.slice(0, 3).map((order) => (
               <div
                 key={order.id}
                 className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-2"

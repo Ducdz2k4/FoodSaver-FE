@@ -13,9 +13,10 @@ import {
   Star,
   ShieldCheck,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { MOCK_ORDERS } from "@/mocks/mockData";
-import { OrderStatus } from "@/types/contract";
+import { useGetOrderByIdQuery, useCancelOrderMutation } from "@/redux/api/orderApi";
 import { toast } from "sonner";
 
 export default function OrderDetailPage({
@@ -24,9 +25,13 @@ export default function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
-  const initialOrder = MOCK_ORDERS.find((o) => o.id === resolvedParams.id) || MOCK_ORDERS[0];
 
-  const [orderStatus, setOrderStatus] = useState<OrderStatus>(initialOrder.status);
+  // Fetch real order from backend
+  const { data: realOrder, isLoading } = useGetOrderByIdQuery(resolvedParams.id);
+  const initialOrder = realOrder || MOCK_ORDERS.find((o) => o.id === resolvedParams.id) || MOCK_ORDERS[0];
+
+  const [cancelOrderMutation, { isLoading: isCancelling }] = useCancelOrderMutation();
+
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("Bận đột xuất không kịp ghé lấy");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -34,10 +39,30 @@ export default function OrderDetailPage({
   const [reviewText, setReviewText] = useState("");
   const [hygieneChecked, setHygieneChecked] = useState(true);
 
-  const handleCancelOrder = () => {
-    setOrderStatus("CANCELLED");
-    setCancelModalOpen(false);
-    toast.info(`Đã hủy đơn hàng thành công. Lý do: "${cancelReason}"`);
+  if (isLoading && !realOrder) {
+    return (
+      <div className="min-h-screen bg-[#f9f3f0] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#00615f] font-bold text-sm">
+          <Loader2 className="size-6 animate-spin" />
+          <span>Đang tải thông tin đơn hàng...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const orderStatus = initialOrder.status;
+
+  const handleCancelOrder = async () => {
+    try {
+      await cancelOrderMutation({
+        id: initialOrder.id,
+        reason: cancelReason,
+      }).unwrap();
+      setCancelModalOpen(false);
+      toast.info(`Đã hủy đơn hàng thành công.`);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Không thể hủy đơn hàng");
+    }
   };
 
   const handleReview = (e: React.FormEvent) => {
@@ -148,23 +173,21 @@ export default function OrderDetailPage({
             </a>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              {orderStatus !== "CANCELLED" && orderStatus !== "COMPLETED" && (
+              {orderStatus === "PENDING" && (
                 <button
                   type="button"
+                  disabled={isCancelling}
                   onClick={() => setCancelModalOpen(true)}
                   className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition"
                 >
-                  Hủy đơn này
+                  {isCancelling ? "Đang hủy..." : "Hủy đơn này"}
                 </button>
               )}
 
               {orderStatus !== "CANCELLED" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setOrderStatus("COMPLETED");
-                    setReviewModalOpen(true);
-                  }}
+                  onClick={() => setReviewModalOpen(true)}
                   className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5"
                 >
                   <CheckCircle2 className="size-3.5" />

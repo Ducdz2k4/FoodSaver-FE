@@ -3,11 +3,14 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Sparkles, Image, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Sparkles, Image, ShieldCheck, Loader2 } from "lucide-react";
 import { FoodCategory } from "@/types/contract";
+import { useCreateListingMutation } from "@/redux/api/listingApi";
+import { toast } from "sonner";
 
 export default function NewListingPage() {
   const router = useRouter();
+  const [createListingMutation, { isLoading: isSubmitting }] = useCreateListingMutation();
 
   const [title, setTitle] = useState("Túi Bánh Sừng Trâu & Donut Nướng Trong Ngày");
   const [description, setDescription] = useState("Gồm 2 croissant bơ Pháp và 2 donut chocolate nướng thơm lừng, còn hạn đến nửa đêm.");
@@ -16,22 +19,41 @@ export default function NewListingPage() {
   const [discountPrice, setDiscountPrice] = useState(35000);
   const [quantity, setQuantity] = useState(6);
   const [unit, setUnit] = useState("túi (4 bánh)");
-  const [expiryAt, setExpiryAt] = useState("2026-09-26T22:30");
+  const [expiryAt, setExpiryAt] = useState(() => {
+    const d = new Date(Date.now() + 4 * 3600 * 1000);
+    return d.toISOString().slice(0, 16);
+  });
   const [pickupStartTime, setPickupStartTime] = useState("18:30");
   const [pickupEndTime, setPickupEndTime] = useState("21:30");
   const [safetyNotes, setSafetyNotes] = useState("Bảo quản nhiệt độ phòng, nên hâm nóng lại bằng lò nướng 2 phút.");
   const [imageUrl, setImageUrl] = useState("https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const discountPercent = originalPrice > 0 ? Math.round(((originalPrice - discountPrice) / originalPrice) * 100) : 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setTimeout(() => {
-      alert("Đăng món giải cứu thành công! Hệ thống 'Jev' đang tự động phân loại rủi ro lãng phí.");
+
+    try {
+      const result = await createListingMutation({
+        title,
+        description,
+        category,
+        originalPrice,
+        discountPrice,
+        quantity,
+        unit,
+        expiryAt: new Date(expiryAt).toISOString(),
+        pickupStartTime,
+        pickupEndTime,
+        imageUrls: [imageUrl],
+        safetyNotes,
+      }).unwrap();
+
+      toast.success("Đăng món giải cứu thành công! AI Jev đã tự động phân loại rủi ro.");
       router.push("/partner/listings");
-    }, 700);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Đăng món thất bại. Vui lòng kiểm tra lại quyền đối tác.");
+    }
   };
 
   return (
@@ -197,10 +219,19 @@ export default function NewListingPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full mt-4 py-3.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg transition"
+            className="w-full mt-4 py-3.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg transition disabled:opacity-60"
           >
-            <CheckCircle2 className="size-4" />
-            <span>Đăng Món Giải Cứu Ngay</span>
+            {isSubmitting ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" />
+                <span>Đang phân tích AI Jev & Lưu món...</span>
+              </span>
+            ) : (
+              <>
+                <CheckCircle2 className="size-4" />
+                <span>Đăng Món Giải Cứu Ngay</span>
+              </>
+            )}
           </button>
         </form>
 

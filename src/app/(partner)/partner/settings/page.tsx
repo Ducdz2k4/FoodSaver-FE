@@ -1,21 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Store,
   ShieldCheck,
   MapPin,
   Clock,
   Phone,
-  FileText,
   Save,
-  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MOCK_PARTNER_PROFILES } from "@/mocks/mockData";
+import { useGetMyPartnerProfileQuery } from "@/redux/api/partnerApi";
 
 export default function PartnerSettingsPage() {
-  const profile = MOCK_PARTNER_PROFILES[0];
+  const { data: realProfile, isLoading } = useGetMyPartnerProfileQuery();
+  const profile = realProfile || MOCK_PARTNER_PROFILES[0];
 
   const [businessName, setBusinessName] = useState(profile.businessName);
   const [phone, setPhone] = useState(profile.phone);
@@ -26,10 +27,26 @@ export default function PartnerSettingsPage() {
     "Quý khách vui lòng gửi xe trước cửa tiệm (miễn phí), vào quầy thu ngân đưa mã QR đơn hàng cho nhân viên để nhận đồ."
   );
 
+  useEffect(() => {
+    if (realProfile) {
+      setBusinessName(realProfile.businessName);
+      setPhone(realProfile.phone);
+      setAddress(realProfile.address);
+    }
+  }, [realProfile]);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Đã lưu thông tin cài đặt cửa hàng thành công!");
   };
+
+  if (isLoading && !realProfile) {
+    return (
+      <div className="flex items-center justify-center p-16">
+        <Loader2 className="size-6 animate-spin text-[#00615f]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">

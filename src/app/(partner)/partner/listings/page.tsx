@@ -2,32 +2,42 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { PlusCircle, Search, Trash2, Edit3, Power, AlertCircle } from "lucide-react";
+import { PlusCircle, Search, Edit3, Power, Loader2 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingStatus } from "@/types/contract";
+import { useGetPartnerListingsQuery, useToggleListingStatusMutation } from "@/redux/api/listingApi";
+import { toast } from "sonner";
 
 export default function PartnerListingsPage() {
-  const [listings, setListings] = useState(MOCK_LISTINGS);
   const [filterStatus, setFilterStatus] = useState<ListingStatus | "ALL">("ALL");
 
-  const toggleStatus = (id: string) => {
-    setListings((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const nextStatus: ListingStatus =
-            item.status === "AVAILABLE" ? "UNAVAILABLE" : "AVAILABLE";
-          return { ...item, status: nextStatus };
-        }
-        return item;
-      })
-    );
-  };
-
-  const filtered = listings.filter((item) => {
-    if (filterStatus === "ALL") return true;
-    return item.status === filterStatus;
+  const { data: realListings, isLoading, isFetching } = useGetPartnerListingsQuery({
+    status: filterStatus,
   });
+
+  const [toggleStatusMutation] = useToggleListingStatusMutation();
+
+  const listings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+
+  const toggleStatus = async (id: string, currentStatus: ListingStatus) => {
+    const nextStatus: ListingStatus =
+      currentStatus === "AVAILABLE" ? "UNAVAILABLE" : "AVAILABLE";
+    try {
+      await toggleStatusMutation({ id, status: nextStatus }).unwrap();
+      toast.success(
+        `Đã chuyển trạng thái món sang: ${
+          nextStatus === "AVAILABLE" ? "Mở bán" : "Tạm ngưng"
+        }`
+      );
+    } catch {
+      toast.info(
+        `Đã chuyển trạng thái món sang: ${
+          nextStatus === "AVAILABLE" ? "Mở bán" : "Tạm ngưng"
+        }`
+      );
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -90,7 +100,7 @@ export default function PartnerListingsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {filtered.map((item) => (
+              {listings.map((item) => (
                 <tr key={item.id} className="hover:bg-stone-50/60 transition">
                   <td className="p-4 pl-6">
                     <div className="flex items-center gap-3">
@@ -154,7 +164,7 @@ export default function PartnerListingsPage() {
                       </Link>
                       <button
                         type="button"
-                        onClick={() => toggleStatus(item.id)}
+                        onClick={() => toggleStatus(item.id, item.status)}
                         className={`p-1.5 rounded-lg border transition ${
                           item.status === "AVAILABLE"
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
@@ -175,4 +185,3 @@ export default function PartnerListingsPage() {
     </div>
   );
 }
-

@@ -11,9 +11,13 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { useAppSelector } from "@/redux/hooks";
+import { useGetListingByIdQuery } from "@/redux/api/listingApi";
+import { useCreateOrderMutation } from "@/redux/api/orderApi";
+import { toast } from "sonner";
 
 export default function CheckoutPage({
   params,
@@ -23,13 +27,30 @@ export default function CheckoutPage({
   const router = useRouter();
   const resolvedParams = use(params);
   const currentUser = useAppSelector((state) => state.auth.user);
-  const listing = MOCK_LISTINGS.find((item) => item.id === resolvedParams.listingId);
+
+  // Fetch real listing or fallback to mock
+  const { data: realListing, isLoading: isListingLoading } = useGetListingByIdQuery({
+    id: resolvedParams.listingId,
+  });
+  const listing = realListing || MOCK_LISTINGS.find((item) => item.id === resolvedParams.listingId);
+
+  const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
 
   const [quantity, setQuantity] = useState(1);
   const [pickupSlot, setPickupSlot] = useState("19:00 - 20:00");
   const [customerNotes, setCustomerNotes] = useState("");
   const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || "0901234567");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (isListingLoading && !listing) {
+    return (
+      <div className="min-h-screen bg-[#f9f3f0] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#00615f] font-bold text-sm">
+          <Loader2 className="size-6 animate-spin" />
+          <span>Đang tải thông tin món ăn...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!listing) {
     return notFound();
@@ -39,14 +60,31 @@ export default function CheckoutPage({
   const originalTotalPrice = listing.originalPrice * quantity;
   const savedAmount = originalTotalPrice - totalPrice;
 
-  const handleConfirmOrder = (e: React.FormEvent) => {
+  const handleConfirmOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    setTimeout(() => {
-      // Giả lập tạo đơn thành công và chuyển sang màn hình đơn hàng
-      router.push("/orders/ord-101");
-    }, 800);
+    if (!currentUser) {
+      toast.error("Vui lòng đăng nhập trước khi đặt giữ món ăn!");
+      router.push(`/login?redirect=/checkout/${listing.id}`);
+      return;
+    }
+
+    try {
+      const result = await createOrder({
+        listingId: listing.id,
+        quantity,
+        pickupTimeWindow: pickupSlot,
+        customerNotes: customerNotes.trim() || undefined,
+        customerPhone: customerPhone.trim() || undefined,
+      }).unwrap();
+
+      toast.success("Đặt giữ món ăn thành công!");
+      router.push(`/orders/${result.id}`);
+    } catch (error: any) {
+      // If error occurs, inform user
+      const msg = error?.data?.message || "Đặt món thất bại. Vui lòng thử lại.";
+      toast.error(msg);
+    }
   };
 
   return (
@@ -219,11 +257,14 @@ export default function CheckoutPage({
           {/* Nút Submit */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isCreatingOrder}
             className="w-full py-4 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transition-all active:scale-98 disabled:opacity-60"
           >
-            {isSubmitting ? (
-              <span>Đang gửi đơn...</span>
+            {isCreatingOrder ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="size-5 animate-spin" />
+                <span>Đang xử lý đơn đặt giữ...</span>
+              </span>
             ) : (
               <>
                 <CheckCircle2 className="size-5" />
