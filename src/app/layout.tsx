@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import StoreProvider from "@/redux/StoreProvider";
 import { AuthProvider } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
 import { GlobalClientProviders } from "@/components/common/GlobalClientProviders";
 
 export const metadata: Metadata = {
@@ -19,8 +20,10 @@ export default function RootLayout({
       <body>
         <StoreProvider>
           <AuthProvider>
-            {children}
-            <GlobalClientProviders />
+            <SocketProvider>
+              {children}
+              <GlobalClientProviders />
+            </SocketProvider>
           </AuthProvider>
         </StoreProvider>
       </body>

@@ -21,7 +21,8 @@ const baseQuery = fetchBaseQuery({
       token = localStorage.getItem("token");
     }
 
-    if (token) {
+    // Attach real JWT token (skip mock tokens for backend calls)
+    if (token && !token.startsWith("mock-")) {
       headers.set("Authorization", `Bearer ${token}`);
     }
 
@@ -32,6 +33,21 @@ const baseQuery = fetchBaseQuery({
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery,
-  tagTypes: ["User", "Admin", "Item", "Setting", "AdminUsers", "UserProfile"],
+  tagTypes: [
+    "User",
+    "Admin",
+    "Item",
+    "Setting",
+    "AdminUsers",
+    "UserProfile",
+    "Listing",
+    "PartnerListing",
+    "Order",
+    "PartnerOrder",
+    "PartnerProfile",
+    "Notification",
+    "AdminListings",
+    "SystemHealth",
+  ],
   endpoints: () => ({}),
 });
