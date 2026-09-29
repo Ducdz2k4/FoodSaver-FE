@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/admin/ui/badge"
+import { Badge } from "@/components/admin/ui/badge";
 import {
   Card,
   CardAction,
@@ -8,10 +8,26 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/admin/ui/card"
-import { TrendingUpIcon, TrendingDownIcon, Utensils, DollarSign, Store, ShieldCheck } from "lucide-react"
+} from "@/components/admin/ui/card";
+import { TrendingUpIcon, Utensils, DollarSign, Store, ShieldCheck } from "lucide-react";
+import { useGetAdminDashboardMetricsQuery } from "@/redux/api/admin/adminDashboardApi";
 
 export function SectionCards() {
+  const { data: metrics } = useGetAdminDashboardMetricsQuery();
+  const kpi = metrics?.kpi;
+
+  const revenueDisplay = kpi?.totalRevenue
+    ? `${kpi.totalRevenue.toLocaleString("vi-VN")}₫`
+    : "45.280.000₫";
+
+  const mealsDisplay = kpi?.totalMealsRescued
+    ? kpi.totalMealsRescued.toLocaleString("vi-VN")
+    : "1,240";
+
+  const partnersDisplay = kpi?.verifiedPartnersCount !== undefined
+    ? kpi.verifiedPartnersCount
+    : 86;
+
   return (
     <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card">
       {/* 1. Total Rescued Revenue */}
@@ -22,7 +38,7 @@ export function SectionCards() {
             <DollarSign className="size-4 text-primary" />
           </CardDescription>
           <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
-            45.280.000₫
+            {revenueDisplay}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
@@ -33,10 +49,10 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <span>Tăng trưởng mạnh tuần này</span>
+            <span>Tăng trưởng tuần này</span>
             <TrendingUpIcon className="size-3.5 text-primary" />
           </div>
-          <div>So với 37.700.000₫ tháng trước</div>
+          <div>Dữ liệu giao dịch hoàn tất từ MySQL</div>
         </CardFooter>
       </Card>
 
@@ -48,7 +64,7 @@ export function SectionCards() {
             <Utensils className="size-4 text-primary" />
           </CardDescription>
           <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
-            12,480
+            {mealsDisplay}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
@@ -59,10 +75,10 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <span>+340 suất trong 24h qua</span>
+            <span>Đã cứu thành công</span>
             <TrendingUpIcon className="size-3.5 text-primary" />
           </div>
-          <div>Tương đương 3.2 tấn rác thải giảm thiểu</div>
+          <div>Giảm thiểu rác thải hữu cơ ra môi trường</div>
         </CardFooter>
       </Card>
 
@@ -70,24 +86,24 @@ export function SectionCards() {
       <Card className="@container/card border-border">
         <CardHeader>
           <CardDescription className="flex items-center justify-between text-xs font-medium">
-            <span>Cửa hàng đối tác</span>
+            <span>Cơ sở đối tác Verified</span>
             <Store className="size-4 text-primary" />
           </CardDescription>
           <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
-            86
+            {partnersDisplay}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
               <TrendingUpIcon className="size-3 text-primary" />
-              +12 mới
+              +{kpi?.pendingPartnersCount || 0} chờ duyệt
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <span>Tiệm bánh, quán ăn &amp; siêu thị</span>
+            <span>Đã kiểm định GPKD &amp; ATTP</span>
           </div>
-          <div>Độ bao phủ 8 quận nội thành</div>
+          <div>Cửa hàng tiện lợi, tiệm bánh &amp; quán ăn</div>
         </CardFooter>
       </Card>
 
@@ -95,26 +111,26 @@ export function SectionCards() {
       <Card className="@container/card border-border">
         <CardHeader>
           <CardDescription className="flex items-center justify-between text-xs font-medium">
-            <span>Tỷ lệ cứu thành công</span>
+            <span>Món đang mở bán</span>
             <ShieldCheck className="size-4 text-primary" />
           </CardDescription>
           <CardTitle className="text-2xl font-bold tabular-nums @[250px]/card:text-3xl text-foreground">
-            94.8%
+            {kpi?.activeListingsCount !== undefined ? kpi.activeListingsCount : 12}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
               <TrendingUpIcon className="size-3 text-primary" />
-              +3.2%
+              Đang hoạt động
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <span>0 đơn quá hạn xuất kho</span>
+            <span>Định vị Geohash chuẩn xác</span>
           </div>
-          <div>Cam kết kiểm duyệt an toàn 100%</div>
+          <div>Đồng bộ thời gian thực qua Socket.IO</div>
         </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

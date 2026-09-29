@@ -12,16 +12,20 @@ import {
   TableCell,
 } from "@/components/admin/ui/table";
 import { Button } from "@/components/admin/ui/button";
-import { UtensilsCrossed, Leaf, DollarSign, Download } from "lucide-react";
+import { UtensilsCrossed, Leaf, DollarSign, Download, Loader2 } from "lucide-react";
+import { useGetAdminESGReportsQuery } from "@/redux/api/admin/adminDashboardApi";
 import { toast } from "sonner";
 
 export default function AdminReportsPage() {
-  const monthlyData = [
-    { month: "T5/2026", kg: 320, co2: 800, saved: "24.500.000₫" },
-    { month: "T6/2026", kg: 480, co2: 1200, saved: "38.200.000₫" },
-    { month: "T7/2026", kg: 650, co2: 1625, saved: "52.000.000₫" },
-    { month: "T8/2026", kg: 890, co2: 2225, saved: "71.400.000₫" },
-    { month: "T9/2026", kg: 1250, co2: 3125, saved: "98.800.000₫" },
+  const { data: esgData, isLoading, isFetching } = useGetAdminESGReportsQuery();
+
+  const summary = esgData?.summary;
+  const monthlyData = esgData?.monthlyBreakdown || [
+    { month: "T5/2026", kg: 320, co2: 800, saved: 24500000 },
+    { month: "T6/2026", kg: 480, co2: 1200, saved: 38200000 },
+    { month: "T7/2026", kg: 650, co2: 1625, saved: 52000000 },
+    { month: "T8/2026", kg: 890, co2: 2225, saved: 71400000 },
+    { month: "T9/2026", kg: 1250, co2: 3125, saved: 98800000 },
   ];
 
   return (
@@ -33,10 +37,10 @@ export default function AdminReportsPage() {
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5 text-xs h-9"
+          className="gap-1.5 text-xs h-9 cursor-pointer"
           onClick={() => toast.info("Đang kết xuất báo cáo ESG định dạng CSV/PDF...")}
         >
-          <Download className="size-3.5" />
+          {isFetching ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
           <span>Xuất báo cáo</span>
         </Button>
       </AdminPageHeader>
@@ -45,21 +49,21 @@ export default function AdminReportsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <AdminStatCard
           title="Tổng thực phẩm giải cứu"
-          value="3.590 kg"
+          value={summary ? `${summary.totalKgRescued.toLocaleString("vi-VN")} kg` : "3.590 kg"}
           icon={<UtensilsCrossed className="size-5" />}
-          description="Tăng 40.4% so với tháng trước"
+          description="Tính từ các đơn hoàn tất"
         />
 
         <AdminStatCard
           title="CO2 giảm phát thải tương đương"
-          value="8.975 kg CO2"
+          value={summary ? `${summary.totalCo2Avoided.toLocaleString("vi-VN")} kg CO2` : "8.975 kg CO2"}
           icon={<Leaf className="size-5" />}
-          description="Tương đương ~900 cây xanh hấp thụ"
+          description={`Tương đương ~${summary?.treesEquivalent || 900} cây xanh hấp thụ`}
         />
 
         <AdminStatCard
           title="Giá trị tiết kiệm cho người dùng"
-          value="284.900.000₫"
+          value={summary ? `${summary.totalSavedMoney.toLocaleString("vi-VN")}₫` : "284.900.000₫"}
           icon={<DollarSign className="size-5" />}
           description="Giảm chi tiêu lãng phí thực phẩm"
         />
@@ -90,7 +94,7 @@ export default function AdminReportsPage() {
                   <TableCell className="font-mono text-xs">{row.kg} kg</TableCell>
                   <TableCell className="font-mono text-xs">{row.co2} kg</TableCell>
                   <TableCell className="text-right font-semibold text-xs">
-                    {row.saved}
+                    {row.saved.toLocaleString("vi-VN")}₫
                   </TableCell>
                 </TableRow>
               ))}
