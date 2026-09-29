@@ -1,20 +1,93 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
-import { Clock, ShieldCheck, CheckCircle2, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Clock, ShieldCheck, CheckCircle2, ArrowRight, AlertCircle, Loader2, Store } from "lucide-react";
 import { useGetMyPartnerProfileQuery } from "@/redux/api/partnerApi";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PartnerPendingPage() {
-  const { data: profile, isLoading } = useGetMyPartnerProfileQuery();
+  const router = useRouter();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
+  // Poll profile every 5 seconds to catch live approval from Admin
+  const { data: profile, isLoading: isProfileLoading, refetch } = useGetMyPartnerProfileQuery(undefined, {
+    pollingInterval: 5000,
+    skip: !isAuthenticated,
+  });
 
   const isVerified = profile?.verificationStatus === "VERIFIED";
   const isRejected = profile?.verificationStatus === "REJECTED";
+  const hasNotApplied = !profile || profile.verificationStatus === "NONE";
+
+  useEffect(() => {
+    if (isVerified) {
+      // Auto refresh user auth state
+      refetch();
+    }
+  }, [isVerified, refetch]);
+
+  if (isAuthLoading || isProfileLoading) {
+    return (
+      <div className="min-h-screen bg-[#f9f3f0] flex items-center justify-center p-4">
+        <div className="flex items-center gap-2 text-[#00615f] font-bold text-sm">
+          <Loader2 className="size-6 animate-spin" />
+          <span>Đang kiểm tra tiến trình thẩm định...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-28 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-6 text-center">
+          <div className="bg-white rounded-3xl p-8 max-w-md mx-auto border border-stone-200/90 shadow-sm space-y-4">
+            <h1 className="text-xl font-black text-stone-900">Vui Lòng Đăng Nhập</h1>
+            <p className="text-xs text-stone-500">
+              Bạn cần đăng nhập để theo dõi trạng thái hồ sơ đối tác của mình.
+            </p>
+            <Link
+              href="/login?redirect=/partner/apply/pending"
+              className="inline-block px-6 py-2.5 rounded-full bg-[#00615f] text-white font-bold text-xs hover:bg-[#089184] transition"
+            >
+              Đăng nhập ngay
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasNotApplied) {
+    return (
+      <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-28 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-6 text-center">
+          <div className="bg-white rounded-3xl p-8 max-w-md mx-auto border border-stone-200/90 shadow-sm space-y-4">
+            <div className="size-14 rounded-2xl bg-[#00615f]/10 text-[#00615f] flex items-center justify-center mx-auto">
+              <Store className="size-7" />
+            </div>
+            <h1 className="text-xl font-black text-stone-900">Chưa Nộp Hồ Sơ</h1>
+            <p className="text-xs text-stone-500">
+              Bạn chưa đăng ký làm đối tác kinh doanh FoodSaver. Hãy nộp hồ sơ GPKD &amp; ATTP ngay nhé!
+            </p>
+            <Link
+              href="/partner/apply"
+              className="inline-block px-6 py-2.5 rounded-full bg-[#00615f] text-white font-bold text-xs hover:bg-[#089184] transition"
+            >
+              Nộp hồ sơ đối tác
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-28 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-white rounded-3xl p-8 border border-stone-200/90 shadow-sm text-center space-y-5">
+        <div className="bg-white rounded-3xl p-8 border border-stone-200/90 shadow-sm text-center space-y-5 max-w-2xl mx-auto">
           <div
             className={`size-16 rounded-full flex items-center justify-center mx-auto ${
               isVerified
@@ -74,7 +147,9 @@ export default function PartnerPendingPage() {
               <CheckCircle2 className="size-5 text-emerald-600 shrink-0" />
               <div className="text-xs">
                 <strong className="text-stone-900 block">Bước 1: Tiếp nhận hồ sơ</strong>
-                <span className="text-stone-500">Đã hoàn tất tiếp nhận dữ liệu và chứng từ</span>
+                <span className="text-stone-500">
+                  {profile.businessName} (MST: {profile.businessLicenseNo})
+                </span>
               </div>
             </div>
 
@@ -96,14 +171,14 @@ export default function PartnerPendingPage() {
                       : "text-amber-800"
                   }`}
                 >
-                  Bước 2: Đối chiếu pháp lý & Chứng nhận ATTP
+                  Bước 2: Đối chiếu pháp lý &amp; Chứng nhận ATTP
                 </strong>
                 <span className="text-stone-500">
                   {isVerified
                     ? "Đã xác nhận tính hợp lệ của cơ sở"
                     : isRejected
                     ? "Hồ sơ chưa đạt yêu cầu kiểm định"
-                    : "Đang thực hiện (Thời gian ước tính: 2 - 24 giờ)"}
+                    : "Đang đối chiếu (Thời gian ước tính: 2 - 24 giờ)"}
                 </span>
               </div>
             </div>
@@ -116,7 +191,9 @@ export default function PartnerPendingPage() {
               )}
               <div className="text-xs">
                 <strong className="text-stone-700 block">Bước 3: Mở khóa Partner Center</strong>
-                <span className="text-stone-500">Bắt đầu đăng bán thực phẩm cứu trợ</span>
+                <span className="text-stone-500">
+                  {isVerified ? "Đã sẵn sàng đăng bán món giải cứu" : "Chờ mở khóa"}
+                </span>
               </div>
             </div>
           </div>
@@ -125,9 +202,10 @@ export default function PartnerPendingPage() {
             {isVerified ? (
               <Link
                 href="/partner/dashboard"
-                className="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition"
+                className="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5"
               >
-                Vào Partner Center ngay
+                <span>Vào Partner Center ngay</span>
+                <ArrowRight className="size-3.5" />
               </Link>
             ) : isRejected ? (
               <Link
