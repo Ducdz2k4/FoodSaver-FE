@@ -34,9 +34,11 @@ function LoginForm() {
       const res = await login({ email: email.trim(), password });
       toast.success("Đăng nhập thành công!");
 
+      const isUserAdmin = res.user?.role?.toUpperCase() === "ADMIN" || res.user?.role?.toUpperCase() === "SYS_ADMIN";
+      const isUserPartner = res.user?.partnerCapability === "VERIFIED";
       const target =
         redirectUrl ||
-        (res.user?.role?.toUpperCase() === "ADMIN" ? "/admin" : "/");
+        (isUserAdmin ? "/admin" : isUserPartner ? "/partner/dashboard" : "/");
 
       router.push(target);
       router.refresh();
@@ -191,3 +193,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

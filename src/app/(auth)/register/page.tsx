@@ -49,7 +49,11 @@ export default function RegisterPage() {
       });
 
       toast.success("Đăng ký tài khoản thành công!");
-      router.push("/");
+      if (role === "PARTNER") {
+        router.push("/partner/apply");
+      } else {
+        router.push("/");
+      }
     } catch (err: any) {
       const msg =
         err?.data?.message || err?.message || "Đăng ký thất bại. Email có thể đã tồn tại.";
@@ -223,3 +227,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+
