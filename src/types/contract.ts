@@ -5,6 +5,8 @@ export type BusinessType = 'CONVENIENCE_STORE' | 'BAKERY' | 'RESTAURANT' | 'SUPE
 export type FoodCategory = 'BAKERY' | 'COOKED_MEAL' | 'GROCERIES' | 'FRUITS' | 'DRINKS' | 'OTHER';
 export type ListingStatus = 'AVAILABLE' | 'EXPIRING_SOON' | 'SOLD_OUT' | 'EXPIRED' | 'UNAVAILABLE';
 export type OrderStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
+export type FulfillmentType = 'PICKUP' | 'DELIVERY';
+export type PaymentMethod = 'COD' | 'SYSTEM_QR';
 export type WasteRisk = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export interface UserProfileDTO {
@@ -49,7 +51,7 @@ export interface ListingDTO {
   discountPrice: number;
   quantity: number;
   unit: string;
-  expiryAt: string; // ISO 8601 string
+  expiryAt: string;
   pickupStartTime: string;
   pickupEndTime: string;
   pickupAddress: string;
@@ -70,6 +72,7 @@ export interface OrderDTO {
   listingId: string;
   listingTitle: string;
   listingImage: string;
+  partnerId?: string;
   partnerName: string;
   partnerAddress: string;
   customerId: string;
@@ -77,10 +80,19 @@ export interface OrderDTO {
   customerPhone: string;
   quantity: number;
   unitPrice: number;
+  shippingFee: number;
+  negotiatedShippingFee?: number | null;
   totalPrice: number;
   status: OrderStatus;
+  fulfillmentType: FulfillmentType;
+  paymentMethod: PaymentMethod;
+  deliveryAddress?: string | null;
+  deliveryDistance?: number | null;
+  isLocked: boolean;
+  lockedAt?: string | null;
   pickupTimeWindow: string;
   customerNotes?: string;
+  cancellationReason?: string | null;
   createdAt: string;
 }
 

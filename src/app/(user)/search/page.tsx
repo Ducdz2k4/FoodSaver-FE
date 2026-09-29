@@ -123,7 +123,7 @@ export default function SearchPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {[1, 2, 3, 5, 10].map((km) => (
+              {[1, 3, 5, 10, 20].map((km) => (
                 <button
                   key={km}
                   type="button"
@@ -184,3 +184,4 @@ export default function SearchPage() {
     </div>
   );
 }
+

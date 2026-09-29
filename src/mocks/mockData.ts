@@ -215,8 +215,12 @@ export const MOCK_ORDERS: OrderDTO[] = [
     customerPhone: '0901234567',
     quantity: 2,
     unitPrice: 39000,
+    shippingFee: 0,
     totalPrice: 78000,
     status: 'ACCEPTED',
+    fulfillmentType: 'PICKUP',
+    paymentMethod: 'COD',
+    isLocked: true,
     pickupTimeWindow: '19:30 - 20:30',
     customerNotes: 'Tôi sẽ ghé lấy vào khoảng 20h',
     createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
@@ -233,3 +237,4 @@ export const MOCK_NOTIFICATIONS: NotificationDTO[] = [
     createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
   },
 ];
+
