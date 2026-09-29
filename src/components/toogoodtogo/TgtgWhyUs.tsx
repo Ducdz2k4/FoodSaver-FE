@@ -2,11 +2,17 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ListingCard } from "@/components/common/ListingCard";
+import { useGetListingsQuery } from "@/redux/api/listingApi";
 
 export function TgtgWhyUs() {
+  const { data: realListings, isLoading } = useGetListingsQuery({ limit: 8 });
+
+  // Use real database listings if available, fallback gracefully to mock items
+  const listings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+
   return (
     <section id="listings" className="py-16 sm:py-24 bg-[#f9f3f0] text-[#252d2d] relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,13 +46,21 @@ export function TgtgWhyUs() {
           </div>
         </div>
 
-        {/* 4 Featured Listings Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7">
-          {MOCK_LISTINGS.map((item) => (
-            <ListingCard key={item.id} listing={item} />
-          ))}
-        </div>
+        {/* Listings Grid */}
+        {isLoading && !realListings ? (
+          <div className="flex items-center justify-center p-12 text-stone-500 gap-2">
+            <Loader2 className="size-6 animate-spin text-[#00615f]" />
+            <span className="text-sm font-bold">Đang tải món ăn giải cứu gần bạn...</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7">
+            {listings.map((item) => (
+              <ListingCard key={item.id} listing={item} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
 }
+

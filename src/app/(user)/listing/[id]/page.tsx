@@ -6,16 +6,17 @@ import { notFound } from "next/navigation";
 import {
   MapPin,
   Clock,
-  ShieldCheck,
   ShoppingBag,
   ArrowLeft,
   Share2,
   AlertTriangle,
-  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
+import { useGetListingByIdQuery } from "@/redux/api/listingApi";
+import { toast } from "sonner";
 
 export default function ListingDetailPage({
   params,
@@ -23,7 +24,23 @@ export default function ListingDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = use(params);
-  const listing = MOCK_LISTINGS.find((item) => item.id === resolvedParams.id);
+
+  // Fetch real listing from backend API
+  const { data: realListing, isLoading } = useGetListingByIdQuery({ id: resolvedParams.id });
+
+  // Use real listing if fetched, or fallback to mock listing if matching
+  const listing = realListing || MOCK_LISTINGS.find((item) => item.id === resolvedParams.id);
+
+  if (isLoading && !listing) {
+    return (
+      <div className="min-h-screen bg-[#f9f3f0] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#00615f] font-bold text-sm">
+          <Loader2 className="size-6 animate-spin" />
+          <span>Đang tải thông tin món ăn giải cứu...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!listing) {
     return notFound();
@@ -55,7 +72,7 @@ export default function ListingDetailPage({
                 });
               } else {
                 navigator.clipboard.writeText(window.location.href);
-                alert("Đã sao chép link món ăn!");
+                toast.success("Đã sao chép liên kết món ăn!");
               }
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-stone-200 text-xs font-bold text-stone-700 hover:bg-stone-50 shadow-sm transition"
