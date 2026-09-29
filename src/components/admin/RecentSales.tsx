@@ -9,8 +9,9 @@ import {
   CardTitle,
 } from "@/components/admin/ui/card";
 import { Badge } from "@/components/admin/ui/badge";
+import { useGetAdminDashboardMetricsQuery } from "@/redux/api/admin/adminDashboardApi";
 
-const RECENT_ORDERS = [
+const FALLBACK_ORDERS = [
   {
     store: "Tiệm Bánh Hoàn Kiếm",
     item: "Butter croissant (x3)",
@@ -38,27 +39,37 @@ const RECENT_ORDERS = [
     initials: "TV",
     time: "32 phút trước",
   },
-  {
-    store: "Artisan Sourdough Bakery",
-    item: "Sourdough loaf (x1)",
-    customer: "Hoàng Nam",
-    amount: "+35.000₫",
-    status: "Đã thanh toán",
-    initials: "HN",
-    time: "45 phút trước",
-  },
-  {
-    store: "7-Eleven Lê Lợi",
-    item: "Packaged sandwich (x2)",
-    customer: "Lan Hương",
-    amount: "+36.000₫",
-    status: "Đã nhận hàng",
-    initials: "LH",
-    time: "1 giờ trước",
-  },
 ];
 
 export function RecentSales() {
+  const { data: metrics } = useGetAdminDashboardMetricsQuery();
+  const recentActivity = metrics?.recentActivity;
+
+  const orders =
+    recentActivity && recentActivity.length > 0
+      ? recentActivity.map((a) => {
+          const initials = (a.customerName || "KH")
+            .split(" ")
+            .map((w) => w[0])
+            .join("")
+            .slice(-2)
+            .toUpperCase();
+          const time = new Date(a.createdAt).toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          return {
+            store: `#${a.orderNumber}`,
+            item: a.listingTitle,
+            customer: a.customerName,
+            amount: `+${a.amount.toLocaleString("vi-VN")}₫`,
+            status: a.status,
+            initials,
+            time,
+          };
+        })
+      : FALLBACK_ORDERS;
+
   return (
     <Card className="border-border">
       <CardHeader className="pb-3">
@@ -66,11 +77,11 @@ export function RecentSales() {
           Đơn Hàng Gần Đây
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
-          24 đơn giải cứu thành công trong ngày hôm nay.
+          Giao dịch giải cứu theo thời gian thực từ cơ sở dữ liệu.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-1">
-        {RECENT_ORDERS.map((order, idx) => (
+        {orders.map((order, idx) => (
           <div key={idx} className="flex items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-3 min-w-0">
               <div className="size-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 text-xs">
