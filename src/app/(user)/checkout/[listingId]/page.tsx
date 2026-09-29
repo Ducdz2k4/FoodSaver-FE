@@ -18,6 +18,8 @@ import {
   DollarSign,
   Gavel,
   Lock,
+  Tag,
+  X,
 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { useAppSelector } from "@/redux/hooks";
@@ -25,6 +27,7 @@ import { useGetListingByIdQuery } from "@/redux/api/listingApi";
 import {
   useCreateOrderMutation,
   useEstimateShippingMutation,
+  useVerifyCouponMutation,
 } from "@/redux/api/orderApi";
 import { FulfillmentType, PaymentMethod } from "@/types/contract";
 import { useSocket } from "@/context/SocketContext";
@@ -64,6 +67,10 @@ export default function CheckoutPage({
   const [proposedFee, setProposedFee] = useState<number>(15000);
   const [bargainStatus, setBargainStatus] = useState<"IDLE" | "WAITING" | "ACCEPTED" | "REJECTED" | "COUNTER">("IDLE");
   const [finalAgreedFee, setFinalAgreedFee] = useState<number>(25000);
+  const [verifyCouponMutation, { isLoading: isCheckingCoupon }] = useVerifyCouponMutation();
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; description: string } | null>(null);
+
   const [partnerMessage, setPartnerMessage] = useState<string>("");
 
   const [pickupSlot, setPickupSlot] = useState("19:00 - 20:00");
@@ -134,6 +141,31 @@ export default function CheckoutPage({
   const currentShippingFee = fulfillmentType === "DELIVERY" ? finalAgreedFee : 0;
   const totalPrice = itemSubtotal + currentShippingFee;
 
+  
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponInput.trim()) {
+      toast.error('Vui lòng nhập mã giảm giá');
+      return;
+    }
+    try {
+      const res = await verifyCouponMutation({
+        code: couponInput.trim(),
+        orderTotal: itemSubtotal,
+      }).unwrap();
+      setAppliedCoupon(res);
+      toast.success(`Áp dụng mã ${res.code} thành công: -${res.discountAmount.toLocaleString('vi-VN')}đ`);
+    } catch (err: any) {
+      toast.error(err?.data?.message || `Mã giảm giá "${couponInput}" không hợp lệ hoặc đã hết hạn.`);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    toast.info('Đã gỡ bỏ mã giảm giá.');
+  };
+
   // Send real-time bargain via Socket.IO
   const handleSendBargain = () => {
     if (!currentUser) {
@@ -190,6 +222,7 @@ export default function CheckoutPage({
         deliveryDistance: fulfillmentType === "DELIVERY" ? deliveryDistance : undefined,
         shippingFee: currentShippingFee,
         negotiatedShippingFee: isBargaining ? proposedFee : undefined,
+        discountCode: appliedCoupon?.code || undefined,
         pickupTimeWindow: pickupSlot,
         customerNotes: customerNotes.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
@@ -205,7 +238,7 @@ export default function CheckoutPage({
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-28 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <Link
           href={`/listing/${listing.id}`}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00615f] hover:underline"
@@ -538,6 +571,71 @@ export default function CheckoutPage({
             </div>
           </div>
 
+          
+          {/* Card Mã Giảm Giá */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-3">
+            <h3 className="font-extrabold text-stone-900 text-sm flex items-center gap-1.5">
+              <Tag className="size-4 text-[#00615f]" />
+              <span>Mã giảm giá FoodSaver</span>
+            </h3>
+
+            {!appliedCoupon ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="Nhập mã (VD: FOODSAVER10, SAVEGREEN)"
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-stone-50 border border-stone-200 text-xs font-mono font-bold uppercase focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    disabled={isCheckingCoupon}
+                    onClick={handleApplyCoupon}
+                    className="px-4 py-2 rounded-xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {isCheckingCoupon ? <Loader2 className="size-3.5 animate-spin" /> : 'Áp dụng'}
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {['FOODSAVER10', 'FREESHIP', 'SAVEGREEN', 'WELCOME'].map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => setCouponInput(code)}
+                      className="px-2 py-0.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold border border-emerald-200 transition cursor-pointer"
+                    >
+                      +{code}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between gap-2">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-black text-xs text-emerald-800">{appliedCoupon.code}</span>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-md border border-emerald-200">
+                      -{appliedCoupon.discountAmount.toLocaleString('vi-VN')}đ
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-600">{appliedCoupon.description}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="p-1 rounded-full text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                  title="Gỡ mã"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Card 4: Tóm tắt hóa đơn & Chốt đơn */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-3">
             <h3 className="font-extrabold text-stone-900 text-sm">Tóm tắt thanh toán</h3>
@@ -556,6 +654,14 @@ export default function CheckoutPage({
                   {currentShippingFee > 0 ? `${currentShippingFee.toLocaleString("vi-VN")}đ` : "Miễn phí"}
                 </span>
               </div>
+
+              
+              {appliedCoupon && (
+                <div className="flex justify-between text-emerald-700 font-bold">
+                  <span>Mã giảm giá ({appliedCoupon.code}):</span>
+                  <span>-{appliedCoupon.discountAmount.toLocaleString('vi-VN')}đ</span>
+                </div>
+              )}
 
               <div className="flex justify-between text-base font-black text-stone-900 pt-2 border-t border-stone-100">
                 <span>Tổng cộng:</span>

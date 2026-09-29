@@ -9,6 +9,7 @@ export interface CreateOrderPayload {
   deliveryAddress?: string;
   deliveryDistance?: number;
   shippingFee?: number;
+  discountCode?: string;
   negotiatedShippingFee?: number;
   pickupTimeWindow: string;
   customerNotes?: string;
@@ -53,6 +54,16 @@ export const orderApi = baseApi.injectEndpoints({
         body,
       }),
       transformResponse: (res: EstimateShippingResponse) => res.data,
+    }),
+
+    // 1b. Khách hàng: Kiểm tra & áp dụng mã giảm giá
+    verifyCoupon: builder.mutation<{ code: string; discountAmount: number; description: string }, { code: string; orderTotal: number }>({
+      query: (body) => ({
+        url: "/api/v1/orders/verify-coupon",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: any) => res.data,
     }),
 
     // 2. Khách hàng: Tạo đơn đặt giữ món ăn (ACID transaction)
@@ -191,6 +202,7 @@ export const orderApi = baseApi.injectEndpoints({
 
 export const {
   useEstimateShippingMutation,
+  useVerifyCouponMutation,
   useCreateOrderMutation,
   useBargainShippingFeeMutation,
   useRespondBargainMutation,
