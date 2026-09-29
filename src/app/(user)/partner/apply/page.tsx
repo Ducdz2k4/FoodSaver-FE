@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Store,
-  UploadCloud,
   ShieldCheck,
   MapPin,
   AlertCircle,
@@ -12,33 +11,62 @@ import {
   CheckCircle2,
   Loader2,
 } from "lucide-react";
-import { useAppSelector } from "@/redux/hooks";
-import { useApplyPartnerMutation } from "@/redux/api/partnerApi";
+import { useAuth } from "@/context/AuthContext";
+import {
+  useApplyPartnerMutation,
+  useGetMyPartnerProfileQuery,
+} from "@/redux/api/partnerApi";
 import { ImageUploadInput } from "@/components/common/ImageUploadInput";
 import { BusinessType } from "@/types/contract";
 import { toast } from "sonner";
 
 export default function PartnerApplyPage() {
   const router = useRouter();
-  const currentUser = useAppSelector((state) => state.auth.user);
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
+  const { data: partnerProfile, isLoading: isProfileLoading } = useGetMyPartnerProfileQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+
   const [applyPartnerMutation, { isLoading: isSubmitting }] = useApplyPartnerMutation();
 
-  const [businessName, setBusinessName] = useState("Tiệm Bánh Mì Artisan Bakery");
-  const [businessLicenseNo, setBusinessLicenseNo] = useState("0314892019");
+  const [businessName, setBusinessName] = useState("");
+  const [businessLicenseNo, setBusinessLicenseNo] = useState("");
   const [businessType, setBusinessType] = useState<BusinessType>("BAKERY");
-  const [address, setAddress] = useState("128 Nguyễn Trãi, Phường Bến Thành, Quận 1, TP.HCM");
-  const [lat, setLat] = useState(10.7712);
-  const [lng, setLng] = useState(106.6908);
-  const [phone, setPhone] = useState(currentUser?.phone || "0934567890");
-  const [businessLicenseUrl, setBusinessLicenseUrl] = useState(
-    "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=800"
-  );
-  const [foodSafetyCertUrl, setFoodSafetyCertUrl] = useState(
-    "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800"
-  );
-  const [hasAgreed, setHasAgreed] = useState(true);
+  const [address, setAddress] = useState("");
+  const [lat, setLat] = useState(10.7769);
+  const [lng, setLng] = useState(106.7009);
+  const [phone, setPhone] = useState("");
+  const [businessLicenseUrl, setBusinessLicenseUrl] = useState("");
+  const [foodSafetyCertUrl, setFoodSafetyCertUrl] = useState("");
+  const [hasAgreed, setHasAgreed] = useState(false);
 
-  const isRejected = currentUser?.partnerCapability === "REJECTED";
+  // Auto redirect if already verified or pending
+  useEffect(() => {
+    if (partnerProfile) {
+      if (partnerProfile.verificationStatus === "VERIFIED") {
+        router.replace("/partner/dashboard");
+      } else if (partnerProfile.verificationStatus === "PENDING") {
+        router.replace("/partner/apply/pending");
+      } else if (partnerProfile.verificationStatus === "REJECTED") {
+        // Prefill previous rejection data so partner can fix easily
+        setBusinessName(partnerProfile.businessName || "");
+        setBusinessLicenseNo(partnerProfile.businessLicenseNo || "");
+        setBusinessType(partnerProfile.businessType || "BAKERY");
+        setAddress(partnerProfile.address || "");
+        setPhone(partnerProfile.phone || user?.phone || "");
+        setBusinessLicenseUrl(partnerProfile.businessLicenseUrl || "");
+        setFoodSafetyCertUrl(partnerProfile.foodSafetyCertUrl || "");
+        if (partnerProfile.lat) setLat(Number(partnerProfile.lat));
+        if (partnerProfile.lng) setLng(Number(partnerProfile.lng));
+      }
+    } else if (user) {
+      if (user.address && !address) setAddress(user.address);
+      if (user.phone && !phone) setPhone(user.phone);
+    }
+  }, [partnerProfile, user, router]);
+
+  const isRejected = partnerProfile?.verificationStatus === "REJECTED";
 
   const handleGetLocation = () => {
     if (navigator.geolocation) {
@@ -50,15 +78,27 @@ export default function PartnerApplyPage() {
         },
         () => toast.error("Không thể truy cập GPS, đang dùng tọa độ mặc định.")
       );
+    } else {
+      toast.error("Trình duyệt không hỗ trợ Geolocation.");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUser) {
+    if (!isAuthenticated) {
       toast.error("Vui lòng đăng nhập trước khi nộp hồ sơ đối tác!");
       router.push("/login?redirect=/partner/apply");
+      return;
+    }
+
+    if (!businessLicenseUrl) {
+      toast.error("Vui lòng tải lên ảnh Giấy phép kinh doanh (GPKD)!");
+      return;
+    }
+
+    if (!foodSafetyCertUrl) {
+      toast.error("Vui lòng tải lên ảnh Giấy chứng nhận cơ sở đủ điều kiện ATTP!");
       return;
     }
 
@@ -69,23 +109,34 @@ export default function PartnerApplyPage() {
 
     try {
       await applyPartnerMutation({
-        businessName,
-        businessLicenseNo,
+        businessName: businessName.trim(),
+        businessLicenseNo: businessLicenseNo.trim(),
         businessLicenseUrl,
         foodSafetyCertUrl,
         businessType,
-        address,
+        address: address.trim(),
         lat,
         lng,
-        phone,
+        phone: phone.trim(),
       }).unwrap();
 
-      toast.success("Nộp hồ sơ đối tác F&B thành công!");
+      toast.success("Nộp hồ sơ đối tác F&B thành công! Vui lòng chờ Ban Quản Trị thẩm định.");
       router.push("/partner/apply/pending");
     } catch (err: any) {
       toast.error(err?.data?.message || "Nộp hồ sơ thất bại. Vui lòng kiểm tra lại thông tin.");
     }
   };
+
+  if (isAuthLoading || isProfileLoading) {
+    return (
+      <div className="min-h-screen bg-[#f9f3f0] flex items-center justify-center p-4">
+        <div className="flex items-center gap-2 text-[#00615f] font-bold text-sm">
+          <Loader2 className="size-6 animate-spin" />
+          <span>Đang kiểm tra hồ sơ đối tác...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-28 px-4 sm:px-6 lg:px-8">
@@ -93,13 +144,13 @@ export default function PartnerApplyPage() {
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-xs font-bold">
             <ShieldCheck className="size-3.5" />
-            <span>MÔ HÌNH B2C • ĐỐI TÁC F&B ĐÃ KIỂM ĐỊNH</span>
+            <span>MÔ HÌNH B2C • ĐỐI TÁC F&amp;B ĐÃ KIỂM ĐỊNH</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#00615f] tracking-tight">
             Đăng Ký Hồ Sơ Đối Tác Bán Hàng
           </h1>
           <p className="text-xs sm:text-sm text-stone-600">
-            Dành cho tiệm bánh, nhà hàng, quán ăn và cửa hàng tiện lợi có đầy đủ giấy phép kinh doanh & chứng nhận ATTP.
+            Dành cho tiệm bánh, nhà hàng, quán ăn và cửa hàng tiện lợi có đầy đủ giấy phép kinh doanh &amp; chứng nhận ATTP.
           </p>
         </div>
 
@@ -112,7 +163,7 @@ export default function PartnerApplyPage() {
                 Hồ sơ của bạn bị từ chối xét duyệt trước đó:
               </strong>
               <p className="text-rose-700">
-                Lý do: Giấy chứng nhận ATTP chụp bị mờ hoặc đã quá hạn hiệu lực. Vui lòng tải lại bản chụp rõ nét hơn.
+                Lý do từ Admin: <em>"{partnerProfile?.rejectionReason || "Thiếu hoặc mờ giấy tờ pháp lý"}"</em>. Vui lòng tải lại bản chụp rõ nét hơn.
               </p>
             </div>
           </div>
@@ -123,7 +174,7 @@ export default function PartnerApplyPage() {
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-sm space-y-4">
             <h2 className="font-extrabold text-stone-900 text-base flex items-center gap-2">
               <Store className="size-4 text-[#00615f]" />
-              <span>1. Thông tin cơ sở kinh doanh F&B</span>
+              <span>1. Thông tin cơ sở kinh doanh F&amp;B</span>
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -196,6 +247,7 @@ export default function PartnerApplyPage() {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Nhập số điện thoại quán"
                   className="w-full px-4 py-2.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00615f]/20"
                 />
               </div>
@@ -207,23 +259,23 @@ export default function PartnerApplyPage() {
                 <button
                   type="button"
                   onClick={handleGetLocation}
-                  className="w-full py-2.5 px-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-xs font-bold text-stone-700 flex items-center justify-center gap-1.5 transition border border-stone-200"
+                  className="w-full py-2.5 px-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-xs font-bold text-stone-700 flex items-center justify-center gap-1.5 transition border border-stone-200 cursor-pointer"
                 >
                   <MapPin className="size-3.5 text-[#00615f]" />
-                  <span>Cập nhật vị trí hiện tại ({lat}, {lng})</span>
+                  <span>Cập nhật vị trí GPS ({lat}, {lng})</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Card 2: Hồ sơ pháp lý bắt buộc (B2C chuẩn) */}
+          {/* Card 2: Hồ sơ pháp lý bắt buộc (Upload trực tiếp lên Cloudinary) */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-sm space-y-4">
             <h2 className="font-extrabold text-stone-900 text-base flex items-center gap-2">
               <FileCheck2 className="size-4 text-[#00615f]" />
-              <span>2. Hồ sơ pháp lý & Chứng nhận ATTP (Bắt buộc)</span>
+              <span>2. Hồ sơ pháp lý &amp; Chứng nhận ATTP (Bắt buộc)</span>
             </h2>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <ImageUploadInput
                 label="Ảnh Scan Giấy phép kinh doanh (GPKD) *:"
                 value={businessLicenseUrl}
@@ -264,7 +316,7 @@ export default function PartnerApplyPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-4 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transition-all active:scale-98 disabled:opacity-60"
+            className="w-full py-4 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transition-all active:scale-98 disabled:opacity-60 cursor-pointer"
           >
             {isSubmitting ? (
               <span className="flex items-center gap-2">
@@ -274,7 +326,7 @@ export default function PartnerApplyPage() {
             ) : (
               <>
                 <CheckCircle2 className="size-5" />
-                <span>Nộp Hồ Sơ Thẩm Định Đối Tác</span>
+                <span>{isRejected ? "Nộp Lại Hồ Sơ Thẩm Định" : "Nộp Hồ Sơ Thẩm Định Đối Tác"}</span>
               </>
             )}
           </button>
@@ -283,4 +335,3 @@ export default function PartnerApplyPage() {
     </div>
   );
 }
-
