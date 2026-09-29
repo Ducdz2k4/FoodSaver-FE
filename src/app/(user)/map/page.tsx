@@ -190,7 +190,7 @@ export default function FoodMapPage() {
                 <span>Bán kính tìm:</span>
               </span>
               <div className="flex items-center gap-1">
-                {[1, 2, 3, 5].map((r) => (
+                {[1, 3, 5, 10, 20].map((r) => (
                   <button
                     key={r}
                     type="button"
@@ -331,4 +331,5 @@ export default function FoodMapPage() {
     </div>
   );
 }
+
 
