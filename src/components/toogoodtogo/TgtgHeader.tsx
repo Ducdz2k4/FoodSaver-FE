@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 
@@ -10,6 +11,16 @@ export function TgtgHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const currentUser = useAppSelector((state) => state.auth.user);
+  const router = useRouter();
+
+  const handleHeaderSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push("/search");
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,7 +59,7 @@ export function TgtgHeader() {
         <div className="hidden lg:flex items-center justify-center flex-1">
           <nav className="liquid-glass flex items-center gap-2 p-1.5 rounded-full border border-stone-200/60 bg-white/70 shadow-sm">
             {/* Integrated Search Capsule */}
-            <div className="relative w-44 xl:w-56">
+            <form onSubmit={handleHeaderSearch} className="relative w-44 xl:w-56">
               <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#f9f3f0]/80 hover:bg-white focus-within:bg-white focus-within:ring-2 focus-within:ring-[#00615f]/20 border border-stone-200/50 transition-all duration-200">
                 <Search className="size-3.5 text-[#00615f] shrink-0" />
                 <input
@@ -69,12 +80,12 @@ export function TgtgHeader() {
                   </button>
                 )}
               </div>
-            </div>
+            </form>
 
             {/* Nav Links */}
             <div className="flex items-center gap-1">
               <Link
-                href="/#listings"
+                href="/search"
                 className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
                 Khám phá
@@ -84,12 +95,6 @@ export function TgtgHeader() {
                 className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
                 Bản đồ
-              </Link>
-              <Link
-                href="/search"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
-              >
-                Tìm kiếm
               </Link>
               <Link
                 href="/#how-it-works"
@@ -213,18 +218,18 @@ export function TgtgHeader() {
         <div className="lg:hidden liquid-glass mx-4 mt-2 px-6 py-6 space-y-4 rounded-3xl shadow-xl border border-stone-200 bg-white/95 backdrop-blur-md animate-in slide-in-from-top duration-200">
           <nav className="flex flex-col space-y-2 text-sm font-bold text-[#00615f] pt-1">
             <Link
-              href="/#listings"
+              href="/search"
               onClick={() => setMobileOpen(false)}
               className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
             >
               Khám phá
             </Link>
             <Link
-              href="/search"
+              href="/map"
               onClick={() => setMobileOpen(false)}
               className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
             >
-              Tìm kiếm
+              Bản đồ
             </Link>
             <Link
               href="/orders"
@@ -272,4 +277,5 @@ export function TgtgHeader() {
     </header>
   );
 }
+
 
