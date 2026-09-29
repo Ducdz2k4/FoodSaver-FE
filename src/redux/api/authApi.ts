@@ -84,6 +84,35 @@ export const authApiSlice = baseApi.injectEndpoints({
       },
     }),
 
+    updateProfile: builder.mutation<UserOut, { fullName?: string; phone?: string; address?: string; bio?: string; avatar?: string }>({
+      query: (body) => ({
+        url: "/api/v1/auth/profile",
+        method: "PUT",
+        body,
+      }),
+      transformResponse: (response: any) => response?.data || response,
+      invalidatesTags: ["User", "UserProfile"],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data) {
+            dispatch(setUser(data));
+          }
+        } catch {
+          // Handled by caller
+        }
+      },
+    }),
+
+    changePassword: builder.mutation<{ message: string }, { oldPassword: string; newPassword: string }>({
+      query: (body) => ({
+        url: "/api/v1/auth/change-password",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: any) => response?.data || response,
+    }),
+
     logout: builder.mutation<void, void>({
       query: () => ({
         url: "/api/v1/auth/logout",
@@ -95,8 +124,9 @@ export const authApiSlice = baseApi.injectEndpoints({
       },
     }),
 
-    checkHealth: builder.query<{ status: string }, void>({
+    checkHealth: builder.query<{ status: string; uptime: number; timestamp: string }, void>({
       query: () => "/health",
+      providesTags: ["SystemHealth"],
     }),
   }),
   overrideExisting: false,
@@ -107,6 +137,8 @@ export const {
   useRegisterMutation,
   useGetMeQuery,
   useLazyGetMeQuery,
+  useUpdateProfileMutation,
+  useChangePasswordMutation,
   useLogoutMutation,
   useCheckHealthQuery,
 } = authApiSlice;

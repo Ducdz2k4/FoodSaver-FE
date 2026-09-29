@@ -3,10 +3,11 @@
 import React, { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Sparkles, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { FoodCategory, ListingStatus } from "@/types/contract";
 import { notFound } from "next/navigation";
+import { useGetListingByIdQuery, useUpdateListingMutation } from "@/redux/api/listingApi";
 import { toast } from "sonner";
 
 export default function EditListingPage({
@@ -16,37 +17,89 @@ export default function EditListingPage({
 }) {
   const router = useRouter();
   const resolvedParams = use(params);
-  const existing = MOCK_LISTINGS.find((item) => item.id === resolvedParams.id);
+
+  const { data: realListing, isLoading: isFetchingListing } = useGetListingByIdQuery({
+    id: resolvedParams.id,
+  });
+
+  const existing = realListing || MOCK_LISTINGS.find((item) => item.id === resolvedParams.id);
+  const [updateListingMutation, { isLoading: isSubmitting }] = useUpdateListingMutation();
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<FoodCategory>("BAKERY");
+  const [originalPrice, setOriginalPrice] = useState(0);
+  const [discountPrice, setDiscountPrice] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [unit, setUnit] = useState("phần");
+  const [status, setStatus] = useState<ListingStatus>("AVAILABLE");
+  const [expiryAt, setExpiryAt] = useState("");
+  const [pickupStartTime, setPickupStartTime] = useState("18:00");
+  const [pickupEndTime, setPickupEndTime] = useState("21:30");
+  const [safetyNotes, setSafetyNotes] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+
+  useEffect(() => {
+    if (existing) {
+      setTitle(existing.title);
+      setDescription(existing.description || "");
+      setCategory(existing.category);
+      setOriginalPrice(existing.originalPrice);
+      setDiscountPrice(existing.discountPrice);
+      setQuantity(existing.quantity);
+      setUnit(existing.unit);
+      setStatus(existing.status);
+      setExpiryAt(existing.expiryAt.slice(0, 16));
+      setPickupStartTime(existing.pickupStartTime);
+      setPickupEndTime(existing.pickupEndTime);
+      setSafetyNotes(existing.safetyNotes || "");
+      setImageUrl(existing.imageUrls[0] || "");
+    }
+  }, [existing]);
+
+  if (isFetchingListing && !existing) {
+    return (
+      <div className="flex items-center justify-center p-16">
+        <Loader2 className="size-6 animate-spin text-[#00615f]" />
+      </div>
+    );
+  }
 
   if (!existing) {
     return notFound();
   }
 
-  const [title, setTitle] = useState(existing.title);
-  const [description, setDescription] = useState(existing.description);
-  const [category, setCategory] = useState<FoodCategory>(existing.category);
-  const [originalPrice, setOriginalPrice] = useState(existing.originalPrice);
-  const [discountPrice, setDiscountPrice] = useState(existing.discountPrice);
-  const [quantity, setQuantity] = useState(existing.quantity);
-  const [unit, setUnit] = useState(existing.unit);
-  const [status, setStatus] = useState<ListingStatus>(existing.status);
-  const [expiryAt, setExpiryAt] = useState(existing.expiryAt.slice(0, 16));
-  const [pickupStartTime, setPickupStartTime] = useState(existing.pickupStartTime);
-  const [pickupEndTime, setPickupEndTime] = useState(existing.pickupEndTime);
-  const [safetyNotes, setSafetyNotes] = useState(existing.safetyNotes || "");
-  const [imageUrl, setImageUrl] = useState(existing.imageUrls[0]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const discountPercent =
     originalPrice > 0 ? Math.round(((originalPrice - discountPrice) / originalPrice) * 100) : 0;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setTimeout(() => {
-      toast.success("Cập nhật thông tin món ăn giải cứu thành công!");
+
+    try {
+      await updateListingMutation({
+        id: existing.id,
+        body: {
+          title,
+          description,
+          category,
+          originalPrice,
+          discountPrice,
+          quantity,
+          unit,
+          status,
+          expiryAt: new Date(expiryAt).toISOString(),
+          pickupStartTime,
+          pickupEndTime,
+          imageUrls: [imageUrl],
+          safetyNotes,
+        },
+      }).unwrap();
+
+      toast.success("Cập nhật thông tin món ăn thành công!");
       router.push("/partner/listings");
-    }, 600);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Cập nhật thất bại. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -228,8 +281,17 @@ export default function EditListingPage({
               disabled={isSubmitting}
               className="flex-1 py-3 px-5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-xs flex items-center justify-center gap-2 shadow-md transition disabled:opacity-60"
             >
-              <CheckCircle2 className="size-4" />
-              <span>Lưu thay đổi món ăn</span>
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Đang cập nhật...</span>
+                </span>
+              ) : (
+                <>
+                  <CheckCircle2 className="size-4" />
+                  <span>Lưu thay đổi món ăn</span>
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -259,7 +321,9 @@ export default function EditListingPage({
 
             <div className="p-5 space-y-3">
               <div>
-                <span className="text-xs font-bold text-[#00615f] block">{existing.partnerName}</span>
+                <span className="text-xs font-bold text-[#00615f] block">
+                  {existing.partnerName || "Quán của bạn"}
+                </span>
                 <h3 className="font-bold text-stone-900 text-base line-clamp-1">{title}</h3>
                 <p className="text-xs text-stone-500 mt-1 line-clamp-2">{description}</p>
               </div>

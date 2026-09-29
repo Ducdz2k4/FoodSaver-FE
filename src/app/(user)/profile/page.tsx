@@ -13,17 +13,21 @@ import {
   Clock,
   AlertCircle,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useUpdateProfileMutation, useChangePasswordMutation } from "@/redux/api/authApi";
 import { toast } from "sonner";
 
 export default function UserProfilePage() {
-  const { user, updateUserLocal } = useAuth();
+  const { user } = useAuth();
+  const [updateProfileMutation, { isLoading: isUpdatingProfile }] = useUpdateProfileMutation();
+  const [changePasswordMutation, { isLoading: isChangingPass }] = useChangePasswordMutation();
 
   const [activeTab, setActiveTab] = useState<"PROFILE" | "PARTNER" | "NOTIFICATIONS" | "SECURITY">("PROFILE");
 
   // Profile form state
-  const [fullName, setFullName] = useState(user?.full_name || "Nguyễn Văn Khách");
+  const [fullName, setFullName] = useState(user?.fullName || user?.full_name || "Nguyễn Văn Khách");
   const [phone, setPhone] = useState(user?.phone || "0901234567");
   const [address, setAddress] = useState(user?.address || "128 Nguyễn Trãi, Quận 1, TP.HCM");
   const [defaultRadius, setDefaultRadius] = useState<number>(3);
@@ -38,22 +42,38 @@ export default function UserProfilePage() {
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserLocal({ full_name: fullName, phone, address });
-    toast.success("Đã cập nhật thông tin cá nhân thành công!");
+    try {
+      await updateProfileMutation({
+        fullName,
+        phone,
+        address,
+      }).unwrap();
+      toast.success("Đã cập nhật thông tin cá nhân thành công!");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Cập nhật thông tin thất bại");
+    }
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPass !== confirmPass) {
       toast.error("Mật khẩu mới không trùng khớp!");
       return;
     }
-    toast.success("Đổi mật khẩu thành công!");
-    setCurrentPass("");
-    setNewPass("");
-    setConfirmPass("");
+    try {
+      await changePasswordMutation({
+        oldPassword: currentPass,
+        newPassword: newPass,
+      }).unwrap();
+      toast.success("Đổi mật khẩu thành công! Vui lòng đăng nhập lại.");
+      setCurrentPass("");
+      setNewPass("");
+      setConfirmPass("");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.");
+    }
   };
 
   const partnerStatus = user?.partnerCapability || "NONE";
@@ -190,9 +210,11 @@ export default function UserProfilePage() {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold shadow-md transition"
+                disabled={isUpdatingProfile}
+                className="px-6 py-2.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold shadow-md transition flex items-center gap-2"
               >
-                Lưu thay đổi
+                {isUpdatingProfile ? <Loader2 className="size-4 animate-spin" /> : null}
+                <span>Lưu thay đổi</span>
               </button>
             </div>
           </form>
@@ -461,9 +483,11 @@ export default function UserProfilePage() {
             <div className="flex justify-end pt-3">
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold shadow-md transition"
+                disabled={isChangingPass}
+                className="px-6 py-2.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold shadow-md transition flex items-center gap-2"
               >
-                Cập nhật mật khẩu
+                {isChangingPass ? <Loader2 className="size-4 animate-spin" /> : null}
+                <span>Cập nhật mật khẩu</span>
               </button>
             </div>
           </form>
