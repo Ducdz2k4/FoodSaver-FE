@@ -21,8 +21,9 @@ export default function RootLayout({
         <StoreProvider>
           <AuthProvider>
             <SocketProvider>
-              {children}
-              <GlobalClientProviders />
+              <GlobalClientProviders>
+                {children}
+              </GlobalClientProviders>
             </SocketProvider>
           </AuthProvider>
         </StoreProvider>
