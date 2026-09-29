@@ -52,7 +52,7 @@ export default function ListingDetailPage({
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-32 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Navigation Breadcrumb & Back */}
         <div className="flex items-center justify-between">
           <Link

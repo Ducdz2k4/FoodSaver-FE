@@ -82,6 +82,8 @@ export interface OrderDTO {
   unitPrice: number;
   shippingFee: number;
   negotiatedShippingFee?: number | null;
+  discountCode?: string | null;
+  discountAmount?: number;
   totalPrice: number;
   status: OrderStatus;
   fulfillmentType: FulfillmentType;
@@ -104,3 +106,4 @@ export interface NotificationDTO {
   read: boolean;
   createdAt: string;
 }
+

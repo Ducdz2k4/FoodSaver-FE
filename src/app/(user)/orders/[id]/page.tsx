@@ -112,7 +112,7 @@ export default function OrderDetailPage({
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-28 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <Link
           href="/orders"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00615f] hover:underline"

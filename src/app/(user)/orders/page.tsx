@@ -20,7 +20,7 @@ export default function OrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-[#00615f] tracking-tight">
