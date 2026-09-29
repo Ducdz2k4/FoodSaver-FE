@@ -4,6 +4,7 @@ import React, { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
+import { ImageUploadInput } from "@/components/common/ImageUploadInput";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { FoodCategory, ListingStatus } from "@/types/contract";
 import { notFound } from "next/navigation";
@@ -248,15 +249,12 @@ export default function EditListingPage({
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-stone-700 block mb-1">Link ảnh món ăn:</label>
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-mono"
-              />
-            </div>
+            <ImageUploadInput
+              label="Hình ảnh món ăn giải cứu:"
+              value={imageUrl}
+              onChange={(url) => setImageUrl(url)}
+              folder="foodsaver/listings"
+            />
 
             <div>
               <label className="text-xs font-bold text-stone-700 block mb-1">Ghi chú bảo quản & ATTP:</label>
@@ -348,3 +346,4 @@ export default function EditListingPage({
     </div>
   );
 }
+

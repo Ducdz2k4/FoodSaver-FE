@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { useApplyPartnerMutation } from "@/redux/api/partnerApi";
+import { ImageUploadInput } from "@/components/common/ImageUploadInput";
 import { BusinessType } from "@/types/contract";
 import { toast } from "sonner";
 
@@ -223,42 +224,24 @@ export default function PartnerApplyPage() {
             </h2>
 
             <div className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-stone-700 block mb-1">
-                  Ảnh Scan Giấy phép kinh doanh (GPKD) <span className="text-rose-500">*</span>:
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="url"
-                    required
-                    value={businessLicenseUrl}
-                    onChange={(e) => setBusinessLicenseUrl(e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs sm:text-sm font-mono focus:outline-none"
-                  />
-                  <div className="size-10 rounded-xl overflow-hidden bg-stone-100 shrink-0 border border-stone-200">
-                    <img src={businessLicenseUrl} alt="GPKD" className="w-full h-full object-cover" />
-                  </div>
-                </div>
-              </div>
+              <ImageUploadInput
+                label="Ảnh Scan Giấy phép kinh doanh (GPKD) *:"
+                value={businessLicenseUrl}
+                onChange={(url) => setBusinessLicenseUrl(url)}
+                folder="foodsaver/licenses"
+                aspectRatio="portrait"
+              />
 
               <div>
-                <label className="text-xs font-bold text-stone-700 block mb-1">
-                  Ảnh Giấy chứng nhận cơ sở đủ điều kiện ATTP <span className="text-rose-500">*</span>:
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="url"
-                    required
-                    value={foodSafetyCertUrl}
-                    onChange={(e) => setFoodSafetyCertUrl(e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs sm:text-sm font-mono focus:outline-none"
-                  />
-                  <div className="size-10 rounded-xl overflow-hidden bg-stone-100 shrink-0 border border-stone-200">
-                    <img src={foodSafetyCertUrl} alt="ATTP" className="w-full h-full object-cover" />
-                  </div>
-                </div>
-                <p className="text-[11px] text-stone-500 mt-1">
-                  Ảnh giấy chứng nhận này sẽ được hiển thị minh bạch cho khách hàng khi họ bấm vào huy hiệu ATTP trên món ăn.
+                <ImageUploadInput
+                  label="Ảnh Giấy chứng nhận cơ sở đủ điều kiện ATTP *:"
+                  value={foodSafetyCertUrl}
+                  onChange={(url) => setFoodSafetyCertUrl(url)}
+                  folder="foodsaver/certificates"
+                  aspectRatio="portrait"
+                />
+                <p className="text-[11px] text-stone-500 mt-1.5">
+                  Ảnh chứng nhận này sẽ được hiển thị minh bạch cho khách hàng khi họ bấm vào huy hiệu ATTP trên món ăn.
                 </p>
               </div>
             </div>
@@ -300,3 +283,4 @@ export default function PartnerApplyPage() {
     </div>
   );
 }
+

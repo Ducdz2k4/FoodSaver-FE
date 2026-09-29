@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Sparkles, Image, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
+import { ImageUploadInput } from "@/components/common/ImageUploadInput";
 import { FoodCategory } from "@/types/contract";
 import { useCreateListingMutation } from "@/redux/api/listingApi";
 import { toast } from "sonner";
@@ -195,15 +196,12 @@ export default function NewListingPage() {
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-stone-700 block mb-1">Link ảnh món ăn:</label>
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-mono"
-              />
-            </div>
+            <ImageUploadInput
+              label="Hình ảnh món ăn giải cứu:"
+              value={imageUrl}
+              onChange={(url) => setImageUrl(url)}
+              folder="foodsaver/listings"
+            />
 
             <div>
               <label className="text-xs font-bold text-stone-700 block mb-1">Ghi chú an toàn & bảo quản:</label>
@@ -285,3 +283,4 @@ export default function NewListingPage() {
     </div>
   );
 }
+
