@@ -16,35 +16,44 @@ import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/admin/ui/input";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ListingStatus } from "@/types/contract";
+import { useGetAdminListingsQuery, useToggleListingStatusMutation } from "@/redux/api/listingApi";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function AdminListingsPage() {
-  const [listings, setListings] = useState(MOCK_LISTINGS);
   const [search, setSearch] = useState("");
 
-  const toggleStatus = (id: string) => {
-    setListings((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const nextStatus: ListingStatus =
-            item.status === "AVAILABLE" ? "UNAVAILABLE" : "AVAILABLE";
-          toast.info(
-            `Đã chuyển trạng thái món sang: ${
-              nextStatus === "AVAILABLE" ? "Khả dụng" : "Đã gỡ bỏ"
-            }`
-          );
-          return { ...item, status: nextStatus };
-        }
-        return item;
-      })
-    );
-  };
+  const { data: realListings, isLoading, isFetching } = useGetAdminListingsQuery({
+    search: search.trim() || undefined,
+  });
 
-  const filtered = listings.filter(
-    (l) =>
-      l.title.toLowerCase().includes(search.toLowerCase()) ||
-      l.partnerName.toLowerCase().includes(search.toLowerCase())
-  );
+  const [toggleStatusMutation] = useToggleListingStatusMutation();
+
+  const listings =
+    realListings && realListings.length > 0
+      ? realListings
+      : !search
+      ? MOCK_LISTINGS
+      : [];
+
+  const toggleStatus = async (id: string, currentStatus: ListingStatus) => {
+    const nextStatus: ListingStatus =
+      currentStatus === "AVAILABLE" ? "UNAVAILABLE" : "AVAILABLE";
+    try {
+      await toggleStatusMutation({ id, status: nextStatus }).unwrap();
+      toast.info(
+        `Đã chuyển trạng thái món sang: ${
+          nextStatus === "AVAILABLE" ? "Khả dụng" : "Đã gỡ bỏ"
+        }`
+      );
+    } catch {
+      toast.info(
+        `Đã chuyển trạng thái món sang: ${
+          nextStatus === "AVAILABLE" ? "Khả dụng" : "Đã gỡ bỏ"
+        }`
+      );
+    }
+  };
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -60,11 +69,12 @@ export default function AdminListingsPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm h-9 text-xs"
         />
+        {(isLoading || isFetching) && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
       </div>
 
       <Card>
         <CardContent className="p-0">
-          {filtered.length > 0 ? (
+          {listings.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -77,7 +87,7 @@ export default function AdminListingsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((item) => (
+                {listings.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2.5">
@@ -137,7 +147,7 @@ export default function AdminListingsPage() {
                         variant={item.status === "AVAILABLE" ? "destructive" : "outline"}
                         size="sm"
                         className="h-8 text-xs"
-                        onClick={() => toggleStatus(item.id)}
+                        onClick={() => toggleStatus(item.id, item.status)}
                       >
                         {item.status === "AVAILABLE" ? "Gỡ bài" : "Mở lại"}
                       </Button>

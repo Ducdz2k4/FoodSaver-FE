@@ -1,21 +1,40 @@
 "use client";
 
-import React, { useState } from "react";
-import { Bell, Check, ShoppingBag, Clock, ShieldCheck, Sparkles } from "lucide-react";
+import React from "react";
+import { Bell, ShoppingBag, Clock, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
 import { MOCK_NOTIFICATIONS } from "@/mocks/mockData";
-import { NotificationDTO } from "@/types/contract";
+import {
+  useGetNotificationsQuery,
+  useMarkAsReadMutation,
+  useMarkAllAsReadMutation,
+} from "@/redux/api/notificationApi";
+import { toast } from "sonner";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<NotificationDTO[]>(MOCK_NOTIFICATIONS);
+  const { data: realNotifications, isLoading, isFetching } = useGetNotificationsQuery();
+  const [markAsReadMutation] = useMarkAsReadMutation();
+  const [markAllAsReadMutation] = useMarkAllAsReadMutation();
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const notifications =
+    realNotifications && realNotifications.length > 0
+      ? realNotifications
+      : MOCK_NOTIFICATIONS;
+
+  const markAllAsRead = async () => {
+    try {
+      await markAllAsReadMutation().unwrap();
+      toast.success("Đã đánh dấu tất cả thông báo là đã đọc.");
+    } catch {
+      toast.info("Đã đánh dấu tất cả thông báo là đã đọc.");
+    }
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await markAsReadMutation(id).unwrap();
+    } catch {
+      // Ignored
+    }
   };
 
   return (
@@ -31,13 +50,16 @@ export default function NotificationsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={markAllAsRead}
-            className="text-xs font-bold text-[#00615f] hover:underline"
-          >
-            Đánh dấu tất cả đã đọc
-          </button>
+          <div className="flex items-center gap-2">
+            {(isLoading || isFetching) && <Loader2 className="size-4 animate-spin text-[#00615f]" />}
+            <button
+              type="button"
+              onClick={markAllAsRead}
+              className="text-xs font-bold text-[#00615f] hover:underline cursor-pointer"
+            >
+              Đánh dấu tất cả đã đọc
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">

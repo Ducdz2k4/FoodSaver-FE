@@ -24,51 +24,73 @@ import {
 import { Input } from "@/components/admin/ui/input";
 import { MOCK_PARTNER_PROFILES } from "@/mocks/mockData";
 import { PartnerProfileDTO } from "@/types/contract";
+import { useGetPendingPartnersQuery, useVerifyPartnerMutation } from "@/redux/api/partnerApi";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function AdminPendingPartnersPage() {
-  const [partners, setPartners] = useState<PartnerProfileDTO[]>(MOCK_PARTNER_PROFILES);
+  const { data: realPartners, isLoading, isFetching } = useGetPendingPartnersQuery();
+  const [verifyPartnerMutation] = useVerifyPartnerMutation();
+
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const pendingList = partners.filter((p) => p.verificationStatus === "PENDING");
+  const pendingList =
+    realPartners !== undefined ? realPartners : MOCK_PARTNER_PROFILES.filter((p) => p.verificationStatus === "PENDING");
 
-  const handleApprove = (id: string) => {
-    setPartners((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, verificationStatus: "VERIFIED" } : p))
-    );
-    toast.success("Đã phê duyệt hồ sơ đối tác thành công.");
+  const handleApprove = async (id: string) => {
+    try {
+      await verifyPartnerMutation({ id, status: "VERIFIED" }).unwrap();
+      toast.success("Đã phê duyệt hồ sơ đối tác thành công.");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Phê duyệt thất bại");
+    }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (!rejectionReason.trim()) {
       toast.error("Vui lòng nhập lý do từ chối hồ sơ.");
       return;
     }
-    setPartners((prev) =>
-      prev.map((p) =>
-        p.id === rejectingId
-          ? { ...p, verificationStatus: "REJECTED", rejectionReason }
-          : p
-      )
-    );
-    toast.info("Đã từ chối hồ sơ đối tác.");
-    setRejectingId(null);
-    setRejectionReason("");
+    try {
+      if (rejectingId) {
+        await verifyPartnerMutation({
+          id: rejectingId,
+          status: "REJECTED",
+          rejectionReason: rejectionReason.trim(),
+        }).unwrap();
+        toast.info("Đã từ chối hồ sơ đối tác.");
+        setRejectingId(null);
+        setRejectionReason("");
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Từ chối hồ sơ thất bại");
+    }
   };
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
       <AdminPageHeader
         title="Duyệt hồ sơ đối tác F&B"
-        badge={pendingList.length > 0 ? `${pendingList.length} hồ sơ chờ` : undefined}
+        badge={
+          isFetching ? (
+            <Loader2 className="size-3 animate-spin" />
+          ) : pendingList.length > 0 ? (
+            `${pendingList.length} hồ sơ chờ`
+          ) : undefined
+        }
         description="Kiểm tra đối chiếu giấy phép kinh doanh và chứng nhận an toàn thực phẩm trước khi cấp quyền bán hàng."
       />
 
       <Card>
         <CardContent className="p-0">
-          {pendingList.length > 0 ? (
+          {isLoading && !realPartners ? (
+            <div className="flex items-center justify-center p-12 text-muted-foreground gap-2">
+              <Loader2 className="size-5 animate-spin" />
+              <span className="text-xs">Đang tải danh sách hồ sơ...</span>
+            </div>
+          ) : pendingList.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
