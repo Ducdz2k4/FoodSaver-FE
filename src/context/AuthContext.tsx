@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { UserOut, LoginIn, RegisterIn, TokenOut } from "@/types/auth";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import { UserOut, LoginIn, RegisterIn, TokenOut, PartnerCapability } from "@/types/auth";
 import {
   useLoginMutation,
   useRegisterMutation,
@@ -22,6 +22,19 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+
+  // Role & Capability Detection Helpers
+  role: string | null;
+  partnerCapability: PartnerCapability;
+  isAdmin: boolean;
+  isPartner: boolean;
+  isPendingPartner: boolean;
+  isRejectedPartner: boolean;
+  isCustomer: boolean;
+  hasRole: (...roles: string[]) => boolean;
+  hasCapability: (...capabilities: PartnerCapability[]) => boolean;
+
+  // Actions
   login: (payload: LoginIn) => Promise<TokenOut>;
   register: (payload: RegisterIn) => Promise<UserOut>;
   updateUserLocal: (updated: Partial<UserOut>) => void;
@@ -44,6 +57,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [initialLoading, setInitialLoading] = useState(true);
 
+  // Computed Role & Capability Detection
+  const role = useMemo(() => user?.role?.toUpperCase() || null, [user?.role]);
+
+  const partnerCapability: PartnerCapability = useMemo(
+    () => user?.partnerCapability || "NONE",
+    [user?.partnerCapability]
+  );
+
+  const isAdmin = useMemo(
+    () => role === "ADMIN" || role === "SYS_ADMIN",
+    [role]
+  );
+
+  const isPartner = useMemo(
+    () => partnerCapability === "VERIFIED",
+    [partnerCapability]
+  );
+
+  const isPendingPartner = useMemo(
+    () => partnerCapability === "PENDING",
+    [partnerCapability]
+  );
+
+  const isRejectedPartner = useMemo(
+    () => partnerCapability === "REJECTED",
+    [partnerCapability]
+  );
+
+  const isCustomer = useMemo(
+    () => isAuthenticated && !isAdmin,
+    [isAuthenticated, isAdmin]
+  );
+
+  const hasRole = useCallback(
+    (...roles: string[]) => {
+      if (!role) return false;
+      return roles.map((r) => r.toUpperCase()).includes(role);
+    },
+    [role]
+  );
+
+  const hasCapability = useCallback(
+    (...capabilities: PartnerCapability[]) => {
+      return capabilities.includes(partnerCapability);
+    },
+    [partnerCapability]
+  );
+
   const refreshUser = useCallback(async (): Promise<UserOut | null> => {
     const storedToken =
       token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
@@ -53,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    // Nếu là mock token của DevRoleSwitcher -> không gọi BE /auth/me để tránh bị 401 rồi tự logout
+    // Skip remote check if using DevRoleSwitcher mock tokens
     if (storedToken.startsWith("mock-")) {
       setInitialLoading(false);
       return user;
@@ -116,6 +177,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         isLoading: initialLoading || isFetchingMe,
         isAuthenticated,
+        role,
+        partnerCapability,
+        isAdmin,
+        isPartner,
+        isPendingPartner,
+        isRejectedPartner,
+        isCustomer,
+        hasRole,
+        hasCapability,
         login,
         register,
         updateUserLocal,

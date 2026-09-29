@@ -16,6 +16,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
+import { PartnerRoleGuard } from "@/components/auth/PartnerRoleGuard";
 
 export default function PartnerLayout({
   children,
@@ -117,9 +118,10 @@ export default function PartnerLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
-        {children}
+        <PartnerRoleGuard>{children}</PartnerRoleGuard>
       </main>
     </div>
   );
 }
+
 
