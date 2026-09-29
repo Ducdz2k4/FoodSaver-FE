@@ -1,36 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   MapPin,
   Clock,
   Compass,
-  SlidersHorizontal,
-  ShieldCheck,
   ShoppingBag,
-  ArrowRight,
   Sparkles,
   Layers,
 } from "lucide-react";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
-import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
 import { ListingDTO, FoodCategory } from "@/types/contract";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
 export default function FoodMapPage() {
   const [selectedListing, setSelectedListing] = useState<ListingDTO>(MOCK_LISTINGS[0]);
   const [categoryFilter, setCategoryFilter] = useState<FoodCategory | "ALL">("ALL");
   const [radiusKm, setRadiusKm] = useState<number>(3);
   const [urgentOnly, setUrgentOnly] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
-  // Pin Coordinates on visual canvas map (percent 0-100)
-  const pinPositions: Record<string, { x: number; y: number }> = {
-    "list-1": { x: 42, y: 56 }, // Bến Thành, Q1
-    "list-2": { x: 44, y: 53 }, // Nguyễn Trãi, Q1
-    "list-3": { x: 35, y: 38 }, // Tú Xương, Q3
-    "list-4": { x: 62, y: 44 }, // Hai Bà Trưng, Q1
-  };
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   const filteredListings = MOCK_LISTINGS.filter((item) => {
     if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
@@ -38,6 +35,94 @@ export default function FoodMapPage() {
     if (urgentOnly && item.status !== "EXPIRING_SOON") return false;
     return true;
   });
+
+  // Initialize Mapbox map
+  useEffect(() => {
+    if (!mapContainerRef.current || !MAPBOX_TOKEN) return;
+
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+
+    const map = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: "mapbox://styles/mapbox/streets-v12",
+      center: [106.695, 10.7769], // District 1, HCMC
+      zoom: 14,
+      pitch: 35,
+    });
+
+    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
+
+    map.on("load", () => {
+      setMapLoaded(true);
+    });
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+    };
+  }, []);
+
+  // Update Markers when filtered listings change
+  useEffect(() => {
+    if (!mapRef.current || !mapLoaded) return;
+
+    // Clear old markers
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    // Add user position marker
+    const userEl = document.createElement("div");
+    userEl.className = "flex flex-col items-center cursor-pointer";
+    userEl.innerHTML = `
+      <div class="size-5 rounded-full bg-[#00615f] border-2 border-white shadow-xl flex items-center justify-center">
+        <div class="size-2 rounded-full bg-[#79e4a7] animate-ping"></div>
+      </div>
+      <span class="text-[9px] font-black text-[#00615f] bg-white/95 px-1.5 py-0.5 rounded shadow mt-1">Bạn đang ở đây</span>
+    `;
+
+    const userMarker = new mapboxgl.Marker(userEl)
+      .setLngLat([106.695, 10.7769])
+      .addTo(mapRef.current);
+    markersRef.current.push(userMarker);
+
+    // Add listing markers
+    filteredListings.forEach((item) => {
+      const isSelected = selectedListing?.id === item.id;
+      const isUrgent = item.status === "EXPIRING_SOON";
+
+      const el = document.createElement("div");
+      el.className = "cursor-pointer transition-transform duration-200 hover:scale-110";
+      el.innerHTML = `
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-2xl border text-xs font-black transition-all ${
+          isSelected
+            ? "bg-[#00615f] text-white border-white ring-4 ring-[#00615f]/30 scale-105"
+            : isUrgent
+            ? "bg-rose-500 text-white border-rose-200 animate-pulse"
+            : "bg-white text-stone-900 border-stone-200"
+        }">
+          <span class="size-2 rounded-full ${isSelected || isUrgent ? "bg-white" : "bg-[#00615f]"}"></span>
+          <span>${item.discountPrice.toLocaleString("vi-VN")}đ</span>
+        </div>
+      `;
+
+      el.addEventListener("click", () => {
+        setSelectedListing(item);
+        mapRef.current?.flyTo({
+          center: [item.lng, item.lat],
+          zoom: 15,
+          speed: 1.2,
+          curve: 1.42,
+        });
+      });
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([item.lng, item.lat])
+        .addTo(mapRef.current!);
+
+      markersRef.current.push(marker);
+    });
+  }, [filteredListings, selectedListing, mapLoaded]);
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-16 px-4 sm:px-6 lg:px-8">
@@ -47,13 +132,13 @@ export default function FoodMapPage() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/90 text-emerald-800 text-xs font-bold mb-1.5">
               <Compass className="size-3.5" />
-              <span>RADAR BẢN ĐỒ CỨU TRỢ • GEOHASH LOCAL</span>
+              <span>MAPBOX VECTOR TILES • GEOHASH RADAR</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-[#00615f] tracking-tight">
               Bản đồ món ngon lân cận
             </h1>
             <p className="text-xs sm:text-sm text-stone-600">
-              Định vị các cửa hàng F&B có thực phẩm cận date đạt chuẩn ATTP quanh bạn.
+              Định vị các tiệm bánh, nhà hàng và cửa hàng tiện lợi có thực phẩm cận date đạt chuẩn ATTP.
             </p>
           </div>
 
@@ -87,13 +172,13 @@ export default function FoodMapPage() {
 
         {/* Map Grid Canvas + Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Main Interactive Visual Map (8 cols) */}
+          {/* Main Mapbox Container (8 cols) */}
           <div className="lg:col-span-8 bg-white rounded-3xl border border-stone-200/90 shadow-md overflow-hidden relative">
             {/* Top Toolbar overlay */}
-            <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-200/80 shadow-sm flex items-center gap-3 text-xs font-bold text-stone-700">
+            <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-200/80 shadow-md flex items-center gap-3 text-xs font-bold text-stone-700">
               <span className="flex items-center gap-1">
                 <MapPin className="size-3.5 text-[#00615f]" />
-                <span>Bán kính radar:</span>
+                <span>Bán kính tìm:</span>
               </span>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 5].map((r) => (
@@ -101,9 +186,9 @@ export default function FoodMapPage() {
                     key={r}
                     type="button"
                     onClick={() => setRadiusKm(r)}
-                    className={`px-2 py-0.5 rounded-lg text-xs font-bold transition ${
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition ${
                       radiusKm === r
-                        ? "bg-[#00615f] text-white"
+                        ? "bg-[#00615f] text-white shadow-sm"
                         : "bg-stone-100 text-stone-600 hover:bg-stone-200"
                     }`}
                   >
@@ -113,84 +198,11 @@ export default function FoodMapPage() {
               </div>
             </div>
 
-            {/* Map Canvas Background (Simulated City Map of Saigon Downtown) */}
-            <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full bg-[#f4ece6] overflow-hidden select-none">
-              {/* Grid Roads & River Graphic */}
-              <svg className="absolute inset-0 w-full h-full opacity-35" xmlns="http://www.w3.org/2000/svg">
-                {/* River */}
-                <path
-                  d="M0,280 C200,260 350,340 500,310 C650,280 800,380 1000,350"
-                  fill="none"
-                  stroke="#a7d8de"
-                  strokeWidth="48"
-                  strokeLinecap="round"
-                />
-                {/* Major Roads */}
-                <line x1="80" y1="0" x2="250" y2="600" stroke="#dfd2c4" strokeWidth="12" />
-                <line x1="0" y1="200" x2="1000" y2="280" stroke="#dfd2c4" strokeWidth="10" />
-                <line x1="300" y1="0" x2="450" y2="600" stroke="#dfd2c4" strokeWidth="14" />
-                <line x1="0" y1="420" x2="1000" y2="350" stroke="#dfd2c4" strokeWidth="10" />
-                <line x1="550" y1="0" x2="650" y2="600" stroke="#dfd2c4" strokeWidth="8" />
-              </svg>
-
-              {/* User Current Position (Center) */}
-              <div
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center"
-                style={{ left: "50%", top: "50%" }}
-              >
-                {/* Radar Ripple */}
-                <div
-                  className="rounded-full bg-emerald-500/15 border border-emerald-500/40 absolute -translate-x-1/2 -translate-y-1/2 animate-ping"
-                  style={{ width: `${radiusKm * 65}px`, height: `${radiusKm * 65}px` }}
-                />
-                <div
-                  className="rounded-full bg-emerald-500/10 border border-emerald-500/30 absolute -translate-x-1/2 -translate-y-1/2"
-                  style={{ width: `${radiusKm * 65}px`, height: `${radiusKm * 65}px` }}
-                />
-
-                <div className="size-5 rounded-full bg-[#00615f] border-2 border-white shadow-lg flex items-center justify-center">
-                  <div className="size-2 rounded-full bg-white animate-pulse" />
-                </div>
-                <span className="text-[10px] font-black text-[#00615f] bg-white/90 px-1.5 py-0.5 rounded shadow mt-1">
-                  Vị trí của bạn
-                </span>
-              </div>
-
-              {/* Listing Food Pins */}
-              {filteredListings.map((item) => {
-                const pos = pinPositions[item.id] || { x: 50, y: 50 };
-                const isSelected = selectedListing?.id === item.id;
-                const isUrgent = item.status === "EXPIRING_SOON";
-
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedListing(item)}
-                    className="absolute transform -translate-x-1/2 -translate-y-1/2 z-20 cursor-pointer group"
-                    style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-                  >
-                    <div
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-xl transition-all duration-200 border ${
-                        isSelected
-                          ? "bg-[#00615f] text-white border-white scale-110 ring-4 ring-[#00615f]/25"
-                          : isUrgent
-                          ? "bg-rose-500 text-white border-rose-200 hover:scale-105 animate-bounce"
-                          : "bg-white text-stone-900 border-stone-200 hover:scale-105"
-                      }`}
-                    >
-                      <MapPin
-                        className={`size-3.5 ${
-                          isSelected || isUrgent ? "text-white" : "text-[#00615f]"
-                        }`}
-                      />
-                      <span className="text-xs font-black whitespace-nowrap">
-                        {item.discountPrice.toLocaleString("vi-VN")}đ
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Mapbox Map Render Element */}
+            <div
+              ref={mapContainerRef}
+              className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px]"
+            />
           </div>
 
           {/* Right Sidebar: Selected Food Popup & Quick Action (4 cols) */}
@@ -275,7 +287,14 @@ export default function FoodMapPage() {
                 {filteredListings.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => setSelectedListing(item)}
+                    onClick={() => {
+                      setSelectedListing(item);
+                      mapRef.current?.flyTo({
+                        center: [item.lng, item.lat],
+                        zoom: 15,
+                        speed: 1.2,
+                      });
+                    }}
                     className={`p-2.5 rounded-2xl cursor-pointer transition flex items-center justify-between gap-2 border ${
                       selectedListing?.id === item.id
                         ? "bg-emerald-50 border-emerald-300"
