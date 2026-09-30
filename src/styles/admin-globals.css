@@ -13,6 +13,7 @@
 .admin-root,
 :root:has(.admin-root) {
   --radius: 0.65rem;
+  --font-sans: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -131,7 +132,7 @@
   background-color: var(--background);
   color: var(--foreground);
   min-height: 100vh;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-poppins), 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 @layer base {
@@ -139,3 +140,4 @@
     @apply border-border outline-ring/50;
   }
 }
+
