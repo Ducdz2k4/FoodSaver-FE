@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/admin/ui/card";
 import { Badge } from "@/components/admin/ui/badge";
 
 export function AdminRoleGuard({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { user, isLoading, isAuthenticated, isAdmin, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -29,7 +29,8 @@ export function AdminRoleGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  if (isLoading) {
+  // Only show full-screen loader during initial load when user is not yet loaded
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
         <RefreshCw className="size-8 animate-spin text-primary mb-3.5" />
@@ -67,7 +68,6 @@ export function AdminRoleGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isAdmin = user.role?.toLowerCase() === "admin";
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
@@ -85,7 +85,7 @@ export function AdminRoleGuard({ children }: { children: React.ReactNode }) {
               </h2>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Tài khoản <strong>{user.email}</strong> hiện không đủ thẩm quyền để vào trang quản trị.
+              Tài khoản <strong>{user.email}</strong> (Vai trò: {user.role}) không đủ thẩm quyền để vào trang quản trị.
             </p>
             <div className="pt-3 flex flex-col sm:flex-row gap-2.5 justify-center">
               <Button asChild variant="outline" className="gap-1.5 w-full sm:w-auto">
@@ -100,7 +100,7 @@ export function AdminRoleGuard({ children }: { children: React.ReactNode }) {
                   logout();
                   router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
                 }}
-                className="gap-1.5 w-full sm:w-auto"
+                className="gap-1.5 w-full sm:w-auto cursor-pointer"
               >
                 <LogIn className="size-4" />
                 <span>Đổi tài khoản khác</span>

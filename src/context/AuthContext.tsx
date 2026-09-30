@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { UserOut, LoginIn, RegisterIn, TokenOut, PartnerCapability } from "@/types/auth";
 import {
   useLoginMutation,
@@ -52,10 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [loginMutation] = useLoginMutation();
   const [registerMutation] = useRegisterMutation();
-  const [triggerGetMe, { isFetching: isFetchingMe }] = useLazyGetMeQuery();
+  const [triggerGetMe] = useLazyGetMeQuery();
   const [logoutMutation] = useLogoutMutation();
 
   const [initialLoading, setInitialLoading] = useState(true);
+  const hasInitializedRef = useRef(false);
 
   // Computed Role & Capability Detection
   const role = useMemo(() => user?.role?.toUpperCase() || null, [user?.role]);
@@ -114,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    // Skip remote check if using DevRoleSwitcher mock tokens
+    // Skip remote check if using mock token
     if (storedToken.startsWith("mock-")) {
       setInitialLoading(false);
       return user;
@@ -130,11 +131,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setInitialLoading(false);
     }
-  }, [token, triggerGetMe, dispatch, user]);
+  }, [token, triggerGetMe, dispatch]); // user is intentionally omitted from dependencies to avoid infinite loop
 
   useEffect(() => {
-    refreshUser();
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      refreshUser();
+    }
   }, [refreshUser]);
+
+  // Safety fallback: if initialLoading takes more than 3s, force release
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const login = async (payload: LoginIn): Promise<TokenOut> => {
     const res = await loginMutation(payload).unwrap();
@@ -175,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         token,
-        isLoading: initialLoading || isFetchingMe,
+        isLoading: initialLoading,
         isAuthenticated,
         role,
         partnerCapability,
