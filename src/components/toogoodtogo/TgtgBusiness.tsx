@@ -2,41 +2,42 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Store, CheckCircle2 } from "lucide-react";
+import { IMAGES } from "@/constants/images";
 
 const SELLER_SOLUTIONS = [
   {
-    title: "BAKERIES & CORNER SHOPS",
+    title: "TIỆM BÁNH & BÁNH MÌ ARTISAN",
     description:
-      "Post surplus loaves, pastries, croissants and bánh mì in under a minute. Recoup ingredient costs and welcome new neighbourhood customers into your store before closing.",
-    forWho: "Artisan Bakeries, Pastry Kitchens, Bánh Mì Corners",
-    href: "/register",
-    mainImage: "/images/tgtg/asset_21.jpg",
-    subImage: "/images/tgtg/asset_25.jpg",
-    altMain: "Golden artisan croissants freshly baked in a local bakery",
-    altSub: "A shopkeeper managing surplus food listings on a phone",
+      "Đăng bán các mẻ bánh mì, bánh ngọt, croissant và bánh sừng trâu dư trong ngày chỉ với 1 phút. Thu hồi vốn nguyên liệu và mở rộng tệp khách hàng quen thuộc trong khu vực.",
+    forWho: "Tiệm bánh Artisan, Tiệm bánh ngọt, Quầy bánh mì",
+    href: "/partner/apply",
+    mainImage: IMAGES.businessBakeryMain,
+    subImage: IMAGES.businessBakerySub,
+    altMain: "Khung cảnh tiệm bánh ấm áp buổi sáng cùng bánh sừng trâu thơm ngon",
+    altSub: "Chủ cửa hàng quản lý và xác nhận đơn hàng trên thiết bị",
   },
   {
-    title: "CONVENIENCE STORES & MINI-MARTS",
+    title: "CỬA HÀNG TIỆN LỢI & SIÊU THỊ MINI",
     description:
-      "Automate end-of-day discounts on packaged sandwiches, fresh dairy, yogurts, and fruit cups. Real-time countdowns ensure items sell quickly within safe windows.",
-    forWho: "Convenience Stores, Mini-Marts, Local Grocers",
-    href: "/register",
-    mainImage: "/images/tgtg/asset_29.png",
-    subImage: "/images/tgtg/asset_33.jpg",
-    altMain: "A happy customer picking up fresh food near closing time",
-    altSub: "Convenience store shelves with fresh packaged sandwiches and snacks",
+      "Tự động áp dụng giá giải cứu cuối ngày cho sandwich đóng gói, sữa tươi, sữa chua và trái cây tươi. Đồng hồ đếm ngược đảm bảo hàng được bán hết trong khung giờ vàng an toàn.",
+    forWho: "Cửa hàng tiện lợi, Mini-mart, Siêu thị bán lẻ",
+    href: "/partner/apply",
+    mainImage: IMAGES.businessStoreMain,
+    subImage: IMAGES.businessStoreSub,
+    altMain: "Khách hàng nhận đồ ăn tươi ngon đóng túi sạch sẽ tại cửa hàng tiện lợi",
+    altSub: "Kệ hàng thực phẩm sạch sẽ, đóng gói vệ sinh đạt chuẩn",
   },
   {
-    title: "FOOD SAFETY & TRANSPARENT LISTINGS",
+    title: "BẾP ĂN THƯƠNG MẠI & CHUẨN VỆ SINH ATTP",
     description:
-      "Display verified storage instructions and exact expiry times directly to customers. Our strict cutoff guarantees expired listings are never sold, protecting your reputation.",
-    forWho: "Commercial Kitchens, Delis, Small Food Businesses",
-    href: "/register",
-    mainImage: "/images/tgtg/asset_37.png",
-    subImage: "/images/tgtg/asset_41.png",
-    altMain: "Packaged fresh dairy and fruit yogurt ready for safe consumption",
-    altSub: "Quality inspection and food-safety checking before sale",
+      "Hiển thị minh bạch giấy chứng nhận vệ sinh ATTP và hướng dẫn bảo quản trực tiếp tới khách hàng. Cơ chế tự động khóa đơn hết hạn giúp bảo vệ uy tín thương hiệu đối tác tuyệt đối.",
+    forWho: "Nhà hàng, Quán cơm văn phòng, Bếp ăn đạt chuẩn ATTP",
+    href: "/partner/apply",
+    mainImage: IMAGES.businessKitchenMain,
+    subImage: IMAGES.businessKitchenSub,
+    altMain: "Suất cơm sườn nướng trứng ốp la sạch sẽ đạt chuẩn vệ sinh ATTP",
+    altSub: "Quầy thực phẩm tươi ngon kiểm định chất lượng nghiêm ngặt",
   },
 ];
 
@@ -49,20 +50,21 @@ export function TgtgBusiness() {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-20">
           <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#00615f]/70 mb-2">
-            For Food Businesses &amp; Sellers
+            Dành Cho Doanh Nghiệp F&amp;B &amp; Đối Tác Kinh Doanh
           </p>
-          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#00615f] tracking-tight mb-4 select-none">
-            Turn today&apos;s surplus into tomorrow&apos;s customers.
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-[#00615f] tracking-tight mb-4 select-none leading-tight">
+            Biến thực phẩm dư hôm nay thành khách hàng gắn bó ngày mai.
           </h2>
           <p className="text-base sm:text-lg lg:text-xl text-[#252d2d]/80 leading-relaxed font-normal mb-8">
-            FoodSaver gives local shops, bakeries and convenience stores an effortless way to sell safe food near expiry to grateful neighbours.
+            FoodSaver mang đến cho các tiệm bánh, nhà hàng và cửa hàng tiện lợi giải pháp bán thực phẩm cận date đạt chuẩn ATTP tới cộng đồng lân cận, thu hồi chi phí và giảm thiểu rác thải hữu cơ.
           </p>
 
           <Link
-            href="/register"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-sm shadow-md transition-all active:scale-98"
+            href="/partner/apply"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-sm shadow-md transition-all active:scale-98 cursor-pointer"
           >
-            <span>Start listing</span>
+            <Store className="size-4" />
+            <span>Đăng ký làm đối tác F&amp;B</span>
             <ArrowRight className="size-4" />
           </Link>
         </div>
@@ -131,7 +133,7 @@ export function TgtgBusiness() {
                   </p>
 
                   <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00615f]">
-                    <span className="text-stone-500 font-semibold">For:</span>
+                    <span className="text-stone-500 font-semibold">Phù hợp:</span>
                     <span className="underline decoration-[#79e4a7] underline-offset-2">
                       {item.forWho}
                     </span>

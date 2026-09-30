@@ -2,31 +2,32 @@
 
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { IMAGES } from "@/constants/images";
 
 const STEPS = [
   {
-    step: "01 List",
-    title: "Post your surplus food",
+    step: "01 Đăng món",
+    title: "Cửa hàng đăng bán thực phẩm cận date",
     description:
-      "Sellers post surplus food with exact expiry time, quantity, price and pickup location.",
+      "Các tiệm bánh, nhà hàng và cửa hàng tiện lợi đăng món ăn với hạn sử dụng chính xác, số lượng tồn và mức giá ưu đãi giảm 50–80%.",
   },
   {
-    step: "02 Countdown",
-    title: "Live countdown tracking",
+    step: "02 Đếm ngược",
+    title: "Đồng hồ đếm lùi thời gian thực",
     description:
-      "Every listing shows a live countdown and updates its status automatically. Expired listings can't be ordered.",
+      "Mọi bài đăng đều hiển thị đồng hồ đếm ngược từng giây theo thời gian thực. Hết hạn sẽ tự động khóa để bảo vệ an toàn cho người dùng.",
   },
   {
-    step: "03 Discover",
-    title: "Find great food nearby",
+    step: "03 Khám phá",
+    title: "Tìm kiếm & định vị quán gần bạn",
     description:
-      "Find food nearby and filter by remaining time, price, distance and category.",
+      "Khách hàng dễ dàng tìm kiếm món ngon quanh mình theo khoảng cách geohash (tối đa 20km), danh mục và mức độ cấp bách.",
   },
   {
-    step: "04 Collect",
-    title: "Pick up & enjoy",
+    step: "04 Nhận món",
+    title: "Đặt giữ & thưởng thức trọn vẹn",
     description:
-      "Order, get notified, and pick up before it expires.",
+      "Xác nhận đặt giữ món trên ứng dụng, nhận mã QR và đến cửa hàng lấy đồ hoặc chọn shipper giao tận nơi nhanh chóng.",
   },
 ];
 
@@ -52,7 +53,7 @@ export function TgtgHowItWorks() {
           <div className="space-y-6 sm:space-y-8 flex flex-col justify-center">
             {/* Pre-title */}
             <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#79e4a7]">
-              Simple &amp; transparent process
+              Quy trình đơn giản &amp; minh bạch
             </p>
 
             {/* Step Heading */}
@@ -65,7 +66,7 @@ export function TgtgHowItWorks() {
               <h3 className="text-xl sm:text-2xl font-bold text-[#79e4a7]">
                 {STEPS[currentStep].title}
               </h3>
-              <p className="text-lg sm:text-2xl text-[#dee3e3] leading-relaxed max-w-lg min-h-[4.5rem]">
+              <p className="text-base sm:text-xl text-[#dee3e3] leading-relaxed max-w-lg min-h-[4.5rem]">
                 {STEPS[currentStep].description}
               </p>
             </div>
@@ -77,11 +78,11 @@ export function TgtgHowItWorks() {
                 type="button"
                 onClick={prevStep}
                 disabled={currentStep === 0}
-                aria-label="Previous step"
+                aria-label="Bước trước"
                 className={`p-2.5 rounded-full border border-white/30 text-white transition-all ${
                   currentStep === 0
                     ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-white/20 active:scale-95"
+                    : "hover:bg-white/20 active:scale-95 cursor-pointer"
                 }`}
               >
                 <ChevronLeft className="size-6" />
@@ -94,8 +95,8 @@ export function TgtgHowItWorks() {
                     key={idx}
                     type="button"
                     onClick={() => setCurrentStep(idx)}
-                    aria-label={`Go to step ${idx + 1}`}
-                    className={`h-2.5 rounded-full transition-all duration-300 ${
+                    aria-label={`Chuyển đến bước ${idx + 1}`}
+                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                       currentStep === idx
                         ? "w-8 bg-[#79e4a7]"
                         : "w-2.5 bg-white/40 hover:bg-white/70"
@@ -109,11 +110,11 @@ export function TgtgHowItWorks() {
                 type="button"
                 onClick={nextStep}
                 disabled={currentStep === STEPS.length - 1}
-                aria-label="Next step"
+                aria-label="Bước tiếp theo"
                 className={`p-2.5 rounded-full border border-white/30 text-white transition-all ${
                   currentStep === STEPS.length - 1
                     ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-white/20 active:scale-95"
+                    : "hover:bg-white/20 active:scale-95 cursor-pointer"
                 }`}
               >
                 <ChevronRight className="size-6" />
@@ -121,14 +122,14 @@ export function TgtgHowItWorks() {
             </div>
           </div>
 
-          {/* Right Column: Layered Images */}
+          {/* Right Column: Layered Images with Vietnamese Models */}
           <div className="relative flex items-center justify-center lg:justify-end">
             <div className="relative w-full max-w-[500px] aspect-square">
-              {/* Main Phone image */}
-              <div className="relative w-[85%] sm:w-[88%] aspect-square ml-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10">
+              {/* Main Phone discovery image */}
+              <div className="relative w-[85%] sm:w-[88%] aspect-square ml-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 bg-emerald-950">
                 <img
-                  src="/images/tgtg/asset_11.jpg"
-                  alt="A user discovering nearby surplus food listings with expiry countdowns on FoodSaver"
+                  src={IMAGES.howItWorksDiscoverApp}
+                  alt="Khách hàng khám phá món ăn giải cứu trên ứng dụng FoodSaver"
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
@@ -137,8 +138,8 @@ export function TgtgHowItWorks() {
               {/* Overlapping sub-image at bottom-left */}
               <div className="absolute -bottom-6 -left-4 sm:-bottom-8 sm:-left-6 w-44 sm:w-56 aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-[#00615f] bg-[#013d3c]">
                 <img
-                  src="/images/tgtg/asset_16.png"
-                  alt="A local baker with fresh artisan bread ready for pickup before closing"
+                  src={IMAGES.howItWorksBakerOffer}
+                  alt="Thợ làm bánh Việt Nam chuẩn bị các hộp bánh tươi ngon trao cho khách"
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
