@@ -33,7 +33,7 @@ export function PartnerRoleGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  if (isLoading) {
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-stone-50 text-stone-800 p-4">
         <RefreshCw className="size-8 animate-spin text-[#00615f] mb-3.5" />
@@ -170,3 +170,4 @@ export function PartnerRoleGuard({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
