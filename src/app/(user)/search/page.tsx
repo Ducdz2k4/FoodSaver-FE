@@ -116,7 +116,13 @@ function DiscoverContent() {
 
   useEffect(() => {
     if (initialQuery) {
-      setSearchTerm(initialQuery);
+      if (initialQuery === "urgent") {
+        setActiveTab("FAST_DELIVERY");
+        setSearchTerm("");
+        toast.info("⚡ Đã lọc các món cận date giảm sâu cần giải cứu khẩn cấp do Jev AI đề xuất!");
+      } else {
+        setSearchTerm(initialQuery);
+      }
     }
   }, [initialQuery]);
 
@@ -603,3 +609,4 @@ export default function SearchPage() {
     </Suspense>
   );
 }
+

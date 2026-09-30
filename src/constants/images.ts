@@ -10,8 +10,8 @@ export const IMAGES = {
   heroSaigonGirl: `${BASE}/${encodeURIComponent("Cô gái Saigon và túi bánh mì.png")}`,
   visualBannerBanquet: `${BASE}/${encodeURIComponent("Tiệc Bánh Mì Và Trái Cây Nhiệt Đới.png")}`,
 
-  // How It Works Steps
-  howItWorksDiscoverApp: `${BASE}/${encodeURIComponent("Khám phá bánh ngon trên ứng dụng.png")}`,
+  // How It Works Steps (Using authentic Vietnamese photos)
+  howItWorksDiscoverApp: `${BASE}/${encodeURIComponent("Quầy bánh ấm áp cùng đơn hàng điện tử.png")}`,
   howItWorksBakerOffer: `${BASE}/${encodeURIComponent("Người thợ bánh trao hộp bánh thơm ngon.png")}`,
 
   // Partner Business Sections
@@ -36,4 +36,7 @@ export const IMAGES = {
   bannerSaleLateDay: `${BASE}/${encodeURIComponent("Đại Tiệc Cuối Ngày Giảm 70%.png")}`,
   bannerFreeshipEco: `${BASE}/${encodeURIComponent("FREESHIP 0đ_ Giao đồ ngon, sống xanh.png")}`,
   bannerRadarMap: `${BASE}/${encodeURIComponent("Bản đồ ẩm thực Sài Gòn rực sáng.png")}`,
+
+  // Flash Sale Popup with Cutout Frame for Countdown
+  flashSalePopupFrame: "/images/flash-sale-popup.png",
 } as const;
