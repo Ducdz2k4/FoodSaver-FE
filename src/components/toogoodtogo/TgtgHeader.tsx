@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck } from "lucide-react";
+import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck, User, LogOut, Compass } from "lucide-react";
+import { UserMenuDropdown } from "@/components/common/UserMenuDropdown";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import { useAppSelector } from "@/redux/hooks";
 
 export function TgtgHeader() {
@@ -11,6 +14,7 @@ export function TgtgHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const currentUser = useAppSelector((state) => state.auth.user);
+  const { logout } = useAuth();
   const router = useRouter();
 
   const handleHeaderSearch = (e: React.FormEvent) => {
@@ -170,18 +174,8 @@ export function TgtgHeader() {
                 </Link>
               )}
 
-              {/* Profile Avatar / Name */}
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 p-1.5 pl-2 sm:pl-3 rounded-full bg-white/80 hover:bg-white border border-stone-200/60 shadow-sm transition"
-              >
-                <span className="text-xs font-bold text-stone-800 hidden sm:inline-block max-w-[120px] truncate">
-                  {currentUser.fullName}
-                </span>
-                <div className="size-7 rounded-full bg-[#00615f] text-white flex items-center justify-center font-bold text-xs">
-                  {currentUser.fullName ? currentUser.fullName.charAt(0).toUpperCase() : "U"}
-                </div>
-              </Link>
+              {/* Profile Dropdown Menu */}
+              <UserMenuDropdown />
             </>
           ) : (
             <>
@@ -270,6 +264,50 @@ export function TgtgHeader() {
                 <ShieldAlert className="size-4" />
                 <span>Admin Portal</span>
               </Link>
+            )}
+
+            {currentUser ? (
+              <>
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="px-3 py-2 rounded-xl hover:bg-stone-100 text-stone-700 font-bold transition flex items-center gap-2"
+                >
+                  <User className="size-4 text-[#00615f]" />
+                  <span>Hồ sơ cá nhân ({currentUser.fullName || currentUser.email})</span>
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    logout();
+                    toast.success("Đã đăng xuất tài khoản.");
+                    router.push("/login");
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition flex items-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="size-4" />
+                  <span>Đăng xuất</span>
+                </button>
+              </>
+            ) : (
+              <div className="pt-2 border-t border-stone-200 flex flex-col gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full text-center py-2.5 rounded-full border border-[#00615f] text-[#00615f] font-bold text-xs"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full text-center py-2.5 rounded-full bg-[#00615f] text-white font-bold text-xs"
+                >
+                  Đăng ký
+                </Link>
+              </div>
             )}
           </nav>
         </div>
