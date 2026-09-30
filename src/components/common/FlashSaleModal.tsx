@@ -99,29 +99,16 @@ export function FlashSaleModal() {
 
   return (
     <>
-      {/* Floating Trigger Widget with continuous jumping, pulsing and glowing effects */}
+      {/* Floating Trigger Widget - Sleek, Clean, No Clashing Colors, Positioned away from N badge */}
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-rose-600 via-amber-500 to-[#00615f] text-white text-xs font-black border-2 border-amber-300/80 cursor-pointer animate-flash-sale select-none group"
+        className="fixed bottom-6 left-16 z-40 flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#00615f] hover:bg-[#089184] text-white text-xs font-extrabold border-2 border-[#79e4a7] shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer select-none"
         title={`Bấm để mở ưu đãi Flash Sale - Giảm đến ${dynamicDiscount}%`}
       >
-        {/* Pulsing Ripple Ring */}
-        <span className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 opacity-60 animate-ping -z-10 pointer-events-none" />
-
-        {/* Flashing Icons */}
-        <div className="flex items-center gap-0.5">
-          <Flame className="size-4 text-amber-200 fill-amber-300 animate-pulse shrink-0" />
-          <Zap className="size-3.5 text-yellow-100 fill-yellow-200 animate-bounce shrink-0" />
-        </div>
-
-        {/* Text with dynamic discount % */}
-        <span className="tracking-tight drop-shadow font-black uppercase text-[11px] sm:text-xs">
-          Flash Sale -{dynamicDiscount}%
-        </span>
-
-        {/* Hot Badge */}
-        <span className="bg-white text-rose-600 px-1.5 py-0.5 rounded-md text-[9px] font-black shadow-sm group-hover:scale-110 transition-transform">
+        <Zap className="size-3.5 text-amber-300 fill-amber-300 shrink-0" />
+        <span className="tracking-tight">Flash Sale -{dynamicDiscount}%</span>
+        <span className="bg-[#79e4a7] text-[#00615f] px-1.5 py-0.2 rounded-md text-[9px] font-black tracking-wider">
           HOT
         </span>
       </button>
@@ -167,11 +154,11 @@ export function FlashSaleModal() {
               ========================================================= */}
               <div
                 style={{
-                  left: "71.0%",
-                  top: "29.0%",
-                  width: "13.0%",
+                  left: "73.2%",
+                  top: "29.2%",
+                  width: "13.5%",
                   height: "19.0%",
-                  transform: "rotate(-6deg)",
+                  transform: "rotate(15deg)",
                   transformOrigin: "center center",
                 }}
                 className="absolute z-20 flex items-center justify-center pointer-events-none"
@@ -206,26 +193,26 @@ export function FlashSaleModal() {
                 </div>
 
                 {/* Unified Large Digital Countdown Display - Spacious & Clean */}
-                <div className="w-full flex flex-col items-center justify-center my-auto px-0.5">
-                  <div className="flex items-center justify-center gap-1 sm:gap-2 w-full bg-white/10 border border-white/20 rounded-lg sm:rounded-xl py-0.5 sm:py-1 px-1 shadow-inner backdrop-blur-xs">
-                    <span className="font-mono font-black text-base sm:text-2xl md:text-3xl text-white tracking-tight drop-shadow">
+                <div className="w-full flex flex-col items-center justify-center my-auto px-1">
+                  <div className="flex items-center justify-center gap-1 sm:gap-1.5 w-full bg-white/10 border border-white/20 rounded-lg sm:rounded-xl py-0.5 px-2 shadow-inner backdrop-blur-xs">
+                    <span className="font-mono font-black text-xs sm:text-base md:text-xl text-white tracking-tight drop-shadow">
                       {pad(timeLeft.hours)}
                     </span>
-                    <span className="font-mono font-black text-xs sm:text-xl text-amber-300 animate-pulse">
+                    <span className="font-mono font-black text-[11px] sm:text-sm text-amber-300 animate-pulse">
                       :
                     </span>
-                    <span className="font-mono font-black text-base sm:text-2xl md:text-3xl text-white tracking-tight drop-shadow">
+                    <span className="font-mono font-black text-xs sm:text-base md:text-xl text-white tracking-tight drop-shadow">
                       {pad(timeLeft.minutes)}
                     </span>
-                    <span className="font-mono font-black text-xs sm:text-xl text-amber-300 animate-pulse">
+                    <span className="font-mono font-black text-[11px] sm:text-sm text-amber-300 animate-pulse">
                       :
                     </span>
-                    <span className="font-mono font-black text-base sm:text-2xl md:text-3xl text-emerald-300 tracking-tight animate-pulse drop-shadow">
+                    <span className="font-mono font-black text-xs sm:text-base md:text-xl text-emerald-300 tracking-tight animate-pulse drop-shadow">
                       {pad(timeLeft.seconds)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between w-full px-2 text-[7px] sm:text-[9px] font-bold text-emerald-200/80 uppercase tracking-tight mt-0.5">
+                  <div className="flex justify-between w-full px-2.5 text-[7px] sm:text-[8px] font-bold text-emerald-200/70 uppercase tracking-tight mt-0.5">
                     <span>Giờ</span>
                     <span>Phút</span>
                     <span>Giây</span>
@@ -245,3 +232,4 @@ export function FlashSaleModal() {
     </>
   );
 }
+
