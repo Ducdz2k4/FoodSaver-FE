@@ -21,6 +21,7 @@ import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
 import { FoodCategory, ListingDTO } from "@/types/contract";
+import { IMAGES } from "@/constants/images";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
 import { toast } from "sonner";
 
@@ -34,38 +35,68 @@ const FOOD_COLLECTIONS: {
   {
     id: "ALL",
     label: "Tất cả món",
-    image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400",
+    image: IMAGES.collectionAll,
     tag: "Đầy đủ lựa chọn",
   },
   {
     id: "DRINKS",
     label: "Đồ uống & Trà",
-    image: "https://images.unsplash.com/photo-1546173159-315724a31696?w=400",
+    image: IMAGES.collectionDrinks,
     tag: "Nước ép tươi",
   },
   {
     id: "BAKERY",
     label: "Bánh mì & Bakery",
-    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400",
+    image: IMAGES.collectionBakery,
     tag: "Nướng trong ngày",
   },
   {
     id: "COOKED_MEAL",
     label: "Cơm & Món nóng",
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+    image: IMAGES.collectionCookedMeal,
     tag: "Cơm văn phòng",
   },
   {
     id: "FRUITS",
     label: "Trái cây & Rau củ",
-    image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400",
+    image: IMAGES.collectionFruits,
     tag: "Tươi mọng",
   },
   {
     id: "GROCERIES",
-    label: "Thực phẩm tạp hóa",
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400",
+    label: "Thực phẩm tiện lợi",
+    image: IMAGES.collectionGroceries,
     tag: "Cửa hàng tiện lợi",
+  },
+];
+
+const PROMO_BANNERS = [
+  {
+    id: "banner-1",
+    title: "Đại Tiệc Cứu Trợ",
+    subtitle: "Giảm đến 70% các món ăn thơm ngon trước giờ đóng cửa",
+    tag: "FLASH SALE",
+    image: IMAGES.bannerSale70,
+    actionLabel: "Săn deal ngay",
+    filterTab: "BEST_SELLER" as QuickTab,
+  },
+  {
+    id: "banner-2",
+    title: "Freeship 0Đ Giờ Vàng",
+    subtitle: "Giao đồ ăn ngon tận tay trong bán kính 20km, sống xanh",
+    tag: "TIẾT KIỆM",
+    image: IMAGES.bannerFreeshipEco,
+    actionLabel: "Đặt ship ngay",
+    filterTab: "FAST_DELIVERY" as QuickTab,
+  },
+  {
+    id: "banner-3",
+    title: "Radar Quán Ngon",
+    subtitle: "Định vị tức thì các cửa hàng đối tác F&B gần bạn nhất",
+    tag: "RADAR 3KM",
+    image: IMAGES.bannerRadarMap,
+    actionLabel: "Mở bản đồ",
+    href: "/map",
   },
 ];
 
@@ -217,6 +248,68 @@ function DiscoverContent() {
                 </button>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* =========================================================
+            PANEL SALE OFF & PROMOTIONAL BANNERS (Shopee/Grab Style)
+        ========================================================= */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-amber-500" />
+              <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+                Ưu đãi giờ vàng hôm nay
+              </h2>
+            </div>
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              ⚡ Tiết kiệm đến 70%
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {PROMO_BANNERS.map((banner) => (
+              <div
+                key={banner.id}
+                className="group relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-stone-200/90 aspect-[16/9] md:aspect-[16/10] bg-stone-900 flex flex-col justify-end p-5 text-white cursor-pointer select-none"
+                onClick={() => {
+                  if (banner.href) {
+                    window.location.href = banner.href;
+                  } else if (banner.filterTab) {
+                    setActiveTab(banner.filterTab);
+                    toast.info(`Đã lọc: ${banner.title}`);
+                  }
+                }}
+              >
+                {/* Background Banner Image */}
+                <img
+                  src={banner.image}
+                  alt={banner.title}
+                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                />
+
+                {/* Dark Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
+
+                {/* Content Overlay */}
+                <div className="relative z-10 space-y-1.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-sm uppercase tracking-wider">
+                    {banner.tag}
+                  </span>
+                  <h3 className="font-black text-lg sm:text-xl text-white tracking-tight drop-shadow leading-tight">
+                    {banner.title}
+                  </h3>
+                  <p className="text-xs text-white/85 line-clamp-1 drop-shadow-sm font-medium">
+                    {banner.subtitle}
+                  </p>
+
+                  <div className="pt-1 flex items-center gap-1 text-xs font-black text-[#79e4a7] group-hover:translate-x-1 transition-transform">
+                    <span>{banner.actionLabel}</span>
+                    <ArrowRight className="size-3.5" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
