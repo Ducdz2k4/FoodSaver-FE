@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { X, ArrowRight, Zap, Flame, Clock } from "lucide-react";
+import { X, ArrowRight, Zap, Flame } from "lucide-react";
 import { IMAGES } from "@/constants/images";
 import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
@@ -153,24 +153,25 @@ export function FlashSaleModal() {
               className="relative w-full aspect-[1672/941] cursor-pointer"
               title="Bấm để xem các món ưu đãi giảm kịch sàn gần bạn"
             >
-              {/* The new artwork with frame and ticket */}
+              {/* The new transparent PNG artwork */}
               <img
-                src={IMAGES.flashSalePopupFrame}
+                src="/images/flash-sale-popup.png"
                 alt={`Flash Sale ${dynamicDiscount}% FoodSaver`}
                 className="w-full h-full object-contain pointer-events-none drop-shadow-[0_20px_50px_rgba(0,97,95,0.4)]"
               />
 
               {/* =========================================================
                   ZONE 1: RIGHT TICKET CUTOUT (Dynamic Discount %)
-                  Positioned directly inside the cream ticket box next to 3D %
+                  Tilted at -6deg to match ticket slant, positioned right before %
+                  Left: 71.0%, Top: 29.0%, Width: 13.0%, Height: 19.0%
               ========================================================= */}
               <div
                 style={{
-                  left: "69.5%",
-                  top: "27.5%",
-                  width: "17.0%",
-                  height: "25.0%",
-                  transform: "rotate(-10.5deg)",
+                  left: "71.0%",
+                  top: "29.0%",
+                  width: "13.0%",
+                  height: "19.0%",
+                  transform: "rotate(-6deg)",
                   transformOrigin: "center center",
                 }}
                 className="absolute z-20 flex items-center justify-center pointer-events-none"
@@ -182,17 +183,19 @@ export function FlashSaleModal() {
 
               {/* =========================================================
                   ZONE 2: CENTER HORIZONTAL NEON FRAME (Timer & Action)
-                  Positioned inside the wide dark-green neon frame
-                  Left: 35.7%, Top: 51.1%, Width: 33.1%, Height: 27.3%
+                  Tilted at -1.5deg to match neon frame slant
+                  Left: 35.2%, Top: 51.0%, Width: 34.2%, Height: 28.5%
               ========================================================= */}
               <div
                 style={{
-                  left: "35.7%",
-                  top: "51.1%",
-                  width: "33.1%",
-                  height: "27.3%",
+                  left: "35.2%",
+                  top: "51.0%",
+                  width: "34.2%",
+                  height: "28.5%",
+                  transform: "rotate(-1.5deg)",
+                  transformOrigin: "center center",
                 }}
-                className="absolute z-20 flex flex-col items-center justify-between p-2 sm:p-3 text-center bg-black/55 backdrop-blur-[2px] rounded-xl sm:rounded-2xl border border-emerald-400/40 shadow-inner overflow-hidden"
+                className="absolute z-20 flex flex-col items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2.5 text-center bg-black/40 backdrop-blur-[1px] rounded-xl sm:rounded-2xl border border-emerald-400/40 shadow-inner overflow-hidden"
               >
                 {/* Header: Cứu Gấp Còn */}
                 <div className="flex items-center justify-center gap-1">
@@ -202,9 +205,9 @@ export function FlashSaleModal() {
                   </span>
                 </div>
 
-                {/* Unified Large Digital Countdown Display - Spacious & Never Crowded */}
-                <div className="w-full flex flex-col items-center justify-center my-auto">
-                  <div className="flex items-center justify-center gap-1 sm:gap-2 w-full bg-white/10 border border-white/20 rounded-lg sm:rounded-xl py-0.5 sm:py-1 px-1.5 shadow-inner backdrop-blur-xs">
+                {/* Unified Large Digital Countdown Display - Spacious & Clean */}
+                <div className="w-full flex flex-col items-center justify-center my-auto px-0.5">
+                  <div className="flex items-center justify-center gap-1 sm:gap-2 w-full bg-white/10 border border-white/20 rounded-lg sm:rounded-xl py-0.5 sm:py-1 px-1 shadow-inner backdrop-blur-xs">
                     <span className="font-mono font-black text-base sm:text-2xl md:text-3xl text-white tracking-tight drop-shadow">
                       {pad(timeLeft.hours)}
                     </span>
