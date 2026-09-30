@@ -72,7 +72,7 @@ export function FlashSaleModal() {
       {/* Popup Modal Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/10 backdrop-blur-[1px] animate-in fade-in duration-150"
           onClick={handleClose}
         >
           {/* Main Visual Container */}
@@ -161,3 +161,4 @@ export function FlashSaleModal() {
     </>
   );
 }
+
