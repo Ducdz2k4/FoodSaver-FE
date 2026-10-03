@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   User,
@@ -27,9 +27,9 @@ export default function UserProfilePage() {
   const [activeTab, setActiveTab] = useState<"PROFILE" | "PARTNER" | "NOTIFICATIONS" | "SECURITY">("PROFILE");
 
   // Profile form state
-  const [fullName, setFullName] = useState(user?.fullName || user?.full_name || "Nguyễn Văn Khách");
-  const [phone, setPhone] = useState(user?.phone || "0901234567");
-  const [address, setAddress] = useState(user?.address || "128 Nguyễn Trãi, Quận 1, TP.HCM");
+  const [fullName, setFullName] = useState(user?.fullName || user?.full_name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [address, setAddress] = useState(user?.address || "");
   const [defaultRadius, setDefaultRadius] = useState<number>(3);
 
   // Notification settings
@@ -41,6 +41,13 @@ export default function UserProfilePage() {
   const [currentPass, setCurrentPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    setFullName(user.fullName || user.full_name || "");
+    setPhone(user.phone || "");
+    setAddress(user.address || "");
+  }, [user]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Bell, ShoppingBag, Clock, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
-import { MOCK_NOTIFICATIONS } from "@/mocks/mockData";
 import {
   useGetNotificationsQuery,
   useMarkAsReadMutation,
@@ -15,10 +14,7 @@ export default function NotificationsPage() {
   const [markAsReadMutation] = useMarkAsReadMutation();
   const [markAllAsReadMutation] = useMarkAllAsReadMutation();
 
-  const notifications =
-    realNotifications && realNotifications.length > 0
-      ? realNotifications
-      : MOCK_NOTIFICATIONS;
+  const notifications = realNotifications || [];
 
   const markAllAsRead = async () => {
     try {

@@ -14,7 +14,6 @@ import {
   CreditCard,
   Lock,
 } from "lucide-react";
-import { MOCK_ORDERS } from "@/mocks/mockData";
 import { OrderDTO } from "@/types/contract";
 import {
   useGetPartnerOrdersQuery,
@@ -30,7 +29,7 @@ export default function PartnerOrdersPage() {
   const [respondBargainMutation] = useRespondBargainMutation();
   const { socket } = useSocket();
 
-  const orders = realOrders && realOrders.length > 0 ? realOrders : MOCK_ORDERS;
+  const orders = realOrders || [];
 
   // Real-time Bargain Request Dialog State
   const [bargainModalOpen, setBargainModalOpen] = useState(false);

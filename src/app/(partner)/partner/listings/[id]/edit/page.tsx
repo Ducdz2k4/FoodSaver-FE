@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 import { ImageUploadInput } from "@/components/common/ImageUploadInput";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { FoodCategory, ListingStatus } from "@/types/contract";
 import { notFound } from "next/navigation";
 import { useGetListingByIdQuery, useUpdateListingMutation } from "@/redux/api/listingApi";
@@ -23,7 +22,7 @@ export default function EditListingPage({
     id: resolvedParams.id,
   });
 
-  const existing = realListing || MOCK_LISTINGS.find((item) => item.id === resolvedParams.id);
+  const existing = realListing;
   const [updateListingMutation, { isLoading: isSubmitting }] = useUpdateListingMutation();
 
   const [title, setTitle] = useState("");
@@ -346,4 +345,3 @@ export default function EditListingPage({
     </div>
   );
 }
-

@@ -14,7 +14,6 @@ import {
 import { Badge } from "@/components/admin/ui/badge";
 import { Button } from "@/components/admin/ui/button";
 import { Input } from "@/components/admin/ui/input";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ListingStatus } from "@/types/contract";
 import { useGetAdminListingsQuery, useToggleListingStatusMutation } from "@/redux/api/listingApi";
 import { toast } from "sonner";
@@ -29,12 +28,7 @@ export default function AdminListingsPage() {
 
   const [toggleStatusMutation] = useToggleListingStatusMutation();
 
-  const listings =
-    realListings && realListings.length > 0
-      ? realListings
-      : !search
-      ? MOCK_LISTINGS
-      : [];
+  const listings = realListings || [];
 
   const toggleStatus = async (id: string, currentStatus: ListingStatus) => {
     const nextStatus: ListingStatus =
@@ -129,7 +123,7 @@ export default function AdminListingsPage() {
 
                     <TableCell>
                       <Badge variant="outline" className="font-mono text-[11px]">
-                        {item.urgencyScore || 0.75} • {item.wasteRisk || "MEDIUM"}
+                        {item.urgencyScore !== undefined ? item.urgencyScore : "—"} • {item.wasteRisk || "—"}
                       </Badge>
                     </TableCell>
 

@@ -3,15 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles, Loader2 } from "lucide-react";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ListingCard } from "@/components/common/ListingCard";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
 
 export function TgtgWhyUs() {
   const { data: realListings, isLoading } = useGetListingsQuery({ limit: 8 });
 
-  // Use real database listings if available, fallback gracefully to mock items
-  const listings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+  const listings = realListings || [];
 
   return (
     <section id="listings" className="py-16 sm:py-24 bg-[#f9f3f0] text-[#252d2d] relative">

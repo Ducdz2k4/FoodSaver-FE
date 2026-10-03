@@ -12,7 +12,6 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import { MOCK_LISTINGS, MOCK_ORDERS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { useGetPartnerListingsQuery } from "@/redux/api/listingApi";
 import { useGetPartnerOrdersQuery } from "@/redux/api/orderApi";
@@ -21,8 +20,8 @@ export default function PartnerDashboardPage() {
   const { data: realListings, isLoading: isListingsLoading } = useGetPartnerListingsQuery();
   const { data: realOrders, isLoading: isOrdersLoading } = useGetPartnerOrdersQuery();
 
-  const listings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
-  const orders = realOrders && realOrders.length > 0 ? realOrders : MOCK_ORDERS;
+  const listings = realListings || [];
+  const orders = realOrders || [];
 
   // Compute live metrics
   const totalSavedCount = orders.filter((o) => o.status === "COMPLETED").reduce((acc, o) => acc + o.quantity, 0) || 142;

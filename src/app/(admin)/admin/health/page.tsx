@@ -9,14 +9,6 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/admin/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/admin/ui/table";
 import { Badge } from "@/components/admin/ui/badge";
 import { Button } from "@/components/admin/ui/button";
 import {
@@ -44,41 +36,6 @@ export default function AdminSystemHealthPage() {
   };
 
   const isServerHealthy = healthData?.status === "ok";
-
-  const backgroundJobs = [
-    {
-      id: "job-101",
-      name: "Expiry Sweep Cron (Quét quá hạn 5m)",
-      status: "COMPLETED",
-      duration: "45ms",
-      processed: "12 listings checked, 1 expired",
-      executedAt: "2 phút trước",
-    },
-    {
-      id: "job-102",
-      name: "Jev Urgency & Waste-Risk Classifier",
-      status: "COMPLETED",
-      duration: "112ms",
-      processed: "TypeSafe AI Jev evaluated listing",
-      executedAt: "5 phút trước",
-    },
-    {
-      id: "job-103",
-      name: "Geohash Radius Index Precomputation",
-      status: "COMPLETED",
-      duration: "28ms",
-      processed: "Cached 4 nearby clusters",
-      executedAt: "10 phút trước",
-    },
-    {
-      id: "job-104",
-      name: "Socket.IO Realtime Connection",
-      status: "ACTIVE",
-      duration: "Streaming",
-      processed: "Subscribed to rooms (user / partner)",
-      executedAt: "Đang duy trì",
-    },
-  ];
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -190,54 +147,6 @@ export default function AdminSystemHealthPage() {
         </Card>
       </div>
 
-      {/* Background Jobs Execution Log */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Nhật ký tác vụ nền gần nhất</CardTitle>
-          <CardDescription className="text-xs">
-            Lịch sử thực thi các tác vụ dọn dẹp hết hạn tự động và phân loại rủi ro.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[280px]">Tên tác vụ worker</TableHead>
-                <TableHead className="w-[120px]">Trạng thái</TableHead>
-                <TableHead className="w-[100px]">Thời gian chạy</TableHead>
-                <TableHead>Kết quả xử lý</TableHead>
-                <TableHead className="w-[140px] text-right">Khởi chạy</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {backgroundJobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell className="font-semibold text-xs text-foreground">
-                    {job.name}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={job.status === "ACTIVE" ? "default" : "outline"}
-                      className="text-[11px]"
-                    >
-                      {job.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {job.duration}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {job.processed}
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground">
-                    {job.executedAt}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   );
 }

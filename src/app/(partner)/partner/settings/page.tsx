@@ -11,16 +11,15 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { MOCK_PARTNER_PROFILES } from "@/mocks/mockData";
 import { useGetMyPartnerProfileQuery } from "@/redux/api/partnerApi";
 
 export default function PartnerSettingsPage() {
   const { data: realProfile, isLoading } = useGetMyPartnerProfileQuery();
-  const profile = realProfile || MOCK_PARTNER_PROFILES[0];
+  const profile = realProfile;
 
-  const [businessName, setBusinessName] = useState(profile.businessName);
-  const [phone, setPhone] = useState(profile.phone);
-  const [address, setAddress] = useState(profile.address);
+  const [businessName, setBusinessName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
   const [defaultPickupStart, setDefaultPickupStart] = useState("18:00");
   const [defaultPickupEnd, setDefaultPickupEnd] = useState("21:30");
   const [pickupInstructions, setPickupInstructions] = useState(
@@ -40,10 +39,21 @@ export default function PartnerSettingsPage() {
     toast.success("Đã lưu thông tin cài đặt cửa hàng thành công!");
   };
 
-  if (isLoading && !realProfile) {
+  if (isLoading && !profile) {
     return (
       <div className="flex items-center justify-center p-16">
         <Loader2 className="size-6 animate-spin text-[#00615f]" />
+      </div>
+    );
+  }
+
+
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 p-16 text-center">
+        <Store className="size-10 text-stone-300" />
+        <p className="text-sm font-bold text-stone-700">Chưa có hồ sơ đối tác để hiển thị.</p>
+        <a href="/partner/apply" className="text-xs font-bold text-[#00615f] hover:underline">Nộp hồ sơ đối tác</a>
       </div>
     );
   }

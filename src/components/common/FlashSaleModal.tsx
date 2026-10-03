@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { X, ArrowRight, Zap, Flame } from "lucide-react";
 import { IMAGES } from "@/constants/images";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
 
 export function FlashSaleModal() {
@@ -13,11 +12,11 @@ export function FlashSaleModal() {
 
   // Query real listings from backend API
   const { data: realListings } = useGetListingsQuery();
-  const allListings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+  const allListings = realListings || [];
 
   // 1. Calculate dynamic highest discount percentage among all active listings
   const dynamicDiscount = useMemo(() => {
-    if (!allListings || allListings.length === 0) return 70;
+    if (allListings.length === 0) return 0;
     const maxPercent = allListings.reduce((max, item) => {
       if (!item.originalPrice || !item.discountPrice) return max;
       const discount = Math.round(
@@ -25,17 +24,17 @@ export function FlashSaleModal() {
       );
       return Math.max(max, discount);
     }, 0);
-    return maxPercent > 0 ? maxPercent : 70;
+    return maxPercent;
   }, [allListings]);
 
   // 2. Find the most urgent listing (earliest expiryAt) to drive real-time dynamic countdown
   const urgentListing = useMemo(() => {
-    if (!allListings || allListings.length === 0) return null;
+    if (allListings.length === 0) return null;
     const now = Date.now();
     const active = [...allListings].filter(
       (item) => new Date(item.expiryAt).getTime() > now
     );
-    if (active.length === 0) return allListings[0];
+    if (active.length === 0) return null;
     return active.sort(
       (a, b) => new Date(a.expiryAt).getTime() - new Date(b.expiryAt).getTime()
     )[0];
@@ -43,9 +42,9 @@ export function FlashSaleModal() {
 
   // 3. Dynamic countdown timer driven by real expiry timestamp
   const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number }>({
-    hours: 1,
-    minutes: 59,
-    seconds: 11,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
   });
 
   useEffect(() => {
@@ -71,13 +70,13 @@ export function FlashSaleModal() {
   // Auto-open modal after 1.8 seconds on mount if not dismissed in session
   useEffect(() => {
     const dismissed = sessionStorage.getItem("flash_sale_dismissed");
-    if (!dismissed) {
+    if (!dismissed && urgentListing) {
       const timer = setTimeout(() => {
         setIsOpen(true);
       }, 1800);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [urgentListing]);
 
   const handleClose = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -90,8 +89,6 @@ export function FlashSaleModal() {
     sessionStorage.setItem("flash_sale_dismissed", "true");
     if (urgentListing?.id) {
       router.push(`/listing/${urgentListing.id}`);
-    } else {
-      router.push("/search?q=urgent");
     }
   };
 
@@ -100,7 +97,8 @@ export function FlashSaleModal() {
   return (
     <>
       {/* Floating Trigger Widget - Sleek, Clean, No Clashing Colors, Positioned away from N badge */}
-      <button
+      {allListings.length > 0 && (
+        <button
         type="button"
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 left-16 z-40 flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#00615f] hover:bg-[#089184] text-white text-xs font-extrabold border-2 border-[#79e4a7] shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all cursor-pointer select-none"
@@ -111,10 +109,11 @@ export function FlashSaleModal() {
         <span className="bg-[#79e4a7] text-[#00615f] px-1.5 py-0.2 rounded-md text-[9px] font-black tracking-wider">
           HOT
         </span>
-      </button>
+        </button>
+      )}
 
       {/* Popup Modal Backdrop (Barely dark, almost 0 blur) */}
-      {isOpen && (
+      {isOpen && urgentListing && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/10 backdrop-blur-[1px] animate-in fade-in duration-150"
           onClick={() => handleClose()}

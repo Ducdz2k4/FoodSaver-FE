@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
 import { useGetListingByIdQuery } from "@/redux/api/listingApi";
@@ -28,8 +27,7 @@ export default function ListingDetailPage({
   // Fetch real listing from backend API
   const { data: realListing, isLoading } = useGetListingByIdQuery({ id: resolvedParams.id });
 
-  // Use real listing if fetched, or fallback to mock listing if matching
-  const listing = realListing || MOCK_LISTINGS.find((item) => item.id === resolvedParams.id);
+  const listing = realListing;
 
   if (isLoading && !listing) {
     return (
