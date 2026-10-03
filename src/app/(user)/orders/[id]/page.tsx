@@ -19,7 +19,6 @@ import {
   ShoppingBag,
   CreditCard,
 } from "lucide-react";
-import { MOCK_ORDERS } from "@/mocks/mockData";
 import {
   useGetOrderByIdQuery,
   useCancelOrderMutation,
@@ -36,7 +35,7 @@ export default function OrderDetailPage({
 
   // Fetch real order from backend
   const { data: realOrder, isLoading } = useGetOrderByIdQuery(resolvedParams.id);
-  const initialOrder = realOrder || MOCK_ORDERS.find((o) => o.id === resolvedParams.id) || MOCK_ORDERS[0];
+  const order = realOrder;
 
   const [cancelOrderMutation, { isLoading: isCancelling }] = useCancelOrderMutation();
   const [lockOrderMutation] = useLockOrderMutation();
@@ -48,33 +47,36 @@ export default function OrderDetailPage({
   const [reviewText, setReviewText] = useState("");
   const [hygieneChecked, setHygieneChecked] = useState(true);
 
-  // 5-second auto locking timer
-  const [countdownSeconds, setCountdownSeconds] = useState<number>(() => {
-    if (initialOrder.isLocked) return 0;
-    const createdAt = new Date(initialOrder.createdAt).getTime();
-    const elapsed = Math.floor((Date.now() - createdAt) / 1000);
-    return Math.max(0, 5 - elapsed);
-  });
-
-  const [isLockedState, setIsLockedState] = useState(initialOrder.isLocked);
+  const [countdownSeconds, setCountdownSeconds] = useState(0);
+  const [isLockedState, setIsLockedState] = useState(false);
 
   useEffect(() => {
-    if (isLockedState) return;
+    if (!order || isLockedState) return;
 
     if (countdownSeconds > 0) {
       const timer = setTimeout(() => {
         setCountdownSeconds((prev) => prev - 1);
       }, 1000);
       return () => clearTimeout(timer);
-    } else {
-      // Auto lock order after 5s
-      setIsLockedState(true);
-      lockOrderMutation(initialOrder.id).unwrap().catch(() => {});
-      toast.info("Đơn hàng đã chốt sau 5 giây! Trạng thái đã được khóa (Không được hủy đơn nữa).");
     }
-  }, [countdownSeconds, isLockedState, initialOrder.id, lockOrderMutation]);
 
-  if (isLoading && !realOrder) {
+    setIsLockedState(true);
+    lockOrderMutation(order.id).unwrap().catch(() => {});
+    toast.info("Đơn hàng đã chốt sau 5 giây! Trạng thái đã được khóa (Không được hủy đơn nữa).");
+  }, [countdownSeconds, isLockedState, order, lockOrderMutation]);
+
+  useEffect(() => {
+    if (!order) return;
+    setIsLockedState(order.isLocked);
+    if (order.isLocked) {
+      setCountdownSeconds(0);
+      return;
+    }
+    const elapsed = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / 1000);
+    setCountdownSeconds(Math.max(0, 5 - elapsed));
+  }, [order]);
+
+  if (isLoading && !order) {
     return (
       <div className="min-h-screen bg-[#f9f3f0] flex items-center justify-center">
         <div className="flex items-center gap-2 text-[#00615f] font-bold text-sm">
@@ -85,16 +87,18 @@ export default function OrderDetailPage({
     );
   }
 
-  const orderStatus = initialOrder.status;
+  if (!order) return notFound();
+
+  const orderStatus = order.status;
 
   const handleCancelOrder = async () => {
-    if (isLockedState || initialOrder.isLocked) {
+    if (isLockedState || order.isLocked) {
       toast.error("Đơn hàng đã khóa sau 5s chốt giá, bạn không được hủy đơn ở bước này nữa!");
       return;
     }
     try {
       await cancelOrderMutation({
-        id: initialOrder.id,
+        id: order.id,
         reason: cancelReason,
       }).unwrap();
       setCancelModalOpen(false);
@@ -166,7 +170,7 @@ export default function OrderDetailPage({
             </h1>
             <p className="text-xs sm:text-sm text-stone-600">
               Mã đơn hàng:{" "}
-              <strong className="font-mono text-stone-900">#{initialOrder.orderNumber}</strong>
+              <strong className="font-mono text-stone-900">#{order.orderNumber}</strong>
             </p>
           </div>
 
@@ -176,13 +180,13 @@ export default function OrderDetailPage({
               <div className="size-44 bg-white p-3 mx-auto rounded-2xl border border-stone-300 shadow-inner flex flex-col items-center justify-center">
                 <QrCode className="size-32 text-stone-800" />
                 <span className="font-mono text-[10px] font-bold text-stone-500 tracking-widest mt-1">
-                  {initialOrder.orderNumber}
+                  {order.orderNumber}
                 </span>
               </div>
               <p className="text-xs text-stone-500 font-medium">
-                {initialOrder.paymentMethod === "SYSTEM_QR"
+                {order.paymentMethod === "SYSTEM_QR"
                   ? "Quét mã QR VietQR hệ thống để thanh toán đơn"
-                  : initialOrder.fulfillmentType === "DELIVERY"
+                  : order.fulfillmentType === "DELIVERY"
                   ? "Mã nhận hàng đối soát với shipper"
                   : "Đưa mã QR cho quán khi đến nhận đồ"}
               </p>
@@ -193,13 +197,13 @@ export default function OrderDetailPage({
           <div className="text-left border-t border-stone-100 pt-5 space-y-2.5 text-xs sm:text-sm">
             <div className="flex justify-between py-1">
               <span className="text-stone-500">Món ăn:</span>
-              <span className="font-bold text-stone-900 text-right">{initialOrder.listingTitle}</span>
+              <span className="font-bold text-stone-900 text-right">{order.listingTitle}</span>
             </div>
 
             <div className="flex justify-between py-1">
               <span className="text-stone-500">Hình thức nhận:</span>
               <span className="font-bold text-[#00615f] flex items-center gap-1">
-                {initialOrder.fulfillmentType === "DELIVERY" ? (
+                {order.fulfillmentType === "DELIVERY" ? (
                   <>
                     <Truck className="size-3.5" /> Giao hàng tận nơi
                   </>
@@ -211,11 +215,11 @@ export default function OrderDetailPage({
               </span>
             </div>
 
-            {initialOrder.fulfillmentType === "DELIVERY" && initialOrder.deliveryAddress && (
+            {order.fulfillmentType === "DELIVERY" && order.deliveryAddress && (
               <div className="flex justify-between py-1">
                 <span className="text-stone-500">Địa chỉ giao:</span>
                 <span className="font-bold text-stone-900 text-right max-w-xs truncate">
-                  {initialOrder.deliveryAddress}
+                  {order.deliveryAddress}
                 </span>
               </div>
             )}
@@ -223,30 +227,30 @@ export default function OrderDetailPage({
             <div className="flex justify-between py-1">
               <span className="text-stone-500">Phương thức thanh toán:</span>
               <span className="font-bold text-stone-900">
-                {initialOrder.paymentMethod === "SYSTEM_QR" ? "QR Hệ Thống FoodSaver" : "Tiền mặt khi nhận (COD)"}
+                {order.paymentMethod === "SYSTEM_QR" ? "QR Hệ Thống FoodSaver" : "Tiền mặt khi nhận (COD)"}
               </span>
             </div>
 
             <div className="flex justify-between py-1">
               <span className="text-stone-500">Số lượng:</span>
-              <span className="font-bold text-stone-900">{initialOrder.quantity} phần</span>
+              <span className="font-bold text-stone-900">{order.quantity} phần</span>
             </div>
 
             <div className="flex justify-between py-1">
               <span className="text-stone-500">Tiền món:</span>
-              <span>{(initialOrder.unitPrice * initialOrder.quantity).toLocaleString("vi-VN")}đ</span>
+              <span>{(order.unitPrice * order.quantity).toLocaleString("vi-VN")}đ</span>
             </div>
 
             <div className="flex justify-between py-1">
               <span className="text-stone-500">Phí giao hàng:</span>
               <span className="font-bold text-stone-900">
-                {initialOrder.shippingFee > 0 ? `${initialOrder.shippingFee.toLocaleString("vi-VN")}đ` : "0đ (Tự lấy)"}
+                {order.shippingFee > 0 ? `${order.shippingFee.toLocaleString("vi-VN")}đ` : "0đ (Tự lấy)"}
               </span>
             </div>
 
             <div className="flex justify-between py-2 border-t border-stone-100 text-base font-black">
               <span>Tổng thanh toán:</span>
-              <span className="text-[#00615f]">{initialOrder.totalPrice.toLocaleString("vi-VN")}đ</span>
+              <span className="text-[#00615f]">{order.totalPrice.toLocaleString("vi-VN")}đ</span>
             </div>
           </div>
 

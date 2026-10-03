@@ -20,13 +20,7 @@ export default function AdminReportsPage() {
   const { data: esgData, isLoading, isFetching } = useGetAdminESGReportsQuery();
 
   const summary = esgData?.summary;
-  const monthlyData = esgData?.monthlyBreakdown || [
-    { month: "T5/2026", kg: 320, co2: 800, saved: 24500000 },
-    { month: "T6/2026", kg: 480, co2: 1200, saved: 38200000 },
-    { month: "T7/2026", kg: 650, co2: 1625, saved: 52000000 },
-    { month: "T8/2026", kg: 890, co2: 2225, saved: 71400000 },
-    { month: "T9/2026", kg: 1250, co2: 3125, saved: 98800000 },
-  ];
+  const monthlyData = esgData?.monthlyBreakdown || [];
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-6">
@@ -49,21 +43,21 @@ export default function AdminReportsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <AdminStatCard
           title="Tổng thực phẩm giải cứu"
-          value={summary ? `${summary.totalKgRescued.toLocaleString("vi-VN")} kg` : "3.590 kg"}
+          value={summary ? `${summary.totalKgRescued.toLocaleString("vi-VN")} kg` : "—"}
           icon={<UtensilsCrossed className="size-5" />}
           description="Tính từ các đơn hoàn tất"
         />
 
         <AdminStatCard
           title="CO2 giảm phát thải tương đương"
-          value={summary ? `${summary.totalCo2Avoided.toLocaleString("vi-VN")} kg CO2` : "8.975 kg CO2"}
+          value={summary ? `${summary.totalCo2Avoided.toLocaleString("vi-VN")} kg CO2` : "—"}
           icon={<Leaf className="size-5" />}
-          description={`Tương đương ~${summary?.treesEquivalent || 900} cây xanh hấp thụ`}
+          description={summary ? `Tương đương ~${summary.treesEquivalent} cây xanh hấp thụ` : "Đang tải dữ liệu"}
         />
 
         <AdminStatCard
           title="Giá trị tiết kiệm cho người dùng"
-          value={summary ? `${summary.totalSavedMoney.toLocaleString("vi-VN")}₫` : "284.900.000₫"}
+          value={summary ? `${summary.totalSavedMoney.toLocaleString("vi-VN")}₫` : "—"}
           icon={<DollarSign className="size-5" />}
           description="Giảm chi tiêu lãng phí thực phẩm"
         />
@@ -88,7 +82,7 @@ export default function AdminReportsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {monthlyData.map((row) => (
+              {monthlyData.length > 0 ? monthlyData.map((row) => (
                 <TableRow key={row.month}>
                   <TableCell className="font-semibold">{row.month}</TableCell>
                   <TableCell className="font-mono text-xs">{row.kg} kg</TableCell>
@@ -97,7 +91,13 @@ export default function AdminReportsPage() {
                     {row.saved.toLocaleString("vi-VN")}₫
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-xs text-muted-foreground">
+                    Chưa có dữ liệu từ đơn hoàn tất.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

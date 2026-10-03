@@ -9,24 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/admin/ui/card";
-import { TrendingUpIcon, Utensils, DollarSign, Store, ShieldCheck } from "lucide-react";
+import { Utensils, DollarSign, Store, ShieldCheck } from "lucide-react";
 import { useGetAdminDashboardMetricsQuery } from "@/redux/api/admin/adminDashboardApi";
 
 export function SectionCards() {
   const { data: metrics } = useGetAdminDashboardMetricsQuery();
   const kpi = metrics?.kpi;
 
-  const revenueDisplay = kpi?.totalRevenue
-    ? `${kpi.totalRevenue.toLocaleString("vi-VN")}₫`
-    : "45.280.000₫";
-
-  const mealsDisplay = kpi?.totalMealsRescued
-    ? kpi.totalMealsRescued.toLocaleString("vi-VN")
-    : "1,240";
-
-  const partnersDisplay = kpi?.verifiedPartnersCount !== undefined
-    ? kpi.verifiedPartnersCount
-    : 86;
+  const revenueDisplay = kpi ? `${kpi.totalRevenue.toLocaleString("vi-VN")}₫` : "—";
+  const mealsDisplay = kpi ? kpi.totalMealsRescued.toLocaleString("vi-VN") : "—";
+  const partnersDisplay = kpi?.verifiedPartnersCount ?? "—";
 
   return (
     <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card">
@@ -42,16 +34,12 @@ export function SectionCards() {
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
-              <TrendingUpIcon className="size-3 text-primary" />
-              +20.1%
+              Hoàn tất
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <span>Tăng trưởng tuần này</span>
-            <TrendingUpIcon className="size-3.5 text-primary" />
-          </div>
+          <div className="font-medium text-foreground">Tổng tiền từ đơn hoàn tất</div>
           <div>Dữ liệu giao dịch hoàn tất từ MySQL</div>
         </CardFooter>
       </Card>
@@ -68,16 +56,12 @@ export function SectionCards() {
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
-              <TrendingUpIcon className="size-3 text-primary" />
-              +18.4%
+              Đã hoàn tất
             </Badge>
           </CardAction>
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <span>Đã cứu thành công</span>
-            <TrendingUpIcon className="size-3.5 text-primary" />
-          </div>
+          <div className="font-medium text-foreground">Đã cứu thành công</div>
           <div>Giảm thiểu rác thải hữu cơ ra môi trường</div>
         </CardFooter>
       </Card>
@@ -94,7 +78,6 @@ export function SectionCards() {
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
-              <TrendingUpIcon className="size-3 text-primary" />
               +{kpi?.pendingPartnersCount || 0} chờ duyệt
             </Badge>
           </CardAction>
@@ -119,7 +102,6 @@ export function SectionCards() {
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="border-primary/30 text-primary font-semibold text-xs">
-              <TrendingUpIcon className="size-3 text-primary" />
               Đang hoạt động
             </Badge>
           </CardAction>

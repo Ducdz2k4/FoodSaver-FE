@@ -17,12 +17,12 @@ import {
   Truck,
   Sparkles,
 } from "lucide-react";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
 import { FoodCategory, ListingDTO } from "@/types/contract";
 import { IMAGES } from "@/constants/images";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 // 1. Food Collection Categories with vibrant photography (Image #2)
@@ -106,13 +106,14 @@ type QuickTab = "NEARBY" | "BEST_SELLER" | "RATING" | "FAST_DELIVERY";
 function DiscoverContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
+  const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | "ALL">("ALL");
   const [activeTab, setActiveTab] = useState<QuickTab>("NEARBY");
   const [radiusKm, setRadiusKm] = useState<number>(5);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [userAddress, setUserAddress] = useState("128 Nguyễn Trãi, Bến Thành, Quận 1, TP.HCM");
+  const [userAddress, setUserAddress] = useState(user?.address || "");
 
   useEffect(() => {
     if (initialQuery) {
@@ -125,6 +126,10 @@ function DiscoverContent() {
       }
     }
   }, [initialQuery]);
+
+  useEffect(() => {
+    if (user?.address) setUserAddress(user.address);
+  }, [user?.address]);
 
   // Query Backend with RTK Query
   const { data: realListings, isLoading, isFetching } = useGetListingsQuery({
@@ -141,7 +146,7 @@ function DiscoverContent() {
         : "EXPIRY",
   });
 
-  const baseListings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+  const baseListings = realListings || [];
 
   // Client-side filtering & sorting for interactive tab feel
   const processedListings = useMemo(() => {
@@ -203,7 +208,7 @@ function DiscoverContent() {
           setUserAddress(`Tọa độ: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)} (Quận 1)`);
           toast.success("Đã định vị vị trí hiện tại thành công!");
         },
-        () => toast.error("Không thể lấy GPS, dùng địa chỉ mặc định.")
+        () => toast.error("Không thể lấy GPS. Vui lòng cấp quyền định vị hoặc nhập địa chỉ trong hồ sơ.")
       );
     }
   };

@@ -10,7 +10,6 @@ import {
   Sparkles,
   Layers,
 } from "lucide-react";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingDTO, FoodCategory } from "@/types/contract";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
@@ -20,7 +19,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
 export default function FoodMapPage() {
-  const [selectedListing, setSelectedListing] = useState<ListingDTO>(MOCK_LISTINGS[0]);
+  const [selectedListing, setSelectedListing] = useState<ListingDTO | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<FoodCategory | "ALL">("ALL");
   const [radiusKm, setRadiusKm] = useState<number>(3);
   const [urgentOnly, setUrgentOnly] = useState(false);
@@ -36,7 +35,7 @@ export default function FoodMapPage() {
     urgentOnly,
   });
 
-  const allListings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+  const allListings = realListings || [];
 
   const filteredListings = allListings.filter((item) => {
     if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
@@ -44,6 +43,10 @@ export default function FoodMapPage() {
     if (urgentOnly && item.status !== "EXPIRING_SOON") return false;
     return true;
   });
+
+  useEffect(() => {
+    if (!selectedListing && allListings.length > 0) setSelectedListing(allListings[0]);
+  }, [allListings, selectedListing]);
 
   // Initialize Mapbox map
   useEffect(() => {
@@ -331,5 +334,3 @@ export default function FoodMapPage() {
     </div>
   );
 }
-
-

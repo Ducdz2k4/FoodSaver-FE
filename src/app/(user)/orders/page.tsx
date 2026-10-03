@@ -3,20 +3,14 @@
 import React from "react";
 import Link from "next/link";
 import { ShoppingBag, Clock, MapPin, ArrowRight, Loader2 } from "lucide-react";
-import { MOCK_ORDERS } from "@/mocks/mockData";
 import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
-import { useAuth } from "@/context/AuthContext";
+
 
 export default function OrdersPage() {
-  const { user } = useAuth();
+
   const { data: realOrders, isLoading, isFetching } = useGetMyOrdersQuery();
 
-  const orders =
-    realOrders && realOrders.length > 0
-      ? realOrders
-      : user
-      ? []
-      : MOCK_ORDERS;
+  const orders = realOrders || [];
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-20 px-4 sm:px-6 lg:px-8">

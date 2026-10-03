@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { PlusCircle, Search, Edit3, Power, Loader2 } from "lucide-react";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingStatus } from "@/types/contract";
 import { useGetPartnerListingsQuery, useToggleListingStatusMutation } from "@/redux/api/listingApi";
@@ -18,7 +17,7 @@ export default function PartnerListingsPage() {
 
   const [toggleStatusMutation] = useToggleListingStatusMutation();
 
-  const listings = realListings && realListings.length > 0 ? realListings : MOCK_LISTINGS;
+  const listings = realListings || [];
 
   const toggleStatus = async (id: string, currentStatus: ListingStatus) => {
     const nextStatus: ListingStatus =

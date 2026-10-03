@@ -21,7 +21,6 @@ import {
   Tag,
   X,
 } from "lucide-react";
-import { MOCK_LISTINGS } from "@/mocks/mockData";
 import { useAppSelector } from "@/redux/hooks";
 import { useGetListingByIdQuery } from "@/redux/api/listingApi";
 import {
@@ -43,11 +42,10 @@ export default function CheckoutPage({
   const currentUser = useAppSelector((state) => state.auth.user);
   const { socket } = useSocket();
 
-  // Fetch real listing or fallback to mock
   const { data: realListing, isLoading: isListingLoading } = useGetListingByIdQuery({
     id: resolvedParams.listingId,
   });
-  const listing = realListing || MOCK_LISTINGS.find((item) => item.id === resolvedParams.listingId);
+  const listing = realListing;
 
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
   const [estimateShipping] = useEstimateShippingMutation();
@@ -57,16 +55,16 @@ export default function CheckoutPage({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("COD");
 
   // Delivery & Distance (Max 20km)
-  const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.address || "128 Nguyễn Trãi, Quận 1, TP.HCM");
+  const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.address || "");
   const [deliveryDistance, setDeliveryDistance] = useState<number>(3.5);
-  const [defaultShippingFee, setDefaultShippingFee] = useState<number>(25000);
+  const [defaultShippingFee, setDefaultShippingFee] = useState<number>(0);
   const [isEstimatingFee, setIsEstimatingFee] = useState(false);
 
   // Bargaining Shipping Fee State
   const [isBargaining, setIsBargaining] = useState(false);
   const [proposedFee, setProposedFee] = useState<number>(15000);
   const [bargainStatus, setBargainStatus] = useState<"IDLE" | "WAITING" | "ACCEPTED" | "REJECTED" | "COUNTER">("IDLE");
-  const [finalAgreedFee, setFinalAgreedFee] = useState<number>(25000);
+  const [finalAgreedFee, setFinalAgreedFee] = useState<number>(0);
   const [verifyCouponMutation, { isLoading: isCheckingCoupon }] = useVerifyCouponMutation();
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; description: string } | null>(null);
@@ -75,7 +73,12 @@ export default function CheckoutPage({
 
   const [pickupSlot, setPickupSlot] = useState("19:00 - 20:00");
   const [customerNotes, setCustomerNotes] = useState("");
-  const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || "0901234567");
+  const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || "");
+
+  useEffect(() => {
+    setDeliveryAddress((previous) => previous || currentUser?.address || "");
+    setCustomerPhone((previous) => previous || currentUser?.phone || "");
+  }, [currentUser?.address, currentUser?.phone]);
 
   // Estimate default shipping fee whenever distance changes
   useEffect(() => {
@@ -88,8 +91,9 @@ export default function CheckoutPage({
           setFinalAgreedFee(res.defaultFee);
         })
         .catch(() => {
-          setDefaultShippingFee(25000);
-          setFinalAgreedFee(25000);
+          setDefaultShippingFee(0);
+          setFinalAgreedFee(0);
+          toast.error("Không thể tính phí giao hàng. Vui lòng thử lại.");
         })
         .finally(() => setIsEstimatingFee(false));
     } else {
@@ -190,17 +194,10 @@ export default function CheckoutPage({
       });
     }
 
-    // Fallback simulation if socket partner doesn't reply in 3s (for testing UI)
-    setTimeout(() => {
-      setBargainStatus((current) => {
-        if (current === "WAITING") {
-          toast.success(`🎉 Quán đã chấp nhận giá chém ${proposedFee.toLocaleString("vi-VN")}đ!`);
-          setFinalAgreedFee(proposedFee);
-          return "ACCEPTED";
-        }
-        return current;
-      });
-    }, 3500);
+    if (!socket) {
+      setBargainStatus("REJECTED");
+      toast.error("Không thể kết nối tới cửa hàng để gửi yêu cầu mặc cả.");
+    }
   };
 
   const handleConfirmOrder = async (e: React.FormEvent) => {
