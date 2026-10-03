@@ -14,6 +14,11 @@ import {
 import { Badge } from "@/components/admin/ui/badge";
 import { Button } from "@/components/admin/ui/button";
 import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/components/admin/ui/avatar";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -25,7 +30,7 @@ import { Input } from "@/components/admin/ui/input";
 import { PartnerProfileDTO } from "@/types/contract";
 import { useGetAllPartnersQuery, useVerifyPartnerMutation } from "@/redux/api/partnerApi";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, ShieldCheck, Clock, AlertCircle } from "lucide-react";
+import { Loader2, ExternalLink, ShieldCheck, Clock, AlertCircle, FileText, Store } from "lucide-react";
 
 type TabFilter = "PENDING" | "VERIFIED" | "REJECTED" | "ALL";
 
@@ -181,24 +186,41 @@ export default function AdminPendingPartnersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[220px]">Cơ sở kinh doanh</TableHead>
+                  <TableHead className="w-[280px]">Cơ sở kinh doanh</TableHead>
                   <TableHead className="w-[140px]">Mã ĐKKD</TableHead>
                   <TableHead className="w-[130px]">Loại hình</TableHead>
                   <TableHead>Địa chỉ</TableHead>
-                  <TableHead className="w-[130px]">Trạng thái</TableHead>
-                  <TableHead className="w-[180px]">Hồ sơ đính kèm</TableHead>
-                  <TableHead className="w-[190px] text-right">Thao tác</TableHead>
+                  <TableHead className="w-[110px]">Trạng thái</TableHead>
+                  <TableHead className="w-[220px]">Hồ sơ đính kèm</TableHead>
+                  <TableHead className="w-[180px] text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayedList.map((partner) => (
                   <TableRow key={partner.id}>
+                    {/* Cơ sở kinh doanh kèm Avatar / Thumbnail */}
                     <TableCell className="font-medium">
-                      <div>
-                        <span className="block font-semibold text-foreground">
-                          {partner.businessName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{partner.phone}</span>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="size-10 rounded-xl border border-border/80 shadow-2xs shrink-0 bg-muted">
+                          {partner.user?.avatar ? (
+                            <AvatarImage
+                              src={partner.user.avatar}
+                              alt={partner.businessName}
+                              className="rounded-xl object-cover"
+                            />
+                          ) : null}
+                          <AvatarFallback className="rounded-xl bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
+                            {partner.businessName ? partner.businessName.substring(0, 2).toUpperCase() : <Store className="size-4" />}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <span className="block font-semibold text-foreground truncate max-w-[190px]" title={partner.businessName}>
+                            {partner.businessName}
+                          </span>
+                          <span className="text-xs text-muted-foreground block truncate max-w-[190px]">
+                            {partner.phone || partner.user?.email || "Chưa có SĐT"}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
 
@@ -239,34 +261,66 @@ export default function AdminPendingPartnersPage() {
                       )}
                     </TableCell>
 
+                    {/* Hồ sơ đính kèm với Thumbnail trực quan */}
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs px-2"
+                      <div className="flex items-center gap-2">
+                        {/* GPKD Thumbnail */}
+                        <button
+                          type="button"
                           onClick={() =>
                             setPreviewDoc({
                               url: partner.businessLicenseUrl,
                               title: `Giấy phép kinh doanh - ${partner.businessName}`,
                             })
                           }
+                          className="group relative flex items-center gap-1.5 p-1 pr-2.5 rounded-lg border border-border/70 bg-muted/40 hover:bg-muted hover:border-primary/40 transition cursor-pointer"
+                          title="Bấm để xem GPKD"
                         >
-                          GPKD
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs px-2"
+                          <div className="size-7 rounded-md overflow-hidden bg-muted border border-border/40 shrink-0 flex items-center justify-center">
+                            {partner.businessLicenseUrl ? (
+                              <img
+                                src={partner.businessLicenseUrl}
+                                alt="GPKD"
+                                className="size-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <FileText className="size-3.5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="text-[11px] font-bold text-foreground">GPKD</span>
+                        </button>
+
+                        {/* ATTP Thumbnail */}
+                        <button
+                          type="button"
                           onClick={() =>
                             setPreviewDoc({
                               url: partner.foodSafetyCertUrl,
                               title: `Chứng nhận ATTP - ${partner.businessName}`,
                             })
                           }
+                          className="group relative flex items-center gap-1.5 p-1 pr-2.5 rounded-lg border border-border/70 bg-muted/40 hover:bg-muted hover:border-primary/40 transition cursor-pointer"
+                          title="Bấm để xem Chứng nhận ATTP"
                         >
-                          ATTP
-                        </Button>
+                          <div className="size-7 rounded-md overflow-hidden bg-muted border border-border/40 shrink-0 flex items-center justify-center">
+                            {partner.foodSafetyCertUrl ? (
+                              <img
+                                src={partner.foodSafetyCertUrl}
+                                alt="ATTP"
+                                className="size-full object-cover group-hover:scale-110 transition-transform duration-200"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <FileText className="size-3.5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <span className="text-[11px] font-bold text-foreground">ATTP</span>
+                        </button>
                       </div>
                     </TableCell>
 

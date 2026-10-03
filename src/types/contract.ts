@@ -36,6 +36,14 @@ export interface PartnerProfileDTO {
   lng: number;
   geohash: string;
   phone: string;
+  user?: {
+    id: string;
+    email: string;
+    fullName?: string;
+    phone?: string;
+    avatar?: string;
+    createdAt?: string;
+  };
 }
 
 export interface ListingDTO {
