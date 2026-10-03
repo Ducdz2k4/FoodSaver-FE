@@ -1,16 +1,36 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { ShoppingBag, Clock, MapPin, ArrowRight, Loader2 } from "lucide-react";
 import { useGetMyOrdersQuery } from "@/redux/api/orderApi";
+import type { OrderStatus } from "@/types/contract";
+
+type OrderFilter = "ALL" | OrderStatus;
+
+const ORDER_FILTERS: Array<{ value: OrderFilter; label: string }> = [
+  { value: "ALL", label: "Tất cả" },
+  { value: "PENDING", label: "Chờ xác nhận" },
+  { value: "ACCEPTED", label: "Đang chuẩn bị" },
+  { value: "COMPLETED", label: "Hoàn thành" },
+  { value: "CANCELLED", label: "Đã hủy" },
+  { value: "REJECTED", label: "Bị từ chối" },
+];
 
 
 export default function OrdersPage() {
 
   const { data: realOrders, isLoading, isFetching } = useGetMyOrdersQuery();
+  const [selectedStatus, setSelectedStatus] = useState<OrderFilter>("ALL");
 
   const orders = realOrders || [];
+  const filteredOrders = useMemo(
+    () =>
+      selectedStatus === "ALL"
+        ? orders
+        : orders.filter((order) => order.status === selectedStatus),
+    [orders, selectedStatus]
+  );
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-28 pb-20 px-4 sm:px-6 lg:px-8">
@@ -27,9 +47,36 @@ export default function OrdersPage() {
           {(isLoading || isFetching) && <Loader2 className="size-5 animate-spin text-[#00615f]" />}
         </div>
 
-        {orders.length > 0 ? (
+        <div
+          className="flex gap-2 overflow-x-auto border-b border-stone-200 pb-1 scrollbar-none"
+          role="tablist"
+          aria-label="Lọc trạng thái đơn hàng"
+        >
+          {ORDER_FILTERS.map((filter) => {
+            const isSelected = selectedStatus === filter.value;
+
+            return (
+              <button
+                key={filter.value}
+                type="button"
+                role="tab"
+                aria-selected={isSelected}
+                onClick={() => setSelectedStatus(filter.value)}
+                className={`shrink-0 border-b-2 px-3 py-2 text-xs sm:text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00615f]/40 ${
+                  isSelected
+                    ? "border-[#00615f] text-[#00615f]"
+                    : "border-transparent text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredOrders.length > 0 ? (
           <div className="space-y-4">
-            {orders.map((order) => (
+            {filteredOrders.map((order) => (
               <div
                 key={order.id}
                 className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm hover:shadow-md transition space-y-4"
@@ -119,17 +166,23 @@ export default function OrdersPage() {
           <div className="bg-white rounded-3xl p-12 text-center border border-stone-200 shadow-sm space-y-3">
             <ShoppingBag className="size-12 text-stone-300 mx-auto" />
             <p className="text-base font-bold text-stone-800">
-              Bạn chưa có đơn đặt giữ món ăn nào.
+              {orders.length > 0
+                ? "Không có đơn nào ở trạng thái này."
+                : "Bạn chưa có đơn đặt giữ món ăn nào."}
             </p>
             <p className="text-xs text-stone-500">
-              Hãy khám phá các món ngon cận date gần bạn để bắt đầu giải cứu nhé!
+              {orders.length > 0
+                ? "Hãy chọn một trạng thái khác để xem các đơn còn lại."
+                : "Hãy khám phá các món ngon cận date gần bạn để bắt đầu giải cứu nhé!"}
             </p>
-            <Link
-              href="/search"
-              className="inline-block mt-3 px-6 py-2.5 rounded-full bg-[#00615f] text-white text-xs font-bold hover:bg-[#089184] transition"
-            >
-              Khám phá món ăn ngay
-            </Link>
+            {orders.length === 0 && (
+              <Link
+                href="/search"
+                className="inline-block mt-3 px-6 py-2.5 rounded-full bg-[#00615f] text-white text-xs font-bold hover:bg-[#089184] transition"
+              >
+                Khám phá món ăn ngay
+              </Link>
+            )}
           </div>
         )}
       </div>
