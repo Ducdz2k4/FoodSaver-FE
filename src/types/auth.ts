@@ -15,6 +15,7 @@ export interface UserOut {
   bio?: string | null;
   googleId?: string | null;
   emailVerified?: boolean;
+  passwordSetupRequired?: boolean;
   partnerCapability?: PartnerCapability;
   partnerProfileId?: string;
 }
