@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function PartnerPendingPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, isLoading: isAuthLoading, refreshUser } = useAuth();
 
   // Poll profile every 5 seconds to catch live approval from Admin
   const { data: profile, isLoading: isProfileLoading, refetch } = useGetMyPartnerProfileQuery(undefined, {
@@ -24,9 +24,10 @@ export default function PartnerPendingPage() {
   useEffect(() => {
     if (isVerified) {
       // Auto refresh user auth state
+      refreshUser();
       refetch();
     }
-  }, [isVerified, refetch]);
+  }, [isVerified, refreshUser, refetch]);
 
   if (isAuthLoading || isProfileLoading) {
     return (

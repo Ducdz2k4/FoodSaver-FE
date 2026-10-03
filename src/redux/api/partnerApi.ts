@@ -58,6 +58,21 @@ export const partnerApi = baseApi.injectEndpoints({
       providesTags: ["PartnerProfile"],
     }),
 
+    // 3b. Admin: Lấy danh sách toàn bộ hồ sơ đối tác (hỗ trợ filter status)
+    getAllPartners: builder.query<PartnerProfileDTO[], { status?: string } | void>({
+      query: (params) => {
+        const queryParams: Record<string, any> = {};
+        if (params?.status && params.status !== "ALL") queryParams.status = params.status;
+        return {
+          url: "/api/v1/admin/partners",
+          method: "GET",
+          params: queryParams,
+        };
+      },
+      transformResponse: (response: ListPartnersResponse) => response.data || [],
+      providesTags: ["PartnerProfile"],
+    }),
+
     // 4. Admin: Phê duyệt hoặc từ chối hồ sơ
     verifyPartner: builder.mutation<PartnerProfileDTO, { id: string; status: "VERIFIED" | "REJECTED"; rejectionReason?: string }>({
       query: ({ id, status, rejectionReason }) => ({
@@ -75,5 +90,6 @@ export const {
   useApplyPartnerMutation,
   useGetMyPartnerProfileQuery,
   useGetPendingPartnersQuery,
+  useGetAllPartnersQuery,
   useVerifyPartnerMutation,
 } = partnerApi;
