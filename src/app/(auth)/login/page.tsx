@@ -12,6 +12,46 @@ const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
 type AuthStep = "login" | "otp" | "password";
 
+const TEST_ACCOUNTS = [
+  {
+    role: "Admin",
+    email: "admin@foodsaver.vn",
+    password: "Admin@123456",
+    badge: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+  },
+  {
+    role: "Sys Admin",
+    email: "sysadmin@foodsaver.vn",
+    password: "Admin@123456",
+    badge: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100",
+  },
+  {
+    role: "Khách hàng (User)",
+    email: "user@foodsaver.vn",
+    password: "Admin@123456",
+    badge: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+  },
+  {
+    role: "Đối tác đã duyệt",
+    email: "partner@foodsaver.vn",
+    password: "Admin@123456",
+    badge: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
+  },
+  {
+    role: "Đối tác chờ duyệt",
+    email: "pending@foodsaver.vn",
+    password: "Admin@123456",
+    badge: "bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100",
+  },
+  {
+    role: "Đối tác từ chối",
+    email: "rejected@foodsaver.vn",
+    password: "Admin@123456",
+    badge: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100",
+  },
+];
+
+
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPasswordValue] = useState("");
@@ -114,6 +154,13 @@ function LoginForm() {
     }
   };
 
+
+  const handleQuickFill = (acc: (typeof TEST_ACCOUNTS)[0]) => {
+    setEmail(acc.email);
+    setPasswordValue(acc.password);
+    toast.success(`Đã điền tài khoản: ${acc.role}`);
+  };
+
   const handleResendOtp = async () => {
     try {
       await resendOtp();
@@ -144,6 +191,31 @@ function LoginForm() {
 
       {step === "login" && (
         <>
+          {/* Quick Fill 6 Test Roles */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-stone-50/90 border border-stone-200/90 space-y-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-extrabold uppercase tracking-wider text-[#00615f]">
+                ⚡ Điền nhanh tài khoản test (6 Role)
+              </span>
+              <span className="text-[10px] text-stone-400 font-medium">Pass: Admin@123456</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              {TEST_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.email}
+                  type="button"
+                  onClick={() => handleQuickFill(acc)}
+                  className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${acc.badge} ${
+                    email === acc.email ? "ring-2 ring-[#00615f]/50 font-black shadow-sm" : ""
+                  }`}
+                  title={`${acc.role} (${acc.email})`}
+                >
+                  <div className="text-[11px] font-bold leading-tight truncate">{acc.role}</div>
+                  <div className="text-[9px] opacity-70 truncate mt-0.5">{acc.email}</div>
+                </button>
+              ))}
+            </div>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div className="space-y-1.5">
               <label className="font-bold text-foreground block">Email đăng nhập</label>
