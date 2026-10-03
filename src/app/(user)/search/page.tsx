@@ -7,14 +7,12 @@ import {
   Search,
   MapPin,
   Clock,
-  Star,
   Heart,
   ShieldCheck,
   Compass,
   ArrowRight,
   Loader2,
   X,
-  Truck,
   Sparkles,
 } from "lucide-react";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
@@ -101,7 +99,7 @@ const PROMO_BANNERS = [
 ];
 
 // 2. BeFood Quick Filter Tab Options (Image #1)
-type QuickTab = "NEARBY" | "BEST_SELLER" | "RATING" | "FAST_DELIVERY";
+type QuickTab = "NEARBY" | "BEST_SELLER" | "URGENT" | "FAST_DELIVERY";
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
@@ -180,7 +178,7 @@ function DiscoverContent() {
       result.sort(
         (a, b) => new Date(a.expiryAt).getTime() - new Date(b.expiryAt).getTime()
       );
-    } else if (activeTab === "RATING") {
+    } else if (activeTab === "URGENT") {
       result.sort((a, b) => (b.urgencyScore || 0) - (a.urgencyScore || 0));
     }
 
@@ -205,7 +203,7 @@ function DiscoverContent() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setUserAddress(`Tọa độ: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)} (Quận 1)`);
+          setUserAddress(`Tọa độ: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
           toast.success("Đã định vị vị trí hiện tại thành công!");
         },
         () => toast.error("Không thể lấy GPS. Vui lòng cấp quyền định vị hoặc nhập địa chỉ trong hồ sơ.")
@@ -381,8 +379,8 @@ function DiscoverContent() {
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto pb-1 sm:pb-0">
             {[
               { id: "NEARBY", label: "Gần tôi" },
-              { id: "BEST_SELLER", label: "Bán chạy" },
-              { id: "RATING", label: "Đánh giá ATTP" },
+              { id: "BEST_SELLER", label: "Giá tốt" },
+              { id: "URGENT", label: "Sắp hết hạn" },
               { id: "FAST_DELIVERY", label: "Giao nhanh & Cận date" },
             ].map((tab) => {
               const isActive = activeTab === tab.id;
@@ -520,20 +518,11 @@ function DiscoverContent() {
 
                         {/* Rating & Distance (Image #2) */}
                         <div className="flex items-center gap-1.5 text-xs text-stone-500 pt-0.5">
-                          <span className="flex items-center text-amber-500 font-bold">
-                            <Star className="size-3 fill-amber-400 text-amber-400 mr-0.5" />
-                            4.8
-                          </span>
-                          <span>•</span>
                           <span className="flex items-center gap-0.5 text-stone-600 font-semibold">
                             <MapPin className="size-3 text-stone-400" />
-                            {item.distanceKm || 0.8} km
+                            {item.distanceKm != null ? `${item.distanceKm} km` : ""}
                           </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-0.5 text-emerald-700 font-semibold">
-                            <Truck className="size-3 text-emerald-600" />
-                            Ship 20km
-                          </span>
+
                         </div>
 
                         {/* Địa chỉ rút gọn */}
