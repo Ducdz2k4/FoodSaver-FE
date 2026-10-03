@@ -15,7 +15,7 @@ const getInitialToken = (): string | null => {
 
 const getInitialUser = (): UserOut | null => {
   if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem("mock_user");
+  const raw = localStorage.getItem("user");
   if (raw) {
     try {
       return JSON.parse(raw);
@@ -50,7 +50,7 @@ export const authSlice = createSlice({
       if (typeof window !== "undefined") {
         localStorage.setItem("token", token);
         if (user) {
-          localStorage.setItem("mock_user", JSON.stringify(user));
+          localStorage.setItem("user", JSON.stringify(user));
         }
         document.cookie = `token=${encodeURIComponent(
           token
@@ -61,7 +61,7 @@ export const authSlice = createSlice({
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
       if (typeof window !== "undefined" && action.payload) {
-        localStorage.setItem("mock_user", JSON.stringify(action.payload));
+        localStorage.setItem("user", JSON.stringify(action.payload));
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -74,7 +74,7 @@ export const authSlice = createSlice({
       state.isLoading = false;
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
-        localStorage.removeItem("mock_user");
+        localStorage.removeItem("user");
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       }
     },

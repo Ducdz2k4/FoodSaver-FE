@@ -35,7 +35,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     // Initialize socket connection
     const socketInstance = io(SOCKET_URL, {
       auth: {
-        token: token && !token.startsWith("mock-") ? token : undefined,
+        token: token || undefined,
       },
       transports: ["websocket", "polling"],
       reconnectionAttempts: 5,

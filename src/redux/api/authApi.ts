@@ -2,8 +2,12 @@ import { baseApi } from "./baseApi";
 import {
   RegisterIn,
   LoginIn,
+  GoogleLoginIn,
   AuthResponseData,
   UserOut,
+  VerifyOtpIn,
+  SetPasswordIn,
+  MessageOut,
 } from "@/types/auth";
 import { setCredentials, setUser, logOut } from "@/redux/slices/authSlice";
 
@@ -15,20 +19,35 @@ export const authApiSlice = baseApi.injectEndpoints({
         method: "POST",
         body: credentials,
       }),
-      transformResponse: (response: any) => {
-        return response?.data || response;
-      },
+      transformResponse: (response: any) => response?.data || response,
       invalidatesTags: ["User", "UserProfile"],
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          const token = data?.accessToken || (data as any)?.access_token;
-          const user = data?.user;
+          const token = data?.accessToken || data?.access_token;
           if (token) {
-            dispatch(setCredentials({ token, user: user || null }));
-            if (!user) {
-              dispatch(authApiSlice.endpoints.getMe.initiate());
-            }
+            dispatch(setCredentials({ token, user: data?.user || null }));
+          }
+        } catch {
+          // Handled by caller
+        }
+      },
+    }),
+
+    googleLogin: builder.mutation<AuthResponseData, GoogleLoginIn>({
+      query: (body) => ({
+        url: "/api/v1/auth/google",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: any) => response?.data || response,
+      invalidatesTags: ["User", "UserProfile"],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const token = data?.accessToken || data?.access_token;
+          if (token) {
+            dispatch(setCredentials({ token, user: data?.user || null }));
           }
         } catch {
           // Handled by caller
@@ -45,20 +64,16 @@ export const authApiSlice = baseApi.injectEndpoints({
           email: userData.email.trim(),
           password: userData.password,
           ...(userData.phone ? { phone: userData.phone.trim() } : {}),
-          role: userData.role || "USER",
           ...(userData.address ? { address: userData.address.trim() } : {}),
         },
       }),
-      transformResponse: (response: any) => {
-        return response?.data || response;
-      },
+      transformResponse: (response: any) => response?.data || response,
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          const token = data?.accessToken || (data as any)?.access_token;
-          const user = data?.user;
+          const token = data?.accessToken || data?.access_token;
           if (token) {
-            dispatch(setCredentials({ token, user: user || null }));
+            dispatch(setCredentials({ token, user: data?.user || null }));
           }
         } catch {
           // Handled by caller
@@ -66,18 +81,50 @@ export const authApiSlice = baseApi.injectEndpoints({
       },
     }),
 
+    verifyOtp: builder.mutation<{ user?: UserOut; message: string }, VerifyOtpIn>({
+      query: (body) => ({
+        url: "/api/v1/auth/verify-otp",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: any) => response?.data || response,
+      invalidatesTags: ["User", "UserProfile"],
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          if (data?.user) dispatch(setUser(data.user));
+        } catch {
+          // Handled by caller
+        }
+      },
+    }),
+
+    resendOtp: builder.mutation<MessageOut, void>({
+      query: () => ({
+        url: "/api/v1/auth/resend-otp",
+        method: "POST",
+      }),
+      transformResponse: (response: any) => response?.data || response,
+    }),
+
+    setPassword: builder.mutation<MessageOut, SetPasswordIn>({
+      query: (body) => ({
+        url: "/api/v1/auth/set-password",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (response: any) => response?.data || response,
+      invalidatesTags: ["User", "UserProfile"],
+    }),
+
     getMe: builder.query<UserOut, void>({
       query: () => "/api/v1/auth/me",
-      transformResponse: (response: any) => {
-        return response?.data || response;
-      },
+      transformResponse: (response: any) => response?.data || response,
       providesTags: ["User", "UserProfile"],
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          if (data) {
-            dispatch(setUser(data));
-          }
+          if (data) dispatch(setUser(data));
         } catch {
           // Handled by caller
         }
@@ -95,16 +142,14 @@ export const authApiSlice = baseApi.injectEndpoints({
       async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
-          if (data) {
-            dispatch(setUser(data));
-          }
+          if (data) dispatch(setUser(data));
         } catch {
           // Handled by caller
         }
       },
     }),
 
-    changePassword: builder.mutation<{ message: string }, { oldPassword: string; newPassword: string }>({
+    changePassword: builder.mutation<MessageOut, { oldPassword: string; newPassword: string }>({
       query: (body) => ({
         url: "/api/v1/auth/change-password",
         method: "POST",
@@ -134,7 +179,11 @@ export const authApiSlice = baseApi.injectEndpoints({
 
 export const {
   useLoginMutation,
+  useGoogleLoginMutation,
   useRegisterMutation,
+  useVerifyOtpMutation,
+  useResendOtpMutation,
+  useSetPasswordMutation,
   useGetMeQuery,
   useLazyGetMeQuery,
   useUpdateProfileMutation,

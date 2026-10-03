@@ -155,10 +155,10 @@ export function FlashSaleModal() {
               <div
                 style={{
                   left: "73.2%",
-                  top: "29.2%",
+                  top: "32.2%",
                   width: "13.5%",
                   height: "19.0%",
-                  transform: "rotate(15deg)",
+                  transform: "rotate(-15deg)",
                   transformOrigin: "center center",
                 }}
                 className="absolute z-20 flex items-center justify-center pointer-events-none"
@@ -175,14 +175,14 @@ export function FlashSaleModal() {
               ========================================================= */}
               <div
                 style={{
-                  left: "35.2%",
-                  top: "51.0%",
-                  width: "34.2%",
-                  height: "28.5%",
+                  left: "37.8%",
+                  top: "54%",
+                  width: "30%",
+                  height: "21%",
                   transform: "rotate(-1.5deg)",
                   transformOrigin: "center center",
                 }}
-                className="absolute z-20 flex flex-col items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2.5 text-center bg-black/40 backdrop-blur-[1px] rounded-xl sm:rounded-2xl border border-emerald-400/40 shadow-inner overflow-hidden"
+                className="absolute z-20 flex flex-col items-center justify-between px-2 sm:px-3 py-0.5 sm:py-1 text-center bg-black/40 backdrop-blur-[1px] rounded-xl sm:rounded-2xl border border-emerald-400/40 shadow-inner overflow-hidden"
               >
                 {/* Header: Cứu Gấp Còn */}
                 <div className="flex items-center justify-center gap-1">
@@ -219,11 +219,7 @@ export function FlashSaleModal() {
                   </div>
                 </div>
 
-                {/* Subtitle & Click Hint */}
-                <div className="w-full flex items-center justify-center gap-1 text-[8px] sm:text-[10px] font-black text-white/95">
-                  <span className="text-amber-300">Chạm để săn deal</span>
-                  <ArrowRight className="size-2.5 sm:size-3 text-amber-300" />
-                </div>
+
               </div>
             </div>
           </div>
@@ -232,4 +228,3 @@ export function FlashSaleModal() {
     </>
   );
 }
-

@@ -13,6 +13,8 @@ export interface UserOut {
   avatar_url?: string | null;
   address?: string | null;
   bio?: string | null;
+  googleId?: string | null;
+  emailVerified?: boolean;
   partnerCapability?: PartnerCapability;
   partnerProfileId?: string;
 }
@@ -22,6 +24,8 @@ export interface AuthResponseData {
   accessToken: string;
   refreshToken?: string;
   expiresIn?: string;
+  requireOtp?: boolean;
+  requirePassword?: boolean;
 }
 
 export interface TokenOut {
@@ -29,11 +33,17 @@ export interface TokenOut {
   accessToken?: string;
   token_type?: string;
   user?: UserOut;
+  requireOtp?: boolean;
+  requirePassword?: boolean;
 }
 
 export interface LoginIn {
   email: string;
   password: string;
+}
+
+export interface GoogleLoginIn {
+  idToken: string;
 }
 
 export interface RegisterIn {
@@ -42,8 +52,15 @@ export interface RegisterIn {
   email: string;
   password: string;
   phone?: string;
-  role?: "USER" | "PARTNER";
   address?: string;
+}
+
+export interface VerifyOtpIn {
+  code: string;
+}
+
+export interface SetPasswordIn {
+  password: string;
 }
 
 export interface MessageOut {
