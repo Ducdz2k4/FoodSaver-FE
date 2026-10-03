@@ -4,6 +4,7 @@ import StoreProvider from "@/redux/StoreProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import { GlobalClientProviders } from "@/components/common/GlobalClientProviders";
+import { GoogleAuthProvider } from "@/components/common/GoogleAuthProvider";
 
 const poppins = localFont({
   src: [
@@ -61,15 +62,17 @@ export default function RootLayout({
   return (
     <html lang="vi" className={poppins.variable}>
       <body className={poppins.className}>
-        <StoreProvider>
-          <AuthProvider>
-            <SocketProvider>
+        <GoogleAuthProvider>
+          <StoreProvider>
+            <AuthProvider>
+              <SocketProvider>
               <GlobalClientProviders>
                 {children}
               </GlobalClientProviders>
-            </SocketProvider>
-          </AuthProvider>
-        </StoreProvider>
+              </SocketProvider>
+            </AuthProvider>
+          </StoreProvider>
+        </GoogleAuthProvider>
       </body>
     </html>
   );

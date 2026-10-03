@@ -11,21 +11,13 @@ const baseQuery = fetchBaseQuery({
   prepareHeaders: (headers, { getState }) => {
     let token: string | null = null;
     try {
-      const state = getState() as RootState;
-      token = state.auth?.token || null;
+      token = (getState() as RootState).auth?.token || null;
     } catch {
-      // Fallback
+      // Use local storage below when the Redux store is unavailable.
     }
 
-    if (!token && typeof window !== "undefined") {
-      token = localStorage.getItem("token");
-    }
-
-    // Attach real JWT token (skip mock tokens for backend calls)
-    if (token && !token.startsWith("mock-")) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-
+    if (!token && typeof window !== "undefined") token = localStorage.getItem("token");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
     return headers;
   },
 });

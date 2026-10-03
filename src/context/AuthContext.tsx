@@ -4,7 +4,11 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { UserOut, LoginIn, RegisterIn, TokenOut, PartnerCapability } from "@/types/auth";
 import {
   useLoginMutation,
+  useGoogleLoginMutation,
   useRegisterMutation,
+  useVerifyOtpMutation,
+  useResendOtpMutation,
+  useSetPasswordMutation,
   useLazyGetMeQuery,
   useLogoutMutation,
 } from "@/redux/api/authApi";
@@ -22,8 +26,6 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-
-  // Role & Capability Detection Helpers
   role: string | null;
   partnerCapability: PartnerCapability;
   isAdmin: boolean;
@@ -33,10 +35,12 @@ interface AuthContextType {
   isCustomer: boolean;
   hasRole: (...roles: string[]) => boolean;
   hasCapability: (...capabilities: PartnerCapability[]) => boolean;
-
-  // Actions
   login: (payload: LoginIn) => Promise<TokenOut>;
-  register: (payload: RegisterIn) => Promise<UserOut>;
+  googleLogin: (idToken: string) => Promise<TokenOut>;
+  register: (payload: RegisterIn) => Promise<TokenOut>;
+  verifyOtp: (code: string) => Promise<UserOut | null>;
+  resendOtp: () => Promise<void>;
+  setPassword: (password: string) => Promise<void>;
   updateUserLocal: (updated: Partial<UserOut>) => void;
   logout: () => void;
   refreshUser: () => Promise<UserOut | null>;
@@ -51,74 +55,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   const [loginMutation] = useLoginMutation();
+  const [googleLoginMutation] = useGoogleLoginMutation();
   const [registerMutation] = useRegisterMutation();
+  const [verifyOtpMutation] = useVerifyOtpMutation();
+  const [resendOtpMutation] = useResendOtpMutation();
+  const [setPasswordMutation] = useSetPasswordMutation();
   const [triggerGetMe] = useLazyGetMeQuery();
   const [logoutMutation] = useLogoutMutation();
 
   const [initialLoading, setInitialLoading] = useState(true);
   const hasInitializedRef = useRef(false);
 
-  // Computed Role & Capability Detection
   const role = useMemo(() => user?.role?.toUpperCase() || null, [user?.role]);
-
   const partnerCapability: PartnerCapability = useMemo(
     () => user?.partnerCapability || "NONE",
     [user?.partnerCapability]
   );
-
-  const isAdmin = useMemo(
-    () => role === "ADMIN" || role === "SYS_ADMIN",
-    [role]
-  );
-
-  const isPartner = useMemo(
-    () => partnerCapability === "VERIFIED",
-    [partnerCapability]
-  );
-
-  const isPendingPartner = useMemo(
-    () => partnerCapability === "PENDING",
-    [partnerCapability]
-  );
-
-  const isRejectedPartner = useMemo(
-    () => partnerCapability === "REJECTED",
-    [partnerCapability]
-  );
-
-  const isCustomer = useMemo(
-    () => isAuthenticated && !isAdmin,
-    [isAuthenticated, isAdmin]
-  );
+  const isAdmin = useMemo(() => role === "ADMIN" || role === "SYS_ADMIN", [role]);
+  const isPartner = useMemo(() => partnerCapability === "VERIFIED", [partnerCapability]);
+  const isPendingPartner = useMemo(() => partnerCapability === "PENDING", [partnerCapability]);
+  const isRejectedPartner = useMemo(() => partnerCapability === "REJECTED", [partnerCapability]);
+  const isCustomer = useMemo(() => isAuthenticated && !isAdmin, [isAuthenticated, isAdmin]);
 
   const hasRole = useCallback(
-    (...roles: string[]) => {
-      if (!role) return false;
-      return roles.map((r) => r.toUpperCase()).includes(role);
-    },
+    (...roles: string[]) => Boolean(role && roles.map((value) => value.toUpperCase()).includes(role)),
     [role]
   );
 
   const hasCapability = useCallback(
-    (...capabilities: PartnerCapability[]) => {
-      return capabilities.includes(partnerCapability);
-    },
+    (...capabilities: PartnerCapability[]) => capabilities.includes(partnerCapability),
     [partnerCapability]
   );
 
   const refreshUser = useCallback(async (): Promise<UserOut | null> => {
-    const storedToken =
-      token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+    const storedToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
 
     if (!storedToken) {
       setInitialLoading(false);
       return null;
-    }
-
-    // Skip remote check if using mock token
-    if (storedToken.startsWith("mock-")) {
-      setInitialLoading(false);
-      return user;
     }
 
     try {
@@ -131,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setInitialLoading(false);
     }
-  }, [token, triggerGetMe, dispatch]); // user is intentionally omitted from dependencies to avoid infinite loop
+  }, [token, triggerGetMe, dispatch]);
 
   useEffect(() => {
     if (!hasInitializedRef.current) {
@@ -140,41 +114,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [refreshUser]);
 
-  // Safety fallback: if initialLoading takes more than 3s, force release
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-    }, 3000);
+    const timer = setTimeout(() => setInitialLoading(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
+  const toTokenOut = (response: { accessToken?: string; access_token?: string; user?: UserOut; requireOtp?: boolean; requirePassword?: boolean }): TokenOut => ({
+    access_token: response.accessToken || response.access_token,
+    accessToken: response.accessToken || response.access_token,
+    user: response.user,
+    requireOtp: response.requireOtp,
+    requirePassword: response.requirePassword,
+  });
+
   const login = async (payload: LoginIn): Promise<TokenOut> => {
-    const res = await loginMutation(payload).unwrap();
-    const accessToken = res.accessToken || (res as any).access_token;
-    const userData = res.user;
-    if (accessToken && !userData) {
-      try {
-        await triggerGetMe().unwrap();
-      } catch {
-        // Ignored
-      }
-    }
-    return {
-      access_token: accessToken,
-      accessToken,
-      user: userData || undefined,
-    };
+    const response = await loginMutation(payload).unwrap();
+    return toTokenOut(response);
   };
 
-  const register = async (payload: RegisterIn): Promise<UserOut> => {
-    const res = await registerMutation(payload).unwrap();
-    return res.user;
+  const googleLogin = async (idToken: string): Promise<TokenOut> => {
+    const response = await googleLoginMutation({ idToken }).unwrap();
+    return toTokenOut(response);
+  };
+
+  const register = async (payload: RegisterIn): Promise<TokenOut> => {
+    const response = await registerMutation(payload).unwrap();
+    return toTokenOut(response);
+  };
+
+  const verifyOtp = async (code: string): Promise<UserOut | null> => {
+    const response = await verifyOtpMutation({ code }).unwrap();
+    if (response.user) dispatch(setUser(response.user));
+    return response.user || null;
+  };
+
+  const resendOtp = async (): Promise<void> => {
+    await resendOtpMutation().unwrap();
+  };
+
+  const setPassword = async (password: string): Promise<void> => {
+    await setPasswordMutation({ password }).unwrap();
   };
 
   const updateUserLocal = (updated: Partial<UserOut>) => {
-    if (user) {
-      dispatch(setUser({ ...user, ...updated }));
-    }
+    if (user) dispatch(setUser({ ...user, ...updated }));
   };
 
   const logout = () => {
@@ -199,7 +182,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hasRole,
         hasCapability,
         login,
+        googleLogin,
         register,
+        verifyOtp,
+        resendOtp,
+        setPassword,
         updateUserLocal,
         logout,
         refreshUser,
@@ -212,8 +199,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
