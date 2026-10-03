@@ -23,30 +23,34 @@ export default function PartnerDashboardPage() {
   const listings = realListings || [];
   const orders = realOrders || [];
 
-  // Compute live metrics
-  const totalSavedCount = orders.filter((o) => o.status === "COMPLETED").reduce((acc, o) => acc + o.quantity, 0) || 142;
-  const totalRevenue = orders.filter((o) => o.status === "COMPLETED").reduce((acc, o) => acc + o.totalPrice, 0) || 4850000;
+  const completedOrders = orders.filter((order) => order.status === "COMPLETED");
+  const totalSavedCount = completedOrders.reduce((total, order) => total + order.quantity, 0);
+  const totalRevenue = completedOrders.reduce((total, order) => total + order.totalPrice, 0);
+  const totalCo2Avoided = Math.round(totalSavedCount * 2.5);
   const pendingOrdersCount = orders.filter((o) => o.status === "PENDING").length;
+  const completedOrdersDescription = completedOrders.length > 0
+    ? `Từ ${completedOrders.length} đơn hoàn tất`
+    : "Chưa có đơn hoàn tất";
 
   const stats = [
     {
       title: "Suất ăn đã cứu",
       value: `${totalSavedCount} suất`,
-      change: "+18% tuần này",
+      change: completedOrdersDescription,
       icon: UtensilsCrossed,
       color: "bg-emerald-50 text-emerald-700 border-emerald-200",
     },
     {
       title: "Doanh thu thu hồi",
       value: `${totalRevenue.toLocaleString("vi-VN")}đ`,
-      change: "Từ đồ ăn cận date",
+      change: completedOrdersDescription,
       icon: DollarSign,
       color: "bg-blue-50 text-blue-700 border-blue-200",
     },
     {
       title: "CO2 giảm phát thải",
-      value: `${Math.round(totalSavedCount * 2.5)} kg`,
-      change: "Tương đương 35 cây xanh",
+      value: `${totalCo2Avoided.toLocaleString("vi-VN")} kg`,
+      change: completedOrders.length > 0 ? "Ước tính từ đơn hoàn tất" : "Chưa có dữ liệu ước tính",
       icon: Leaf,
       color: "bg-[#79e4a7]/20 text-[#00615f] border-[#79e4a7]/40",
     },
