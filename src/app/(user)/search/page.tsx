@@ -20,6 +20,7 @@ import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
 import { FoodCategory, ListingDTO } from "@/types/contract";
 import { IMAGES } from "@/constants/images";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
+import { useGetMyFavoritesQuery, useAddFavoriteMutation, useRemoveFavoriteMutation } from "@/redux/api/favoriteApi";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -110,7 +111,10 @@ function DiscoverContent() {
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | "ALL">("ALL");
   const [activeTab, setActiveTab] = useState<QuickTab>("NEARBY");
   const [radiusKm, setRadiusKm] = useState<number>(5);
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const { data: myFavoriteIds = [] } = useGetMyFavoritesQuery(undefined, { skip: !user });
+  const [addFavorite] = useAddFavoriteMutation();
+  const [removeFavorite] = useRemoveFavoriteMutation();
+  const favoriteSet = useMemo(() => new Set(myFavoriteIds), [myFavoriteIds]);
   const [userAddress, setUserAddress] = useState(user?.address || "");
 
   useEffect(() => {
@@ -185,18 +189,25 @@ function DiscoverContent() {
     return result;
   }, [baseListings, searchTerm, selectedCategory, radiusKm, activeTab]);
 
-  const toggleFavorite = (e: React.MouseEvent, id: string) => {
+  const toggleFavorite = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setFavorites((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-    toast.success(
-      favorites[id]
-        ? "Đã xóa món khỏi danh sách yêu thích"
-        : "Đã lưu món vào danh sách yêu thích!"
-    );
+    if (!user) {
+      toast.error("Vui lòng đăng nhập để lưu danh sách yêu thích!");
+      return;
+    }
+    const isCurrentlyFav = favoriteSet.has(id);
+    try {
+      if (isCurrentlyFav) {
+        await removeFavorite(id).unwrap();
+        toast.success("Đã xóa món khỏi danh sách yêu thích");
+      } else {
+        await addFavorite(id).unwrap();
+        toast.success("Đã lưu món vào danh sách yêu thích!");
+      }
+    } catch {
+      toast.error("Không thể cập nhật danh sách yêu thích");
+    }
   };
 
   const handleDetectGPS = () => {
@@ -452,7 +463,7 @@ function DiscoverContent() {
                 const discountPercent = Math.round(
                   (discountAmount / item.originalPrice) * 100
                 );
-                const isFav = favorites[item.id];
+                const isFav = favoriteSet.has(item.id);
 
                 return (
                   <Link

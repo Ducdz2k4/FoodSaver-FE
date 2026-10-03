@@ -40,6 +40,7 @@ export const baseApi = createApi({
     "Notification",
     "AdminListings",
     "SystemHealth",
+    "Favorite",
   ],
   endpoints: () => ({}),
 });
