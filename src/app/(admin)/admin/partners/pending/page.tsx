@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { AdminPageHeader, AdminEmptyState } from "@/components/admin";
 import { Card, CardContent } from "@/components/admin/ui/card";
 import {
@@ -23,27 +23,48 @@ import {
 } from "@/components/admin/ui/dialog";
 import { Input } from "@/components/admin/ui/input";
 import { PartnerProfileDTO } from "@/types/contract";
-import { useGetPendingPartnersQuery, useVerifyPartnerMutation } from "@/redux/api/partnerApi";
+import { useGetAllPartnersQuery, useVerifyPartnerMutation } from "@/redux/api/partnerApi";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ExternalLink, ShieldCheck, Clock, AlertCircle } from "lucide-react";
+
+type TabFilter = "PENDING" | "VERIFIED" | "REJECTED" | "ALL";
 
 export default function AdminPendingPartnersPage() {
-  const { data: realPartners, isLoading, isFetching } = useGetPendingPartnersQuery();
+  const [activeTab, setActiveTab] = useState<TabFilter>("PENDING");
+  const { data: realPartners, isLoading, isFetching, refetch } = useGetAllPartnersQuery();
   const [verifyPartnerMutation, { isLoading: isVerifying }] = useVerifyPartnerMutation();
 
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  // 100% real database data from backend
-  const pendingList: PartnerProfileDTO[] = realPartners || [];
+  const allPartners: PartnerProfileDTO[] = useMemo(() => realPartners || [], [realPartners]);
+
+  const pendingCount = useMemo(
+    () => allPartners.filter((p) => p.verificationStatus === "PENDING").length,
+    [allPartners]
+  );
+  const verifiedCount = useMemo(
+    () => allPartners.filter((p) => p.verificationStatus === "VERIFIED").length,
+    [allPartners]
+  );
+  const rejectedCount = useMemo(
+    () => allPartners.filter((p) => p.verificationStatus === "REJECTED").length,
+    [allPartners]
+  );
+
+  const displayedList = useMemo(() => {
+    if (activeTab === "ALL") return allPartners;
+    return allPartners.filter((p) => p.verificationStatus === activeTab);
+  }, [allPartners, activeTab]);
 
   const handleApprove = async (id: string) => {
     try {
       await verifyPartnerMutation({ id, status: "VERIFIED" }).unwrap();
-      toast.success("Đã phê duyệt hồ sơ đối tác thành công!");
+      toast.success("Đã phê duyệt hồ sơ đối tác thành công! Quyền bán hàng đã được cấp.");
+      refetch();
     } catch (err: any) {
-      toast.error(err?.data?.message || "Phê duyệt hồ sơ thất bại");
+      toast.error(err?.data?.message || err?.message || "Phê duyệt hồ sơ thất bại");
     }
   };
 
@@ -59,12 +80,13 @@ export default function AdminPendingPartnersPage() {
           status: "REJECTED",
           rejectionReason: rejectionReason.trim(),
         }).unwrap();
-        toast.info("Đã từ chối hồ sơ đối tác và thông báo lý do.");
+        toast.info("Đã từ chối hồ sơ đối tác và gửi thông báo lý do.");
         setRejectingId(null);
         setRejectionReason("");
+        refetch();
       }
     } catch (err: any) {
-      toast.error(err?.data?.message || "Từ chối hồ sơ thất bại");
+      toast.error(err?.data?.message || err?.message || "Từ chối hồ sơ thất bại");
     }
   };
 
@@ -78,12 +100,75 @@ export default function AdminPendingPartnersPage() {
               <Loader2 className="size-3 animate-spin" />
               <span>Đang đồng bộ...</span>
             </div>
-          ) : pendingList.length > 0 ? (
-            `${pendingList.length} hồ sơ chờ`
+          ) : pendingCount > 0 ? (
+            `${pendingCount} hồ sơ chờ`
           ) : undefined
         }
         description="Kiểm tra đối chiếu giấy phép kinh doanh và chứng nhận an toàn thực phẩm trước khi cấp quyền bán hàng."
       />
+
+      {/* Tabs Filter */}
+      <div className="flex items-center gap-2 border-b pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab("PENDING")}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === "PENDING"
+              ? "bg-[#00615f] text-white shadow-sm"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          <Clock className="size-3.5" />
+          <span>Hồ sơ chờ duyệt</span>
+          <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+            {pendingCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("VERIFIED")}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === "VERIFIED"
+              ? "bg-[#00615f] text-white shadow-sm"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          <ShieldCheck className="size-3.5" />
+          <span>Đã phê duyệt</span>
+          <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+            {verifiedCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("REJECTED")}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === "REJECTED"
+              ? "bg-[#00615f] text-white shadow-sm"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          <AlertCircle className="size-3.5" />
+          <span>Bị từ chối</span>
+          <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-white/20">
+            {rejectedCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("ALL")}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === "ALL"
+              ? "bg-[#00615f] text-white shadow-sm"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          Tất cả ({allPartners.length})
+        </button>
+      </div>
 
       <Card>
         <CardContent className="p-0">
@@ -92,7 +177,7 @@ export default function AdminPendingPartnersPage() {
               <Loader2 className="size-5 animate-spin text-primary" />
               <span className="text-xs">Đang tải danh sách hồ sơ đối tác từ cơ sở dữ liệu...</span>
             </div>
-          ) : pendingList.length > 0 ? (
+          ) : displayedList.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -100,12 +185,13 @@ export default function AdminPendingPartnersPage() {
                   <TableHead className="w-[140px]">Mã ĐKKD</TableHead>
                   <TableHead className="w-[130px]">Loại hình</TableHead>
                   <TableHead>Địa chỉ</TableHead>
-                  <TableHead className="w-[200px]">Hồ sơ đính kèm</TableHead>
-                  <TableHead className="w-[180px] text-right">Thao tác</TableHead>
+                  <TableHead className="w-[130px]">Trạng thái</TableHead>
+                  <TableHead className="w-[180px]">Hồ sơ đính kèm</TableHead>
+                  <TableHead className="w-[190px] text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingList.map((partner) => (
+                {displayedList.map((partner) => (
                   <TableRow key={partner.id}>
                     <TableCell className="font-medium">
                       <div>
@@ -121,13 +207,36 @@ export default function AdminPendingPartnersPage() {
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant="secondary" className="font-normal capitalize">
+                      <Badge variant="secondary" className="font-normal capitalize text-[11px]">
                         {partner.businessType.toLowerCase().replace("_", " ")}
                       </Badge>
                     </TableCell>
 
                     <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
                       {partner.address}
+                    </TableCell>
+
+                    <TableCell>
+                      {partner.verificationStatus === "VERIFIED" ? (
+                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] font-bold">
+                          Đã duyệt
+                        </Badge>
+                      ) : partner.verificationStatus === "REJECTED" ? (
+                        <div className="space-y-0.5">
+                          <Badge variant="destructive" className="text-[10px] font-bold">
+                            Từ chối
+                          </Badge>
+                          {partner.rejectionReason && (
+                            <span className="block text-[10px] text-muted-foreground truncate max-w-[120px]" title={partner.rejectionReason}>
+                              {partner.rejectionReason}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-[10px] font-bold">
+                          Chờ duyệt
+                        </Badge>
+                      )}
                     </TableCell>
 
                     <TableCell>
@@ -163,23 +272,50 @@ export default function AdminPendingPartnersPage() {
 
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={isVerifying}
-                          className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => setRejectingId(partner.id)}
-                        >
-                          Từ chối
-                        </Button>
-                        <Button
-                          size="sm"
-                          disabled={isVerifying}
-                          className="h-8 text-xs"
-                          onClick={() => handleApprove(partner.id)}
-                        >
-                          Phê duyệt
-                        </Button>
+                        {partner.verificationStatus === "PENDING" && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={isVerifying}
+                              className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive cursor-pointer"
+                              onClick={() => setRejectingId(partner.id)}
+                            >
+                              Từ chối
+                            </Button>
+                            <Button
+                              size="sm"
+                              disabled={isVerifying}
+                              className="h-8 text-xs bg-[#00615f] hover:bg-[#089184] text-white cursor-pointer"
+                              onClick={() => handleApprove(partner.id)}
+                            >
+                              Phê duyệt
+                            </Button>
+                          </>
+                        )}
+
+                        {partner.verificationStatus === "VERIFIED" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isVerifying}
+                            className="h-8 text-xs text-destructive hover:bg-destructive/10 cursor-pointer"
+                            onClick={() => setRejectingId(partner.id)}
+                          >
+                            Hủy quyền bán
+                          </Button>
+                        )}
+
+                        {partner.verificationStatus === "REJECTED" && (
+                          <Button
+                            size="sm"
+                            disabled={isVerifying}
+                            className="h-8 text-xs bg-[#00615f] hover:bg-[#089184] text-white cursor-pointer"
+                            onClick={() => handleApprove(partner.id)}
+                          >
+                            Phê duyệt lại
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -188,7 +324,15 @@ export default function AdminPendingPartnersPage() {
             </Table>
           ) : (
             <AdminEmptyState
-              title="Không có hồ sơ nào chờ duyệt"
+              title={
+                activeTab === "PENDING"
+                  ? "Không có hồ sơ nào chờ duyệt"
+                  : activeTab === "VERIFIED"
+                  ? "Chưa có đối tác nào được duyệt"
+                  : activeTab === "REJECTED"
+                  ? "Không có hồ sơ nào bị từ chối"
+                  : "Chưa có hồ sơ đối tác nào trong hệ thống"
+              }
               description="Toàn bộ hồ sơ đăng ký đối tác F&B trong cơ sở dữ liệu đã được xử lý hoàn tất."
             />
           )}
@@ -201,16 +345,34 @@ export default function AdminPendingPartnersPage() {
           <DialogHeader>
             <DialogTitle className="text-base">{previewDoc?.title}</DialogTitle>
           </DialogHeader>
-          <div className="relative aspect-[4/3] w-full rounded-md overflow-hidden border bg-muted my-2">
-            {previewDoc && (
+          <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden border bg-stone-50 my-2 flex items-center justify-center">
+            {previewDoc?.url ? (
               <img
                 src={previewDoc.url}
                 alt={previewDoc.title}
                 className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
               />
+            ) : (
+              <div className="text-center p-6 text-muted-foreground text-xs">
+                Chưa có hình ảnh giấy tờ đính kèm cho hồ sơ này.
+              </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
+            {previewDoc?.url ? (
+              <a
+                href={previewDoc.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-bold text-[#00615f] hover:underline flex items-center gap-1"
+              >
+                <span>Mở trong tab mới</span>
+                <ExternalLink className="size-3" />
+              </a>
+            ) : <div />}
             <Button variant="outline" size="sm" onClick={() => setPreviewDoc(null)}>
               Đóng
             </Button>
@@ -222,16 +384,16 @@ export default function AdminPendingPartnersPage() {
       <Dialog open={!!rejectingId} onOpenChange={(open) => !open && setRejectingId(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-base">Từ chối hồ sơ đối tác</DialogTitle>
+            <DialogTitle className="text-base">Từ chối / Hủy cấp quyền đối tác</DialogTitle>
             <DialogDescription className="text-xs">
-              Vui lòng nêu rõ lý do để đối tác nhận được thông báo và bổ sung hồ sơ.
+              Vui lòng nêu rõ lý do để đối tác nhận được thông báo in-app và cập nhật lại giấy tờ.
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <Input
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Ví dụ: Giấy chứng nhận ATTP đã hết hiệu lực..."
+              placeholder="Ví dụ: Giấy chứng nhận ATTP đã hết hạn, vui lòng nộp bản mới..."
               className="text-xs"
             />
           </div>
