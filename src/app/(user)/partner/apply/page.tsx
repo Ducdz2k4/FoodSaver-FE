@@ -41,6 +41,12 @@ export default function PartnerApplyPage() {
   const [foodSafetyCertUrl, setFoodSafetyCertUrl] = useState("");
   const [hasAgreed, setHasAgreed] = useState(false);
 
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      router.replace(`/login?redirect=${encodeURIComponent("/partner/apply")}`);
+    }
+  }, [isAuthLoading, isAuthenticated, router]);
+
   // Auto redirect if already verified or pending
   useEffect(() => {
     if (partnerProfile) {
