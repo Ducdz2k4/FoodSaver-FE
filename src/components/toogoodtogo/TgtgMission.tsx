@@ -24,24 +24,21 @@ const COMMITMENTS = [
   },
 ];
 
-const IMPACT_FIGURES = [
+const IMPACT_HIGHLIGHTS = [
   {
     icon: Utensils,
-    value: "12,480",
-    label: "Meals rescued",
-    desc: "Quality food enjoyed, not wasted",
+    title: "Mỗi đơn hoàn tất",
+    description: "giúp thực phẩm chất lượng được sử dụng thay vì lãng phí.",
   },
   {
     icon: Leaf,
-    value: "3.2 t",
-    label: "Food waste avoided",
-    desc: "Direct reduction in landfill carbon emissions",
+    title: "Mỗi món được giải cứu",
+    description: "góp phần giảm lượng thực phẩm phải bỏ đi không cần thiết.",
   },
   {
     icon: Store,
-    value: "86",
-    label: "Partner stores",
-    desc: "Bakeries, corner shops & local businesses",
+    title: "Mỗi đối tác được xác thực",
+    description: "cùng xây dựng mạng lưới thực phẩm an toàn, minh bạch.",
   },
 ];
 
@@ -98,16 +95,14 @@ export function TgtgMission() {
         {/* Impact Figures Section */}
         <div className="pt-8 border-t border-stone-200/70">
           <div className="text-center mb-10">
-            <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#00615f]/70">
-              Community Impact
-            </p>
+            <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#00615f]/70">Community Impact</p>
             <h3 className="text-2xl sm:text-3xl font-black text-[#00615f] mt-1">
-              Real results across our local network
+              Tác động tích cực từ từng hành động nhỏ
             </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {IMPACT_FIGURES.map((stat, i) => {
+            {IMPACT_HIGHLIGHTS.map((stat, i) => {
               const Icon = stat.icon;
               return (
                 <div
@@ -117,14 +112,11 @@ export function TgtgMission() {
                   <div className="size-12 rounded-2xl bg-[#79e4a7]/20 text-[#00615f] flex items-center justify-center mb-4">
                     <Icon className="size-6" />
                   </div>
-                  <div className="text-3xl sm:text-4xl font-black text-[#00615f] tracking-tight">
-                    {stat.value}
-                  </div>
                   <div className="text-sm font-bold text-[#252d2d] mt-1">
-                    {stat.label}
+                    {stat.title}
                   </div>
                   <div className="text-xs text-stone-500 mt-1">
-                    {stat.desc}
+                    {stat.description}
                   </div>
                 </div>
               );
