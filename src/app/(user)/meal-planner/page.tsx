@@ -22,8 +22,11 @@ import {
   Store,
   Tag,
   Loader2,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useGetRecipesQuery, RecipeDTO } from "@/redux/api/mealPlannerApi";
+import { AddToCalendarModal } from "@/components/meal-planner/AddToCalendarModal";
 
 const CATEGORIES = [
   { key: "all", label: "Tất cả", icon: Sparkles },
@@ -75,6 +78,7 @@ export default function MealPlannerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [calendarModalRecipe, setCalendarModalRecipe] = useState<RecipeDTO | null>(null);
 
   const { data: response, isLoading, isFetching } = useGetRecipesQuery({
     category: activeCategory,
@@ -194,7 +198,9 @@ export default function MealPlannerPage() {
                   <div>
                     {/* Photo Header */}
                     <div className="relative">
-                      <RecipeImage recipe={recipe} />
+                      <Link href={`/meal-planner/${recipe.id}`} className="block">
+                        <RecipeImage recipe={recipe} />
+                      </Link>
 
                       {/* Favorite Button */}
                       <button
@@ -222,9 +228,11 @@ export default function MealPlannerPage() {
 
                     {/* Card Info */}
                     <div className="p-4 pb-3">
-                      <h3 className="font-bold text-stone-900 text-sm leading-snug group-hover:text-[#00615f] transition-colors">
-                        {recipe.name}
-                      </h3>
+                      <Link href={`/meal-planner/${recipe.id}`} className="block group/title">
+                        <h3 className="font-bold text-stone-900 text-sm leading-snug group-hover/title:text-[#00615f] transition-colors">
+                          {recipe.name}
+                        </h3>
+                      </Link>
 
                       <div className="mt-1 flex items-center gap-1.5">
                         <div className="flex items-center gap-0.5">
@@ -283,20 +291,37 @@ export default function MealPlannerPage() {
 
                   {/* Card Cost Footer */}
                   <div>
-                    <div className="px-4 py-2.5 bg-stone-50/80 border-t border-stone-100 flex items-center justify-between">
+                    <div className="px-3.5 py-2.5 bg-stone-50/80 border-t border-stone-100 flex items-center justify-between gap-2">
                       <div>
                         <p className="text-[10px] text-stone-500">Ước tính / người</p>
-                        <p className="text-sm font-bold text-stone-900">
+                        <p className="text-xs sm:text-sm font-bold text-stone-900">
                           ~{formatVND(Math.round(totalIngredientCost / (recipe.servings || 1)))}
                         </p>
                       </div>
-                      <button
-                        onClick={() => setExpandedRecipe(isExpanded ? null : recipe.id)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-[#00615f] text-white text-[11px] font-medium transition-colors"
-                      >
-                        {isExpanded ? "Thu gọn" : "Chi tiết"}
-                        <ChevronRight className={`size-3 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCalendarModalRecipe(recipe);
+                          }}
+                          className="rounded-lg text-[11px] gap-1 font-bold shadow-2xs cursor-pointer"
+                          title="Thêm món này vào lịch thực đơn tháng"
+                        >
+                          <CalendarIcon className="size-3" />
+                          <span>+ Lịch</span>
+                        </Button>
+
+                        <Link
+                          href={`/meal-planner/${recipe.id}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 hover:text-stone-900 text-[11px] font-semibold transition cursor-pointer"
+                        >
+                          <span>Chi tiết</span>
+                          <ChevronRight className="size-3 text-stone-400" />
+                        </Link>
+                      </div>
                     </div>
 
                     {/* Expandable Recipe Detail */}
@@ -370,6 +395,13 @@ export default function MealPlannerPage() {
           </div>
         )}
       </section>
+
+      {/* Add To Calendar Modal */}
+      <AddToCalendarModal
+        isOpen={Boolean(calendarModalRecipe)}
+        onClose={() => setCalendarModalRecipe(null)}
+        recipe={calendarModalRecipe}
+      />
     </div>
   );
 }

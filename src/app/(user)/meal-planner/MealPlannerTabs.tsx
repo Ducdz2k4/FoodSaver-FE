@@ -14,7 +14,7 @@ export function MealPlannerTabs() {
       label: "Thực đơn & Công thức",
       icon: ChefHat,
       badge: "16 món",
-      isActive: pathname === "/meal-planner",
+      isActive: pathname === "/meal-planner" || (!pathname.startsWith("/meal-planner/calendar") && !pathname.startsWith("/meal-planner/community") && !pathname.startsWith("/meal-planner/chat")),
     },
     {
       href: "/meal-planner/calendar",
