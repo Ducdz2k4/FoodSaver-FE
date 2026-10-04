@@ -103,12 +103,24 @@ export default function MealPlannerChatPage() {
     const textarea = inputRef.current;
     if (!textarea) return;
     textarea.style.height = "auto";
-    const maxHeight = 88; // ~3 lines
+    const maxHeight = 96; // ~3 lines
     const scrollHeight = textarea.scrollHeight;
+    if (!textarea.value || textarea.value.trim() === "") {
+      textarea.style.height = "44px";
+      textarea.style.overflowY = "hidden";
+      return;
+    }
     const nextHeight = Math.min(scrollHeight, maxHeight);
-    textarea.style.height = `${Math.max(42, nextHeight)}px`;
+    textarea.style.height = `${Math.max(44, nextHeight)}px`;
     textarea.style.overflowY = scrollHeight > maxHeight ? "auto" : "hidden";
   };
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "44px";
+      inputRef.current.style.overflowY = "hidden";
+    }
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -165,6 +177,10 @@ export default function MealPlannerChatPage() {
 
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    if (inputRef.current) {
+      inputRef.current.style.height = "44px";
+      inputRef.current.style.overflowY = "hidden";
+    }
     setIsTyping(true);
 
     try {
@@ -454,6 +470,176 @@ export default function MealPlannerChatPage() {
                   {/* ══════ RICH CARDS EMBEDDED IN CHAT ══════ */}
                   {msg.richCards && (
                     <div className="space-y-2.5 animate-in fade-in zoom-in-95">
+                      {/* Rich Card: Calendar Conflict Detected */}
+                      {msg.richCards.type === "calendar_conflict" && msg.richCards.data && (
+                        <div className="rounded-2xl border border-amber-300 bg-amber-50/70 p-4 space-y-3 shadow-xs">
+                          <div className="flex items-center justify-between pb-2 border-b border-amber-200/80">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                              <AlertTriangle className="size-3.5 text-amber-700" />
+                              <span>LỊCH ĂN ĐÃ CÓ MÓN ({msg.richCards.data.formattedDate || msg.richCards.data.date})</span>
+                            </span>
+                            <span className="text-[10px] font-semibold text-amber-800">
+                              Phát hiện xung đột lịch
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-stone-700">
+                            Ngày này trong hệ thống của bạn đã có các món ăn sau:
+                          </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            {msg.richCards.data.existing?.breakfast && (
+                              <div className="p-2.5 rounded-xl bg-white border border-amber-200/80">
+                                <p className="text-[10px] font-semibold text-stone-500">🌅 Bữa sáng</p>
+                                <p className="text-xs font-bold text-stone-900 mt-0.5 truncate">
+                                  {msg.richCards.data.existing.breakfast.meal}
+                                </p>
+                                <p className="text-[11px] text-[#00615f] font-semibold">
+                                  {formatVND(msg.richCards.data.existing.breakfast.cost)}
+                                </p>
+                              </div>
+                            )}
+                            {msg.richCards.data.existing?.lunch && (
+                              <div className="p-2.5 rounded-xl bg-white border border-amber-200/80">
+                                <p className="text-[10px] font-semibold text-stone-500">☀️ Bữa trưa</p>
+                                <p className="text-xs font-bold text-stone-900 mt-0.5 truncate">
+                                  {msg.richCards.data.existing.lunch.meal}
+                                </p>
+                                <p className="text-[11px] text-[#00615f] font-semibold">
+                                  {formatVND(msg.richCards.data.existing.lunch.cost)}
+                                </p>
+                              </div>
+                            )}
+                            {msg.richCards.data.existing?.dinner && (
+                              <div className="p-2.5 rounded-xl bg-white border border-amber-200/80">
+                                <p className="text-[10px] font-semibold text-stone-500">🌙 Bữa tối</p>
+                                <p className="text-xs font-bold text-stone-900 mt-0.5 truncate">
+                                  {msg.richCards.data.existing.dinner.meal}
+                                </p>
+                                <p className="text-[11px] text-[#00615f] font-semibold">
+                                  {formatVND(msg.richCards.data.existing.dinner.cost)}
+                                </p>
+                              </div>
+                            )}
+                            {msg.richCards.data.existing?.snack && (
+                              <div className="p-2.5 rounded-xl bg-white border border-amber-200/80">
+                                <p className="text-[10px] font-semibold text-stone-500">🍎 Bữa phụ</p>
+                                <p className="text-xs font-bold text-stone-900 mt-0.5 truncate">
+                                  {msg.richCards.data.existing.snack.meal}
+                                </p>
+                                <p className="text-[11px] text-[#00615f] font-semibold">
+                                  {formatVND(msg.richCards.data.existing.snack.cost)}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          <p className="text-xs font-semibold text-stone-800 pt-1">
+                            Bạn muốn thay thế như thế nào?
+                          </p>
+
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleSend("Thay thế toàn bộ ngày mai")}
+                              className="rounded-xl text-xs font-bold gap-1 shadow-xs"
+                            >
+                              <CheckCircle2 className="size-3.5" />
+                              <span>Thay thế toàn bộ</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSend("Chỉ thay thế Bữa trưa")}
+                              className="rounded-xl text-xs font-semibold"
+                            >
+                              Chỉ đổi Bữa trưa
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSend("Chỉ thay thế Bữa tối")}
+                              className="rounded-xl text-xs font-semibold"
+                            >
+                              Chỉ đổi Bữa tối
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSend("Chỉ thay thế Bữa sáng")}
+                              className="rounded-xl text-xs font-semibold"
+                            >
+                              Chỉ đổi Bữa sáng
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleSend("Giữ nguyên lịch cũ")}
+                              className="rounded-xl text-xs font-medium text-stone-600 hover:text-stone-900"
+                            >
+                              Giữ nguyên lịch cũ
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Rich Card: Calendar Applied Success */}
+                      {msg.richCards.type === "calendar_applied" && msg.richCards.data && (
+                        <div className="rounded-2xl border border-emerald-300 bg-emerald-50/80 p-4 space-y-3 shadow-xs">
+                          <div className="flex items-center justify-between pb-2 border-b border-emerald-200/80">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-100 text-[#00615f] border border-emerald-300">
+                              <CheckCircle2 className="size-3.5 text-emerald-600" />
+                              <span>ĐÃ LƯU VÀO CƠ SỞ DỮ LIỆU THỰC</span>
+                            </span>
+                            <span className="text-[10px] font-bold text-[#00615f]">
+                              Ngày: {msg.richCards.data.formattedDate || msg.richCards.data.date}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            {msg.richCards.data.slots?.map((slot: any, sIdx: number) => (
+                              <div
+                                key={sIdx}
+                                className="p-2.5 rounded-xl bg-white border border-emerald-200/70 flex items-center justify-between text-xs"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-stone-700">
+                                    {slot.slot === "breakfast" ? "🌅 Sáng" : slot.slot === "lunch" ? "☀️ Trưa" : slot.slot === "dinner" ? "🌙 Tối" : "🍎 Phụ"}:
+                                  </span>
+                                  <span className="font-semibold text-stone-900">{slot.meal || slot.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-[11px] font-bold text-[#00615f]">{formatVND(slot.cost)}</span>
+                                  <span className="text-[10px] text-stone-500">({slot.calories} kcal)</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="default"
+                              className="flex-1 rounded-xl text-xs font-bold gap-1.5 shadow-xs"
+                            >
+                              <Link href="/meal-planner/calendar">
+                                <CalendarIcon className="size-3.5" />
+                                <span>Mở xem Lịch ăn tháng</span>
+                              </Link>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSend("Tạo danh sách đi chợ cho ngày mai")}
+                              className="rounded-xl text-xs font-semibold"
+                            >
+                              Lập danh sách đi chợ
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       {/* Rich Card Type 1: Feasibility Negotiation */}
                       {msg.richCards.type === "feasibility_negotiation" && (
                         <div className="rounded-2xl border border-amber-200/90 bg-amber-50/60 p-3.5 space-y-3">
@@ -607,26 +793,38 @@ export default function MealPlannerChatPage() {
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </div>
+            </div>
+
+          {/* Floating Scroll to Bottom Button */}
+          {showScrollBottomBtn && (
+            <button
+              type="button"
+              onClick={() => scrollToBottom(true)}
+              className="absolute bottom-24 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-[#00615f] border border-stone-200/90 shadow-lg hover:bg-emerald-50 text-xs font-semibold cursor-pointer animate-in fade-in transition"
+            >
+              <ArrowDown className="size-3.5 animate-bounce text-[#00615f]" />
+              <span>Cuộn xuống dưới</span>
+            </button>
+          )}
 
           {/* Chat Input Bar */}
           <div className="p-3 sm:p-4 border-t border-stone-100 bg-white">
-            <form onSubmit={handleSubmit} className="flex gap-2">
+            <form onSubmit={handleSubmit} className="flex gap-2 items-end">
               <textarea
                 ref={inputRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Nhập câu hỏi (ví dụ: làm sao ăn 50K/ngày, 100k cho cả tháng 30 ngày, tìm quán gần đây...)..."
+                placeholder="Nhập câu hỏi (ví dụ: thực đơn ăn chay ngày mai, ăn 50K/ngày đủ chất không...)..."
                 rows={1}
-                className="flex-1 px-4 py-3 rounded-2xl bg-stone-50 border border-stone-200 text-xs sm:text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f] transition resize-none"
+                className="flex-1 px-4 py-3 rounded-2xl bg-stone-50 border border-stone-200 text-xs sm:text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f] transition resize-none overflow-hidden"
+                style={{ minHeight: "44px", maxHeight: "96px", height: "44px" }}
               />
               <Button
                 type="submit"
                 variant="default"
                 disabled={!input.trim() || isTyping}
-                className="shrink-0 px-4 sm:px-5 rounded-2xl font-bold gap-1.5 shadow-md h-auto py-3 cursor-pointer"
+                className="shrink-0 px-4 sm:px-5 rounded-2xl font-bold gap-1.5 shadow-md h-11 cursor-pointer"
               >
                 <Send className="size-4" />
                 <span className="hidden sm:inline">Gửi</span>
