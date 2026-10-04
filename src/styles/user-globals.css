@@ -175,7 +175,34 @@
 
 :root {
   color-scheme: light;
+  --background: #ffffff;
+  --foreground: #1c1917;
+  --card: #ffffff;
+  --card-foreground: #1c1917;
+  --popover: #ffffff;
+  --popover-foreground: #1c1917;
   --primary: #00615f;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f4;
+  --secondary-foreground: #1c1917;
+  --muted: #f5f5f4;
+  --muted-foreground: #78716c;
+  --accent: #f5f5f4;
+  --accent-foreground: #1c1917;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e7e5e4;
+  --input: #e7e5e4;
+  --ring: #00615f;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1c1917;
+  --sidebar-primary: #00615f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f4;
+  --sidebar-accent-foreground: #1c1917;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #00615f;
+  --color-tgtg-green: #00615f;
   --primary-foreground: #ffffff;
   --color-tgtg-green: #00615f;
   --color-tgtg-green-hover: #089184;
@@ -543,4 +570,42 @@ a[class~="bg-teal-600"] svg,
   border-radius: 0.75rem !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15) !important;
   padding: 1.5rem !important;
+}
+
+
+/* 6. Code block & Mermaid action toolbars (Copy, Download, Zoom) */
+[data-streamdown*="actions"],
+[data-streamdown="code-block-actions"],
+[data-streamdown="mermaid-block-actions"] {
+  background-color: #ffffff !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  opacity: 1 !important;
+}
+
+[data-streamdown*="actions"] button,
+[data-streamdown="code-block-actions"] button,
+[data-streamdown="mermaid-block-actions"] button {
+  background-color: #ffffff !important;
+  color: #57534e !important;
+}
+
+[data-streamdown*="actions"] button:hover,
+[data-streamdown="code-block-actions"] button:hover,
+[data-streamdown="mermaid-block-actions"] button:hover {
+  background-color: #f5f5f4 !important;
+  color: #00615f !important;
+}
+
+/* 7. Fullscreen Container Backdrop */
+[data-streamdown="mermaid-fullscreen"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  background-color: #ffffff !important;
+  padding: 1.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: auto !important;
 }
