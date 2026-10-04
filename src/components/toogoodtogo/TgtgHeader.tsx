@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck, User, LogOut, Compass } from "lucide-react";
+import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck, User, LogOut, Compass, ChefHat } from "lucide-react";
 import { UserMenuDropdown } from "@/components/common/UserMenuDropdown";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -111,6 +111,13 @@ export function TgtgHeader() {
                 className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
               >
                 Đơn của tôi
+              </Link>
+              <Link
+                href="/meal-planner"
+                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition inline-flex items-center gap-1"
+              >
+                <ChefHat className="size-3.5" />
+                Ăn gì?
               </Link>
             </div>
           </nav>
