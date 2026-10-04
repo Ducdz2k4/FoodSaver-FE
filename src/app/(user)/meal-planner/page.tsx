@@ -306,65 +306,9 @@ export default function MealPlannerPage() {
   }, [activeCategory, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f9f3f0] to-[#fef9f6]">
-      {/* ══════ HERO ══════ */}
-      <section className="relative pt-24 pb-10 sm:pt-28 sm:pb-14 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#00615f]/5 via-transparent to-[#79e4a7]/10" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center max-w-2xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00615f]/10 text-[#00615f] text-xs font-bold">
-              <ChefHat className="size-4" />
-              <span>Thực đơn thông minh cho sinh viên</span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-stone-900 tracking-tight leading-tight">
-              Hôm nay ăn gì<span className="text-[#00615f]">?</span>
-            </h1>
-            <p className="text-sm sm:text-base text-stone-600 leading-relaxed max-w-lg mx-auto">
-              Khám phá công thức nấu ăn tiết kiệm, đầy đủ dinh dưỡng. Lên kế
-              hoạch bữa ăn hàng tháng, chia sẻ kinh nghiệm cùng cộng đồng.
-            </p>
-          </div>
-
-          {/* ── Quick nav cards ── */}
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
-            <Link
-              href="/meal-planner"
-              className="group p-4 rounded-2xl bg-white/80 backdrop-blur border border-[#00615f]/20 shadow-sm hover:shadow-md hover:border-[#00615f]/40 transition-all text-center"
-            >
-              <ChefHat className="size-7 mx-auto text-[#00615f] group-hover:scale-110 transition-transform" />
-              <p className="mt-2 text-xs font-bold text-stone-800">Thực đơn</p>
-              <p className="text-[10px] text-stone-500">Công thức & nguyên liệu</p>
-            </Link>
-            <Link
-              href="/meal-planner/calendar"
-              className="group p-4 rounded-2xl bg-white/80 backdrop-blur border border-orange-200 shadow-sm hover:shadow-md hover:border-orange-300 transition-all text-center"
-            >
-              <Calendar className="size-7 mx-auto text-orange-500 group-hover:scale-110 transition-transform" />
-              <p className="mt-2 text-xs font-bold text-stone-800">Lịch ăn tháng</p>
-              <p className="text-[10px] text-stone-500">Kế hoạch & chi phí</p>
-            </Link>
-            <Link
-              href="/meal-planner/community"
-              className="group p-4 rounded-2xl bg-white/80 backdrop-blur border border-violet-200 shadow-sm hover:shadow-md hover:border-violet-300 transition-all text-center"
-            >
-              <Users className="size-7 mx-auto text-violet-500 group-hover:scale-110 transition-transform" />
-              <p className="mt-2 text-xs font-bold text-stone-800">Cộng đồng</p>
-              <p className="text-[10px] text-stone-500">Chia sẻ từ SV đi trước</p>
-            </Link>
-            <Link
-              href="/meal-planner/chat"
-              className="group p-4 rounded-2xl bg-white/80 backdrop-blur border border-sky-200 shadow-sm hover:shadow-md hover:border-sky-300 transition-all text-center"
-            >
-              <MessageCircle className="size-7 mx-auto text-sky-500 group-hover:scale-110 transition-transform" />
-              <p className="mt-2 text-xs font-bold text-stone-800">Trợ lý AI</p>
-              <p className="text-[10px] text-stone-500">Hỏi đáp tài chính</p>
-            </Link>
-          </div>
-        </div>
-      </section>
-
+    <div className="space-y-6">
       {/* ══════ DAILY NUTRITION SUMMARY ══════ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+      <section className="mb-2">
         <div className="p-5 rounded-2xl bg-white/70 backdrop-blur border border-stone-200/80 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -406,7 +350,7 @@ export default function MealPlannerPage() {
       </section>
 
       {/* ══════ SEARCH & FILTER ══════ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+      <section className="mb-2">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-stone-400" />
@@ -444,7 +388,7 @@ export default function MealPlannerPage() {
       </section>
 
       {/* ══════ RECIPE GRID ══════ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <section>
         {filtered.length === 0 ? (
           <div className="text-center py-16">
             <ChefHat className="size-12 mx-auto text-stone-300 mb-3" />
