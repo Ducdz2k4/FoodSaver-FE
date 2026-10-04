@@ -734,30 +734,66 @@ export default function MealPlannerChatPage() {
                         </div>
                       )}
 
-                      {/* Rich Card Type 3: Schedule Preview */}
+                      {/* Rich Card Type 3: Schedule Preview with Interactive Action Skills */}
                       {msg.richCards.type === "schedule_preview" && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-[#00615f] flex items-center gap-1">
-                              <CalendarIcon className="size-3.5" />
+                        <div className="rounded-2xl border border-emerald-300 bg-emerald-50/70 p-4 space-y-3 shadow-xs">
+                          <div className="flex items-center justify-between pb-2 border-b border-emerald-200/80">
+                            <span className="text-xs font-bold text-[#00615f] flex items-center gap-1.5">
+                              <CalendarIcon className="size-4" />
                               <span>Thực đơn {msg.richCards.data.days} ngày đề xuất</span>
                             </span>
-                            <span className="text-[11px] font-bold text-stone-800">
+                            <span className="text-xs font-bold text-stone-800 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200">
                               ~{formatVND(msg.richCards.data.dailyBudget)}/ngày
                             </span>
                           </div>
 
-                          <Button
-                            asChild
-                            variant="default"
-                            size="sm"
-                            className="w-full rounded-xl font-bold gap-1.5 text-xs shadow-xs"
-                          >
-                            <Link href="/meal-planner/calendar">
-                              <CalendarIcon className="size-3.5" />
-                              <span>Mở lịch ăn tháng để áp dụng</span>
-                            </Link>
-                          </Button>
+                          <p className="text-xs text-stone-700 font-medium">
+                            Bạn có muốn lưu thực đơn này vào Lịch ăn tháng không? Bấm chọn phương án bên dưới để bot thực hiện ngay:
+                          </p>
+
+                          <div className="flex flex-wrap gap-2 pt-0.5">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleSend("Áp dụng vào lịch ăn ngày mai cho t")}
+                              className="rounded-xl text-xs font-bold gap-1.5 shadow-xs cursor-pointer"
+                            >
+                              <CheckCircle2 className="size-3.5" />
+                              <span>Có, áp dụng vào ngày mai</span>
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSend("Không, đổi món khác")}
+                              className="rounded-xl text-xs font-semibold cursor-pointer bg-white hover:bg-stone-50"
+                            >
+                              <X className="size-3.5 text-stone-500" />
+                              <span>Không, đổi món khác</span>
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSend("Xem danh sách nguyên liệu đi chợ")}
+                              className="rounded-xl text-xs font-semibold cursor-pointer bg-white hover:bg-stone-50"
+                            >
+                              <ShoppingCart className="size-3.5 text-[#00615f]" />
+                              <span>Xem đồ đi chợ</span>
+                            </Button>
+
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="ghost"
+                              className="rounded-xl text-xs text-stone-600 hover:text-stone-900 cursor-pointer"
+                            >
+                              <Link href="/meal-planner/calendar">
+                                <CalendarIcon className="size-3.5" />
+                                <span>Xem lịch tháng</span>
+                              </Link>
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
