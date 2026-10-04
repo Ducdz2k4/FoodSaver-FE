@@ -121,12 +121,7 @@ export default function MealCalendarPage() {
   }, [year, month]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f9f3f0] to-[#fef9f6]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
-        {/* breadcrumb */}
-        <Link href="/meal-planner" className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-[#00615f] mb-4 transition">
-          <ArrowLeft className="size-3.5" /> Hôm nay ăn gì?
-        </Link>
+    <div className="space-y-6">
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* ═══ LEFT: CALENDAR ═══ */}
@@ -317,7 +312,6 @@ export default function MealCalendarPage() {
             )}
           </div>
         </div>
-      </div>
     </div>
   );
 }
