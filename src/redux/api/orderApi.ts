@@ -1,5 +1,13 @@
 import { baseApi } from "./baseApi";
-import { OrderDTO, OrderStatus, FulfillmentType, PaymentMethod } from "@/types/contract";
+import {
+  OrderDTO,
+  OrderStatus,
+  FulfillmentType,
+  PaymentMethod,
+  OrderChatThreadDTO,
+  OrderChatMessageDTO,
+  PartnerFinanceSummaryDTO,
+} from "@/types/contract";
 
 export interface CreateOrderPayload {
   listingId: string;
@@ -197,6 +205,90 @@ export const orderApi = baseApi.injectEndpoints({
         { type: "Order", id },
       ],
     }),
+    // 11. Đối tác: Bàn giao món cho khách (xác thực bằng OTP 6 số đối với Store Pickup)
+    confirmHandover: builder.mutation<OrderDTO, { id: string; otp?: string; note?: string }>({
+      query: ({ id, ...body }) => ({
+        url: `/api/v1/partner/orders/${id}/handover`,
+        method: "PATCH",
+        body,
+      }),
+      transformResponse: (response: SingleOrderResponse) => response.data,
+      invalidatesTags: (_result, _error, { id }) => [
+        "PartnerOrder",
+        "Order",
+        "Listing",
+        "PartnerListing",
+        { type: "Order", id },
+      ],
+    }),
+
+    // 12. Khách hàng: Xác nhận đã nhận đủ món (Two-party Confirmation kích hoạt Settlement)
+    customerConfirmReceipt: builder.mutation<OrderDTO, { id: string; note?: string }>({
+      query: ({ id, ...body }) => ({
+        url: `/api/v1/orders/${id}/confirm-receipt`,
+        method: "PATCH",
+        body,
+      }),
+      transformResponse: (response: SingleOrderResponse) => response.data,
+      invalidatesTags: (_result, _error, { id }) => [
+        "PartnerOrder",
+        "Order",
+        "Listing",
+        "PartnerListing",
+        { type: "Order", id },
+      ],
+    }),
+
+    // 13. Cuộc trò chuyện theo đơn hàng (Khách <-> Quán)
+    getOrderChat: builder.query<OrderChatThreadDTO, string>({
+      query: (orderId) => ({
+        url: `/api/v1/communication/orders/${orderId}/chat`,
+        method: "GET",
+      }),
+      transformResponse: (res: any) => res.data,
+      providesTags: (_res, _err, id) => [{ type: "Order", id }],
+    }),
+
+    // 14. Gửi tin nhắn trong đơn hàng
+    sendOrderChatMessage: builder.mutation<OrderChatMessageDTO, { orderId: string; message: string }>({
+      query: ({ orderId, message }) => ({
+        url: `/api/v1/communication/orders/${orderId}/chat`,
+        method: "POST",
+        body: { message },
+      }),
+      transformResponse: (res: any) => res.data,
+    }),
+
+    // 15. Ghi nhận sự kiện gọi điện thoại cho đơn hàng
+    recordOrderCall: builder.mutation<any, { orderId: string; eventType: string; durationSec?: number }>({
+      query: ({ orderId, ...body }) => ({
+        url: `/api/v1/communication/orders/${orderId}/call`,
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: any) => res.data,
+    }),
+
+    // 16. Đối tác: Xem bảng tổng quan tài chính minh bạch (Ledger / Wallet / Nợ phí tiền mặt)
+    getPartnerFinanceSummary: builder.query<PartnerFinanceSummaryDTO, void>({
+      query: () => ({
+        url: "/api/v1/partner/finance/summary",
+        method: "GET",
+      }),
+      transformResponse: (res: any) => res.data,
+      providesTags: ["PartnerOrder"],
+    }),
+
+    // 17. Đối tác: Gửi yêu cầu rút tiền về tài khoản ngân hàng (Payout)
+    requestPayout: builder.mutation<any, { amount: number; bankName: string; bankAccountNo: string; bankAccountName: string }>({
+      query: (body) => ({
+        url: "/api/v1/partner/finance/payout",
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: any) => res.data,
+      invalidatesTags: ["PartnerOrder"],
+    }),
   }),
 });
 
@@ -212,4 +304,11 @@ export const {
   useCancelOrderMutation,
   useGetPartnerOrdersQuery,
   useUpdatePartnerOrderStatusMutation,
+  useConfirmHandoverMutation,
+  useCustomerConfirmReceiptMutation,
+  useGetOrderChatQuery,
+  useSendOrderChatMessageMutation,
+  useRecordOrderCallMutation,
+  useGetPartnerFinanceSummaryQuery,
+  useRequestPayoutMutation,
 } = orderApi;
