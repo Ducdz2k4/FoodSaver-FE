@@ -13,7 +13,9 @@ export function TgtgHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const currentUser = useAppSelector((state) => state.auth.user);
+  const [mounted, setMounted] = useState(false);
+  const rawUser = useAppSelector((state) => state.auth.user);
+  const currentUser = mounted ? rawUser : null;
   const { logout } = useAuth();
   const router = useRouter();
 

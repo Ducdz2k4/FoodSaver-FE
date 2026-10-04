@@ -60,8 +60,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={poppins.variable}>
-      <body className={poppins.className}>
+    <html lang="vi" className={poppins.variable} suppressHydrationWarning>
+      <body className={poppins.className} suppressHydrationWarning>
         <GoogleAuthProvider>
           <StoreProvider>
             <AuthProvider>
