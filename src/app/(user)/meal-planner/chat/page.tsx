@@ -50,7 +50,7 @@ const QUICK_PROMPTS = [
   { icon: ShoppingCart, label: "Kế hoạch chi tiêu 1.5 triệu/tháng", prompt: "Giúp mình lập kế hoạch tài chính chi tiêu ăn uống trong tháng với ngân sách 1.5 triệu" },
   { icon: MapPin, label: "Chợ nào rẻ nhất ở Sài Gòn?", prompt: "Những chợ đầu mối nào ở Sài Gòn bán rau củ, thịt cá giá rẻ nhất?" },
   { icon: ChefHat, label: "Thực đơn 1 tuần cho 2 người < 500K", prompt: "Lên thực đơn ăn uống 1 tuần cho 2 người với chi phí dưới 500K" },
-  { icon: Sparkles, label: "Ăn 1 tháng với 100k được không?", prompt: "Làm sao để ăn 1 tháng với 100k?" },
+  { icon: Sparkles, label: "Hôm nay ăn gì ngon bổ rẻ?", prompt: "Hôm nay ăn gì ngon bổ rẻ gợi ý cho mình với" },
 ];
 
 function formatVND(n: number) {
@@ -65,7 +65,7 @@ export default function MealPlannerChatPage() {
       id: "welcome-1",
       role: "assistant",
       content:
-        "Xin chào! Mình là **Trợ lý Tài chính & Dinh dưỡng FoodSaver** (vận hành bởi Agent JEV System One).\n\nMình có thể giúp bạn:\n1. **Đánh giá tính khả thi tài chính** (như ăn 50k/ngày, 100k cho cả tháng...).\n2. **Đàm phán và tối ưu ngân sách** dựa trên giá nguyên liệu thực tế.\n3. **Săn suất ăn giải cứu cận date** giá siêu rẻ từ đối tác FoodSaver gần bạn.\n\nBạn đang cần lên kế hoạch chi tiêu như thế nào?",
+        "Xin chào! Mình là **Trợ lý Dinh dưỡng & Tài chính FoodSaver** 🌿\n\nMình luôn sẵn sàng hỗ trợ bạn:\n- 🥗 Lên thực đơn ăn uống ngon miệng, đủ chất theo khẩu vị và ngân sách.\n- 🛒 Lập kế hoạch đi chợ thông minh, tiết kiệm tối đa.\n- ⚡ Săn các suất ăn giải cứu giờ vàng giảm giá đến 50% từ đối tác quanh bạn.\n\nHôm nay bạn muốn ăn gì hoặc cần mình hỗ trợ kế hoạch thế nào?",
       timestamp: new Date(),
     },
   ]);
