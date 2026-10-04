@@ -143,7 +143,8 @@ export default function CheckoutPage({
 
   const itemSubtotal = listing.discountPrice * quantity;
   const currentShippingFee = fulfillmentType === "DELIVERY" ? finalAgreedFee : 0;
-  const totalPrice = itemSubtotal + currentShippingFee;
+  const finalTotalPrice = Math.max(0, itemSubtotal + currentShippingFee - (appliedCoupon?.discountAmount || 0));
+  const totalPrice = finalTotalPrice;
 
   
   const handleApplyCoupon = async (e: React.FormEvent) => {
@@ -314,12 +315,12 @@ export default function CheckoutPage({
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-extrabold text-sm flex items-center gap-1.5">
-                    <ShoppingBag className="size-4" /> Tự đến quán lấy
+                    <ShoppingBag className="size-4" /> Tới quán lấy (Store Pickup)
                   </span>
-                  <span className="text-xs font-bold">0đ phí ship</span>
+                  <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-md">Giữ món 30p</span>
                 </div>
                 <p className={`text-xs ${fulfillmentType === "PICKUP" ? "text-emerald-100" : "text-stone-500"}`}>
-                  Bạn đến trực tiếp cửa hàng theo khung giờ hẹn để nhận đồ.
+                  Nhận mã OTP 6 số bảo mật trên ứng dụng, đọc mã cho quán khi tới nhận đồ. 0đ phí ship.
                 </p>
               </button>
 
@@ -334,12 +335,12 @@ export default function CheckoutPage({
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-extrabold text-sm flex items-center gap-1.5">
-                    <Truck className="size-4" /> Giao hàng tận nơi
+                    <Truck className="size-4" /> Quán tự giao hàng (Partner Delivery)
                   </span>
-                  <span className="text-xs font-bold">Phí ship tối đa 60k</span>
+                  <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-md">Bán kính ≤20km</span>
                 </div>
                 <p className={`text-xs ${fulfillmentType === "DELIVERY" ? "text-emerald-100" : "text-stone-500"}`}>
-                  Quán gửi shipper giao tới tận tay bạn (Bán kính tối đa 20km).
+                  Đối tác tự vận chuyển. 100% phí giao hàng thuộc về quán (Nền tảng 0% hoa hồng trên ship).
                 </p>
               </button>
             </div>
@@ -532,24 +533,6 @@ export default function CheckoutPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setPaymentMethod("COD")}
-                className={`p-4 rounded-2xl border text-left transition ${
-                  paymentMethod === "COD"
-                    ? "bg-[#00615f] text-white border-[#00615f] shadow-md"
-                    : "bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200"
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="size-4" />
-                  <span className="font-extrabold text-sm">Thanh toán khi nhận hàng (COD)</span>
-                </div>
-                <p className={`text-xs ${paymentMethod === "COD" ? "text-emerald-100" : "text-stone-500"}`}>
-                  Thanh toán tiền mặt hoặc chuyển khoản trực tiếp cho shipper/quầy khi nhận đồ.
-                </p>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => setPaymentMethod("SYSTEM_QR")}
                 className={`p-4 rounded-2xl border text-left transition ${
                   paymentMethod === "SYSTEM_QR"
@@ -559,10 +542,28 @@ export default function CheckoutPage({
               >
                 <div className="flex items-center gap-2 mb-1">
                   <QrCode className="size-4" />
-                  <span className="font-extrabold text-sm">Quét mã QR hệ thống FoodSaver</span>
+                  <span className="font-extrabold text-sm">Thanh toán trực tuyến (ONLINE - Ký quỹ Escrow)</span>
                 </div>
                 <p className={`text-xs ${paymentMethod === "SYSTEM_QR" ? "text-emerald-100" : "text-stone-500"}`}>
-                  Quét mã QR VietQR tự động khớp nội dung đơn hàng ngay sau khi chốt giá.
+                  Tiền được ký quỹ an toàn tại FoodSaver, chỉ giải ngân cho quán khi bạn đã xác nhận nhận hàng.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("COD")}
+                className={`p-4 rounded-2xl border text-left transition ${
+                  paymentMethod === "COD"
+                    ? "bg-[#00615f] text-white border-[#00615f] shadow-md"
+                    : "bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <DollarSign className="size-4" />
+                  <span className="font-extrabold text-sm">Tiền mặt khi nhận (CASH / COD)</span>
+                </div>
+                <p className={`text-xs ${paymentMethod === "COD" ? "text-emerald-100" : "text-stone-500"}`}>
+                  Thanh toán tiền mặt trực tiếp cho quán khi nhận đồ tại quầy hoặc cho người giao hàng.
                 </p>
               </button>
             </div>
@@ -666,6 +667,9 @@ export default function CheckoutPage({
                   {totalPrice.toLocaleString("vi-VN")}đ
                 </span>
               </div>
+              <p className="text-[11px] text-stone-500 italic pt-1 text-center">
+                * FoodSaver cam kết 0% phí nền tảng trên phí ship (100% thuộc về quán).
+              </p>
             </div>
 
             <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
