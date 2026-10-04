@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Calendar as CalendarIcon,
@@ -28,6 +29,7 @@ import {
   RotateCcw,
   Zap,
   Tag,
+  ShoppingBag,
 } from "lucide-react";
 import {
   useGetMonthMealPlansQuery,
@@ -39,6 +41,8 @@ import {
   DayPlanDTO,
   RecipeDTO,
 } from "@/redux/api/mealPlannerApi";
+import { useGetListingsQuery } from "@/redux/api/listingApi";
+import { ListingDTO } from "@/types/contract";
 import { toast } from "sonner";
 
 const DAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -288,6 +292,246 @@ const NEARBY_STORES = [
   },
 ];
 
+
+function normalizeVietnamese(str: string): string {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function computeDishListingMatchScore(mealName: string, listingTitle: string, listingDesc: string): number {
+  const normMeal = normalizeVietnamese(mealName);
+  const normTitle = normalizeVietnamese(listingTitle);
+  const normDesc = normalizeVietnamese(listingDesc);
+
+  if (!normMeal || !normTitle) return 0;
+  if (normTitle.includes(normMeal)) return 100;
+
+  // Key dish phrases in Vietnamese cuisine
+  const keyPhrases = [
+    "bun bo", "com tam", "canh chua", "trai cay", "banh mi", "pho bo",
+    "goi cuon", "xoi xeo", "com rang", "suon nuong", "ca loc", "salad",
+    "thit kho", "ca kho", "bun cha", "mi quang", "chao ga", "sua chua",
+    "uc ga", "bo xao", "trung chien"
+  ];
+  for (const phrase of keyPhrases) {
+    if (normMeal.includes(phrase) && (normTitle.includes(phrase) || normDesc.includes(phrase))) {
+      return 85;
+    }
+  }
+
+  // Word token overlap
+  const words = normMeal.split(" ").filter((w) => w.length > 1);
+  let matched = 0;
+  for (const w of words) {
+    if (normTitle.includes(w) || normDesc.includes(w)) {
+      matched++;
+    }
+  }
+
+  return (matched / Math.max(words.length, 1)) * 60;
+}
+
+interface MatchedRescueDealItem {
+  listing: ListingDTO;
+  matchInfo?: { slotKey: string; slotLabel: string; meal: string };
+  score: number;
+}
+
+function DayRescueDealsRadar({
+  selectedDay,
+  deals,
+  isLoading,
+  hasPlan,
+}: {
+  selectedDay: number;
+  deals: MatchedRescueDealItem[];
+  isLoading: boolean;
+  hasPlan: boolean;
+}) {
+  const matchedCount = deals.filter((d) => d.matchInfo).length;
+
+  return (
+    <div className="rounded-2xl bg-white border border-stone-200/90 p-4 space-y-3.5 shadow-xs">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-[#00615f] border border-emerald-200/80">
+              <Zap className="size-3 text-[#00615f]" />
+              RADAR CỨU MÓN {hasPlan ? `· THEO THỰC ĐƠN NGÀY ${selectedDay}` : "· GỢI Ý GẦN BẠN"}
+            </span>
+            {matchedCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100/70 text-emerald-900 border border-emerald-200/60">
+                Khớp {matchedCount} món
+              </span>
+            )}
+          </div>
+          <h3 className="text-sm font-bold text-stone-900">
+            {hasPlan && matchedCount > 0
+              ? `Có ${matchedCount} món trong thực đơn đang có suất giải cứu gần bạn!`
+              : "Suất ăn giải cứu giờ vàng lân cận hôm nay"}
+          </h3>
+          <p className="text-xs text-stone-500">
+            {hasPlan && matchedCount > 0
+              ? "Tiết kiệm thời gian tự nấu: Đặt ship hoặc ghé lấy ngay món nóng hổi từ các đối tác lân cận với giá giảm đến 50%."
+              : "Thực đơn hôm nay có thể thay thế bằng các suất ăn nóng hổi từ đối tác gần bạn với giá tiết kiệm tối đa."}
+          </p>
+        </div>
+
+        <Link
+          href="/map"
+          className="text-xs font-semibold text-[#00615f] hover:text-[#004e4c] flex items-center gap-1 shrink-0 self-start sm:self-auto group transition"
+        >
+          <span>Xem trên bản đồ</span>
+          <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      </div>
+
+      {/* Deals list or loading / empty */}
+      {isLoading ? (
+        <div className="py-8 text-center text-stone-400 flex items-center justify-center gap-2">
+          <Loader2 className="size-4 animate-spin text-[#00615f]" />
+          <span className="text-xs">Đang quét các suất ăn cứu trợ quanh bạn...</span>
+        </div>
+      ) : deals.length === 0 ? (
+        <div className="py-6 text-center text-xs text-stone-400 bg-stone-50 rounded-xl border border-dashed border-stone-200">
+          Chưa tìm thấy suất giải cứu phù hợp trong bán kính 10 km
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {deals.map(({ listing, matchInfo }) => {
+            const discountPercent =
+              listing.originalPrice > listing.discountPrice
+                ? Math.round(
+                    ((listing.originalPrice - listing.discountPrice) /
+                      listing.originalPrice) *
+                      100
+                  )
+                : 0;
+
+            const imageSrc =
+              listing.imageUrls && listing.imageUrls.length > 0
+                ? listing.imageUrls[0]
+                : "";
+
+            return (
+              <div
+                key={listing.id}
+                className="group rounded-xl border border-stone-200/85 bg-stone-50/40 hover:bg-white hover:border-[#00615f]/40 hover:shadow-xs transition-all p-3 flex flex-col justify-between gap-3"
+              >
+                <div>
+                  {/* Match Slot / Urgency Tag */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    {matchInfo ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100/70 text-emerald-900 border border-emerald-200/60 truncate max-w-[200px]">
+                        <Sparkles className="size-3 text-[#00615f] shrink-0" />
+                        <span className="truncate">
+                          {matchInfo.slotLabel}: {matchInfo.meal}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">
+                        <Flame className="size-3 text-amber-600 shrink-0" />
+                        <span>Giờ vàng cứu món</span>
+                      </span>
+                    )}
+
+                    {listing.quantity <= 5 && (
+                      <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded shrink-0">
+                        Còn {listing.quantity} suất
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Food Info Row */}
+                  <div className="flex items-start gap-2.5">
+                    <div className="relative size-16 rounded-lg overflow-hidden shrink-0 bg-stone-100 border border-stone-200/80">
+                      {imageSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={imageSrc}
+                          alt={listing.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xl bg-stone-100 text-stone-400">
+                          🍲
+                        </div>
+                      )}
+                      {discountPercent > 0 && (
+                        <span className="absolute bottom-1 right-1 px-1 py-0.5 rounded text-[9px] font-bold bg-rose-600 text-white shadow-xs leading-none">
+                          -{discountPercent}%
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/listing/${listing.id}`}
+                        className="text-xs font-bold text-stone-900 hover:text-[#00615f] line-clamp-1 group-hover:underline transition block"
+                        title={listing.title}
+                      >
+                        {listing.title}
+                      </Link>
+
+                      <p className="text-[11px] text-stone-500 flex items-center gap-1 mt-0.5 truncate">
+                        <Store className="size-3 text-stone-400 shrink-0" />
+                        <span className="truncate">{listing.partnerName}</span>
+                        <span className="text-stone-300">·</span>
+                        <span className="shrink-0 font-medium text-stone-600">
+                          {listing.distanceKm ? `${listing.distanceKm} km` : "0.8 km"}
+                        </span>
+                      </p>
+
+                      {/* Price Row */}
+                      <div className="flex items-baseline gap-1.5 mt-1">
+                        <span className="text-xs font-bold text-[#00615f]">
+                          {formatVND(listing.discountPrice)}
+                        </span>
+                        {listing.originalPrice > listing.discountPrice && (
+                          <span className="text-[10px] text-stone-400 line-through">
+                            {formatVND(listing.originalPrice)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions Row */}
+                <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between gap-2">
+                  <Link
+                    href={`/map?highlight=${listing.id}&lat=${listing.lat}&lng=${listing.lng}`}
+                    className="px-2.5 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-100 text-stone-600 hover:text-stone-900 text-[11px] font-semibold transition flex items-center gap-1 shrink-0"
+                  >
+                    <MapPin className="size-3 text-stone-400" />
+                    <span>Bản đồ</span>
+                  </Link>
+
+                  <Link
+                    href={`/checkout/${listing.id}`}
+                    className="flex-1 px-3 py-1.5 rounded-lg bg-[#00615f] hover:bg-[#004e4c] text-white text-[11px] font-semibold transition shadow-xs flex items-center justify-center gap-1 text-center"
+                  >
+                    <ShoppingBag className="size-3" />
+                    <span>Đặt ship / Cứu món</span>
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MealCalendarPage() {
   const router = useRouter();
   const now = new Date();
@@ -332,9 +576,20 @@ export default function MealCalendarPage() {
     category: shelfCategory === "all" ? undefined : shelfCategory,
     search: shelfSearch || undefined,
   });
+  const { data: realListings = [], isLoading: isListingsLoading } = useGetListingsQuery({
+    radiusKm: 15,
+  });
 
   const [saveSlot, { isLoading: isSaving }] = useSaveMealPlanSlotMutation();
   const [deleteSlot] = useDeleteMealPlanSlotMutation();
+
+  // Active rescue deals filtered
+  const activeRescueDeals = useMemo(() => {
+    if (!Array.isArray(realListings) || realListings.length === 0) return [];
+    return realListings.filter(
+      (l) => (l.status === "AVAILABLE" || l.status === "EXPIRING_SOON") && (l.quantity === undefined || l.quantity > 0)
+    );
+  }, [realListings]);
 
   const plans = plansRes?.data || {};
   const recipes = recipesRes?.data || [];
@@ -648,6 +903,78 @@ export default function MealCalendarPage() {
     selectedDayMeals.length,
     selectedPlan || undefined
   );
+
+  // Radar deals matched with selected day's dishes
+  const selectedDayMatchedDeals = useMemo<MatchedRescueDealItem[]>(() => {
+    if (!activeRescueDeals.length) return [];
+
+    const dayMeals: Array<{
+      slotKey: "breakfast" | "lunch" | "dinner" | "snack";
+      slotLabel: string;
+      meal: string;
+    }> = [];
+
+    if (selectedPlan) {
+      (["breakfast", "lunch", "dinner", "snack"] as const).forEach((slotKey) => {
+        const slotData = selectedPlan[slotKey] as MealPlanSlotDTO | undefined;
+        if (slotData && slotData.meal) {
+          dayMeals.push({
+            slotKey,
+            slotLabel: SLOT_META[slotKey]?.label || slotKey,
+            meal: slotData.meal,
+          });
+        }
+      });
+    }
+
+    const matched: MatchedRescueDealItem[] = [];
+    const usedListingIds = new Set<string>();
+
+    // 1. Try to find match for each planned meal
+    for (const mealObj of dayMeals) {
+      let bestMatch: ListingDTO | null = null;
+      let highestScore = 0;
+
+      for (const listing of activeRescueDeals) {
+        if (usedListingIds.has(listing.id)) continue;
+        const score = computeDishListingMatchScore(
+          mealObj.meal,
+          listing.title,
+          listing.description
+        );
+        if (score >= 40 && score > highestScore) {
+          highestScore = score;
+          bestMatch = listing;
+        }
+      }
+
+      if (bestMatch) {
+        usedListingIds.add(bestMatch.id);
+        matched.push({
+          listing: bestMatch,
+          matchInfo: mealObj,
+          score: highestScore,
+        });
+      }
+    }
+
+    // 2. Backfill up to 4 deals with top active rescue deals
+    if (matched.length < 4) {
+      const remaining = activeRescueDeals
+        .filter((l) => !usedListingIds.has(l.id))
+        .sort((a, b) => (b.urgencyScore || 0) - (a.urgencyScore || 0));
+
+      for (const l of remaining) {
+        if (matched.length >= 4) break;
+        matched.push({
+          listing: l,
+          score: 0,
+        });
+      }
+    }
+
+    return matched;
+  }, [activeRescueDeals, selectedPlan]);
 
   // Core function to save slot
   const executeSaveSlot = async (
@@ -1148,6 +1475,14 @@ export default function MealCalendarPage() {
                   <span>Bắt đầu đi chợ</span>
                 </button>
               </div>
+
+              {/* ═══ DAY RESCUE DEALS RADAR (GIẢI CỨU THEO THỰC ĐƠN NGÀY) ═══ */}
+              <DayRescueDealsRadar
+                selectedDay={selectedDay || today.getDate()}
+                deals={selectedDayMatchedDeals}
+                isLoading={isListingsLoading}
+                hasPlan={true}
+              />
             </div>
           ) : selectedDay ? (
             <div className="space-y-3">
@@ -1181,6 +1516,14 @@ export default function MealCalendarPage() {
                   <span>Bắt đầu đi chợ</span>
                 </button>
               </div>
+
+              {/* ═══ DAY RESCUE DEALS RADAR (GỢI Ý CỨU MÓN GẦN BẠN) ═══ */}
+              <DayRescueDealsRadar
+                selectedDay={selectedDay || today.getDate()}
+                deals={selectedDayMatchedDeals}
+                isLoading={isListingsLoading}
+                hasPlan={false}
+              />
             </div>
           ) : (
             <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-8 text-center">
