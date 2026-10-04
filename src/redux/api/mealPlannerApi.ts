@@ -20,11 +20,19 @@ export interface RecipeDTO {
   steps: string[];
   rating: number;
   reviews: number;
+  // Partner borrowing integration
+  partnerImage?: string | null;
+  partnerListingId?: string | null;
+  partnerListingTitle?: string | null;
+  partnerStoreName?: string | null;
+  partnerPrice?: number | null;
+  partnerOriginalPrice?: number | null;
 }
 
 export interface MealPlanSlotDTO {
   id?: string;
   meal: string;
+  image?: string | null;
   calories: number;
   cost: number;
   ingredients: string[];
@@ -69,8 +77,8 @@ export const mealPlannerApi = baseApi.injectEndpoints({
     getRecipes: builder.query<{ data: RecipeDTO[]; meta?: any }, { category?: string; search?: string } | void>({
       query: (params) => {
         const q = new URLSearchParams();
-        if (params?.category && params.category !== "all") q.append("category", params.category);
-        if (params?.search && params.search.trim()) q.append("search", params.search.trim());
+        if (params && params.category && params.category !== "all") q.append("category", params.category);
+        if (params && params.search && params.search.trim()) q.append("search", params.search.trim());
         return `/api/v1/recipes?${q.toString()}`;
       },
       providesTags: ["Recipe"],
@@ -94,7 +102,7 @@ export const mealPlannerApi = baseApi.injectEndpoints({
 
     saveMealPlanSlot: builder.mutation<
       { data: any },
-      { date: string; slot: string; meal: string; calories?: number; cost?: number; ingredients?: string[] }
+      { date: string; slot: string; meal: string; image?: string | null; calories?: number; cost?: number; ingredients?: string[] }
     >({
       query: (body) => ({
         url: "/api/v1/meal-plans",
@@ -116,8 +124,8 @@ export const mealPlannerApi = baseApi.injectEndpoints({
     getCommunityPosts: builder.query<{ data: CommunityPostDTO[]; meta?: any }, { category?: string; sortBy?: string } | void>({
       query: (params) => {
         const q = new URLSearchParams();
-        if (params?.category && params.category !== "all") q.append("category", params.category);
-        if (params?.sortBy) q.append("sortBy", params.sortBy);
+        if (params && params.category && params.category !== "all") q.append("category", params.category);
+        if (params && params.sortBy) q.append("sortBy", params.sortBy);
         return `/api/v1/community/posts?${q.toString()}`;
       },
       providesTags: ["CommunityPost"],
