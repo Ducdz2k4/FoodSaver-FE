@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -562,6 +562,28 @@ export default function MealCalendarPage() {
 
   // Replacement confirmation modal
   const [replaceModal, setReplaceModal] = useState<ReplaceModalData | null>(null);
+
+  // Deep-link: auto-select date from URL query param (?date=YYYY-MM-DD)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const paramDate = params.get("date");
+      if (paramDate) {
+        const parts = paramDate.split("-");
+        if (parts.length === 3) {
+          const y = parseInt(parts[0], 10);
+          const m = parseInt(parts[1], 10) - 1;
+          const d = parseInt(parts[2], 10);
+          if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+            setYear(y);
+            setMonth(m);
+            setSelectedDay(d);
+            setSummaryView("day");
+          }
+        }
+      }
+    }
+  }, []);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfWeek(year, month);
