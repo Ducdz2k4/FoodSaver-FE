@@ -4,9 +4,11 @@ export type PartnerCapability = 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 export type BusinessType = 'CONVENIENCE_STORE' | 'BAKERY' | 'RESTAURANT' | 'SUPERMARKET' | 'OTHER';
 export type FoodCategory = 'BAKERY' | 'COOKED_MEAL' | 'GROCERIES' | 'FRUITS' | 'DRINKS' | 'OTHER';
 export type ListingStatus = 'AVAILABLE' | 'EXPIRING_SOON' | 'SOLD_OUT' | 'EXPIRED' | 'UNAVAILABLE';
-export type OrderStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
-export type FulfillmentType = 'PICKUP' | 'DELIVERY';
-export type PaymentMethod = 'COD' | 'SYSTEM_QR';
+export type OrderStatus = 'PENDING' | 'AWAITING_PAYMENT' | 'PAID' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'HANDED_OVER' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'EXPIRED' | 'DISPUTED';
+export type PaymentStatus = 'PENDING' | 'ESCROW_HELD' | 'SETTLED' | 'CASH_COLLECTED' | 'REFUNDED' | 'FAILED';
+export type ReservationStatus = 'RESERVED' | 'CONFIRMED' | 'RELEASED' | 'EXPIRED';
+export type FulfillmentType = 'PICKUP' | 'DELIVERY' | 'STORE_PICKUP' | 'PARTNER_DELIVERY';
+export type PaymentMethod = 'COD' | 'SYSTEM_QR' | 'CASH' | 'ONLINE';
 export type WasteRisk = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export interface UserProfileDTO {
@@ -88,14 +90,25 @@ export interface OrderDTO {
   customerPhone: string;
   quantity: number;
   unitPrice: number;
+  merchandiseTotal?: number;
+  serviceFee?: number;
+  serviceFeePercentage?: number;
   shippingFee: number;
   negotiatedShippingFee?: number | null;
   discountCode?: string | null;
   discountAmount?: number;
   totalPrice: number;
   status: OrderStatus;
+  paymentStatus?: PaymentStatus;
+  reservationStatus?: ReservationStatus;
   fulfillmentType: FulfillmentType;
   paymentMethod: PaymentMethod;
+  pickupOtp?: string | null;
+  pickupQrCode?: string | null;
+  partnerConfirmedAt?: string | null;
+  customerConfirmedAt?: string | null;
+  handedOverAt?: string | null;
+  completedAt?: string | null;
   deliveryAddress?: string | null;
   deliveryDistance?: number | null;
   isLocked: boolean;
@@ -115,3 +128,49 @@ export interface NotificationDTO {
   createdAt: string;
 }
 
+
+
+export interface OrderChatMessageDTO {
+  id: string;
+  senderId: string;
+  senderRole: "CUSTOMER" | "PARTNER";
+  message: string;
+  createdAt: string;
+}
+
+export interface OrderChatThreadDTO {
+  thread: {
+    id: string;
+    orderId: string;
+    partnerId: string;
+    customerId: string;
+    messages: OrderChatMessageDTO[];
+  };
+  order: {
+    id: string;
+    orderNumber: string;
+    listingTitle: string;
+    partnerName: string;
+    customerName: string;
+    customerPhone: string;
+    partnerPhone: string;
+  };
+}
+
+export interface PartnerFinanceSummaryDTO {
+  partnerId: string;
+  businessName: string;
+  availableBalance: number;
+  pendingBalance: number;
+  cashDebtBalance: number;
+  debtLimit: number;
+  isSuspended: boolean;
+  canAcceptCashOrders: boolean;
+  recentPayouts: Array<{
+    id: string;
+    payoutNumber: string;
+    amount: number;
+    status: string;
+    createdAt: string;
+  }>;
+}

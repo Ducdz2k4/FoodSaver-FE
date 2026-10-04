@@ -23,6 +23,7 @@ export interface UserOut {
 export interface AuthResponseData {
   user: UserOut;
   accessToken: string;
+  access_token?: string;
   refreshToken?: string;
   expiresIn?: string;
   requireOtp?: boolean;
