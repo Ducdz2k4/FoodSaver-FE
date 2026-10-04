@@ -308,7 +308,7 @@ export default function MealCalendarPage() {
   const [groceryStep, setGroceryStep] = useState<1 | 2 | 3>(1);
   const [groceryDaysMode, setGroceryDaysMode] = useState<"today" | "3days" | "7days" | "custom">("3days");
   const [customDays, setCustomDays] = useState<number>(3);
-  const [haveAtHome, setHaveAtHome] = useState<Set<string>>(new Set());
+  const [selectedToBuy, setSelectedToBuy] = useState<Set<string>>(new Set());
   const [isUrgentGoShoppingOpen, setIsUrgentGoShoppingOpen] = useState(false);
 
   // Replacement confirmation modal
@@ -370,19 +370,25 @@ export default function MealCalendarPage() {
       ? `${groceryDates[0].dayName} (${groceryDates[0].label})`
       : `Từ ${groceryDates[0].dayName} (${groceryDates[0].label}) đến ${groceryDates[groceryDates.length - 1].dayName} (${groceryDates[groceryDates.length - 1].label}) · ${effectiveDaysCount} ngày`;
 
-  // Aggregate ingredients for selected dates
-  const aggregatedIngredientsMap = new Map<
-    string,
-    {
+  // Aggregate dishes with ingredients & images for selected dates
+  const plannedDishes: {
+    dishKey: string;
+    dateKey: string;
+    dayLabel: string;
+    slotKey: string;
+    slotLabel: string;
+    dishName: string;
+    image?: string | null;
+    calories: number;
+    cost: number;
+    ingredients: {
+      id: string;
       name: string;
+      amount?: string;
       category: string;
       estimatedPrice: number;
-      meals: Set<string>;
-      dates: Set<string>;
-    }
-  >();
-
-  let plannedMealsCountInWindow = 0;
+    }[];
+  }[] = [];
 
   groceryDates.forEach((gd) => {
     const plan = plans[gd.key];
@@ -390,73 +396,225 @@ export default function MealCalendarPage() {
     (["breakfast", "lunch", "dinner", "snack"] as const).forEach((slotKey) => {
       const slot = plan[slotKey];
       if (!slot) return;
-      plannedMealsCountInWindow++;
-      const slotIngredients = Array.isArray(slot.ingredients) ? slot.ingredients : [];
-      slotIngredients.forEach((ingName) => {
+      const meta = SLOT_META[slotKey];
+      const matchingRecipe = recipes.find(
+        (r) => r.name.trim().toLowerCase() === slot.meal.trim().toLowerCase()
+      );
+
+      const rawIngredients =
+        Array.isArray(slot.ingredients) && slot.ingredients.length > 0
+          ? slot.ingredients
+          : matchingRecipe && matchingRecipe.ingredients.length > 0
+          ? matchingRecipe.ingredients.map((i) => i.name)
+          : ["Nguyên liệu tươi chính", "Gia vị chế biến"];
+
+      const dishImg = slot.image || matchingRecipe?.partnerImage || matchingRecipe?.image || null;
+      const dishKey = `${gd.key}_${slotKey}_${slot.meal}`;
+
+      const dishIngredients = rawIngredients.map((ingName, idx) => {
         const cleanName = String(ingName).trim();
-        if (!cleanName) return;
-        if (!aggregatedIngredientsMap.has(cleanName)) {
-          const cat = inferCategory(cleanName);
-          const price = inferPrice(cleanName, cat);
-          aggregatedIngredientsMap.set(cleanName, {
-            name: cleanName,
-            category: cat,
-            estimatedPrice: price,
-            meals: new Set([slot.meal]),
-            dates: new Set([gd.label]),
-          });
-        } else {
-          const existing = aggregatedIngredientsMap.get(cleanName)!;
-          existing.meals.add(slot.meal);
-          existing.dates.add(gd.label);
-        }
+        const cat = inferCategory(cleanName);
+        const recipeIng = matchingRecipe?.ingredients?.find(
+          (ri) => ri.name.trim().toLowerCase() === cleanName.toLowerCase()
+        );
+        const price = recipeIng?.estimatedPrice || inferPrice(cleanName, cat);
+        const amount = recipeIng?.amount;
+
+        return {
+          id: `${dishKey}::${cleanName}::${idx}`,
+          name: cleanName,
+          amount,
+          category: cat,
+          estimatedPrice: price,
+        };
+      });
+
+      plannedDishes.push({
+        dishKey,
+        dateKey: gd.key,
+        dayLabel: `${gd.dayName} (${gd.label})`,
+        slotKey,
+        slotLabel: meta.label,
+        dishName: slot.meal,
+        image: dishImg,
+        calories: slot.calories || matchingRecipe?.calories || 450,
+        cost: slot.cost || matchingRecipe?.cost || 35000,
+        ingredients: dishIngredients,
       });
     });
   });
 
-  // Fallback staples if user has planned few or no meals yet:
-  if (aggregatedIngredientsMap.size < 4) {
-    DEFAULT_STAPLE_INGREDIENTS.forEach((item) => {
-      if (!aggregatedIngredientsMap.has(item.name)) {
-        aggregatedIngredientsMap.set(item.name, {
-          name: item.name,
-          category: item.category,
-          estimatedPrice: item.estimatedPrice,
-          meals: new Set(item.meals),
-          dates: new Set([groceryDates[0].label]),
-        });
-      }
+  // Fallback staple dishes if user has planned no meals yet in this window:
+  if (plannedDishes.length === 0) {
+    const sampleSlots = ["breakfast", "lunch", "dinner"] as const;
+    const fallbackRecipes =
+      recipes.length > 0
+        ? recipes.slice(0, 3)
+        : [
+            {
+              id: "fb_1",
+              name: "Salad ức gà sốt mè rang",
+              image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&auto=format&fit=crop&q=80",
+              calories: 380,
+              cost: 42000,
+              ingredients: [
+                { name: "Ức gà phi lê", amount: "200g", estimatedPrice: 30000 },
+                { name: "Xà lách xoăn & Cà chua bi", amount: "150g", estimatedPrice: 12000 },
+                { name: "Sốt mè rang Kewpie", amount: "30ml", estimatedPrice: 8000 },
+              ],
+            },
+            {
+              id: "fb_2",
+              name: "Trứng chiên cà chua & Cơm nóng",
+              image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop&q=80",
+              calories: 420,
+              cost: 25000,
+              ingredients: [
+                { name: "Trứng gà tươi", amount: "2 quả", estimatedPrice: 16000 },
+                { name: "Cà chua chín đỏ", amount: "1 quả", estimatedPrice: 6000 },
+                { name: "Hành hoa & Tiêu", amount: "10g", estimatedPrice: 3000 },
+              ],
+            },
+          ];
+
+    fallbackRecipes.forEach((rec: any, idx: number) => {
+      const gd = groceryDates[Math.min(idx, groceryDates.length - 1)];
+      const sKey = sampleSlots[idx % sampleSlots.length];
+      const meta = SLOT_META[sKey];
+      const dishKey = `fallback_${gd.key}_${sKey}_${rec.id}`;
+      plannedDishes.push({
+        dishKey,
+        dateKey: gd.key,
+        dayLabel: `${gd.dayName} (${gd.label})`,
+        slotKey: sKey,
+        slotLabel: meta.label,
+        dishName: rec.name,
+        image: rec.partnerImage || rec.image,
+        calories: rec.calories,
+        cost: rec.cost,
+        ingredients: rec.ingredients.map((ri: any, iIdx: number) => ({
+          id: `${dishKey}::${ri.name}::${iIdx}`,
+          name: ri.name,
+          amount: ri.amount,
+          category: inferCategory(ri.name),
+          estimatedPrice: ri.estimatedPrice || 15000,
+        })),
+      });
     });
   }
 
-  const aggregatedList = Array.from(aggregatedIngredientsMap.values()).map((item) => ({
-    name: item.name,
-    category: item.category,
-    estimatedPrice: item.estimatedPrice,
-    meals: Array.from(item.meals),
-    dates: Array.from(item.dates),
-  }));
+  // Flat list of all ingredients from all dishes in the window
+  const allDishIngredients = plannedDishes.flatMap((d) => d.ingredients);
+  const isSelectedEmpty = selectedToBuy.size === 0;
 
-  const neededIngredients = aggregatedList.filter((item) => !haveAtHome.has(item.name));
-  const savedAmount = Array.from(haveAtHome).reduce((sum, name) => {
-    const found = aggregatedList.find((x) => x.name === name);
-    return sum + (found ? found.estimatedPrice : 15000);
-  }, 0);
-  const neededCost = neededIngredients.reduce((sum, item) => sum + item.estimatedPrice, 0);
+  // Items selected to buy (when empty, all are selected by default)
+  const selectedIngredientsList = allDishIngredients.filter((i) =>
+    isSelectedEmpty ? true : selectedToBuy.has(i.id)
+  );
+
+  const selectedCount = selectedIngredientsList.length;
+  const unselectedCount = allDishIngredients.length - selectedCount;
+  const neededCost = selectedIngredientsList.reduce((sum, i) => sum + i.estimatedPrice, 0);
+  const savedAmount = allDishIngredients
+    .filter((i) => (isSelectedEmpty ? false : !selectedToBuy.has(i.id)))
+    .reduce((sum, i) => sum + i.estimatedPrice, 0);
+
+  // Deduplicated items to buy (for Steps 3, 4 and Map radar)
+  const uniqueItemsToBuyMap = new Map<
+    string,
+    {
+      name: string;
+      category: string;
+      estimatedPrice: number;
+      amount?: string;
+      dishes: string[];
+    }
+  >();
+
+  selectedIngredientsList.forEach((item) => {
+    if (!uniqueItemsToBuyMap.has(item.name)) {
+      const parentDish = plannedDishes.find((d) =>
+        d.ingredients.some((i) => i.id === item.id)
+      );
+      uniqueItemsToBuyMap.set(item.name, {
+        name: item.name,
+        category: item.category,
+        estimatedPrice: item.estimatedPrice,
+        amount: item.amount,
+        dishes: parentDish ? [parentDish.dishName] : [],
+      });
+    } else {
+      const existing = uniqueItemsToBuyMap.get(item.name)!;
+      const parentDish = plannedDishes.find((d) =>
+        d.ingredients.some((i) => i.id === item.id)
+      );
+      if (parentDish && !existing.dishes.includes(parentDish.dishName)) {
+        existing.dishes.push(parentDish.dishName);
+      }
+    }
+  });
+
+  const neededIngredients = Array.from(uniqueItemsToBuyMap.values());
 
   const handleOpenGroceryModal = () => {
     setIsGroceryWizardOpen(true);
     setGroceryStep(1);
+    // Pre-select all ingredients
+    setSelectedToBuy(new Set(allDishIngredients.map((i) => i.id)));
   };
 
-  const handleToggleHaveAtHome = (name: string) => {
-    const next = new Set(haveAtHome);
-    if (next.has(name)) {
-      next.delete(name);
+  const handleToggleIngredient = (id: string) => {
+    const next = isSelectedEmpty
+      ? new Set(allDishIngredients.map((i) => i.id))
+      : new Set(selectedToBuy);
+
+    if (next.has(id)) {
+      next.delete(id);
     } else {
-      next.add(name);
+      next.add(id);
     }
-    setHaveAtHome(next);
+    setSelectedToBuy(next);
+  };
+
+  const handleSelectAllIngredients = () => {
+    setSelectedToBuy(new Set(allDishIngredients.map((i) => i.id)));
+    toast.success("Đã chọn tất cả nguyên liệu vào danh sách đi chợ!");
+  };
+
+  const handleDeselectAllIngredients = () => {
+    setSelectedToBuy(new Set());
+    toast.info("Đã bỏ chọn tất cả nguyên liệu.");
+  };
+
+  const handleDeselectPantrySpices = () => {
+    const next = isSelectedEmpty
+      ? new Set(allDishIngredients.map((i) => i.id))
+      : new Set(selectedToBuy);
+
+    allDishIngredients.forEach((item) => {
+      if (item.category === "Gia vị & Đồ khô") {
+        next.delete(item.id);
+      }
+    });
+    setSelectedToBuy(next);
+    toast.success("Đã bỏ tích các gia vị cơ bản (đã có sẵn ở nhà)!");
+  };
+
+  const handleToggleDishIngredients = (dish: (typeof plannedDishes)[0]) => {
+    const next = isSelectedEmpty
+      ? new Set(allDishIngredients.map((i) => i.id))
+      : new Set(selectedToBuy);
+
+    const isAllDishSelected = dish.ingredients.every((i) => next.has(i.id));
+
+    if (isAllDishSelected) {
+      dish.ingredients.forEach((i) => next.delete(i.id));
+      toast.info(`Đã bỏ chọn các nguyên liệu của món ${dish.dishName}`);
+    } else {
+      dish.ingredients.forEach((i) => next.add(i.id));
+      toast.success(`Đã thêm tất cả nguyên liệu của món ${dish.dishName}`);
+    }
+    setSelectedToBuy(next);
   };
 
   const prevMonth = () => {
@@ -1261,7 +1419,7 @@ export default function MealCalendarPage() {
       {/* ══════ SHOPPING LIST MODAL ══════ */}
       {isGroceryWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl border border-stone-200 space-y-5 max-h-[90vh] flex flex-col">
+          <div className="w-full max-w-3xl lg:max-w-4xl rounded-3xl bg-white p-5 sm:p-7 shadow-2xl border border-stone-200 space-y-4 max-h-[90vh] flex flex-col">
             {/* Wizard Header */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-100 shrink-0">
               <div className="flex items-center gap-2.5">
@@ -1423,104 +1581,177 @@ export default function MealCalendarPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-stone-500 font-medium">Bữa ăn đã lên lịch:</span>
-                      <span className="font-bold text-[#00615f]">{plannedMealsCountInWindow} bữa ăn</span>
+                      <span className="font-bold text-[#00615f]">{plannedDishes.length} bữa ăn</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-stone-500 font-medium">Tổng nguyên liệu ước tính:</span>
-                      <span className="font-bold text-stone-800">{aggregatedList.length} nguyên liệu</span>
+                      <span className="font-bold text-stone-800">{allDishIngredients.length} nguyên liệu</span>
                     </div>
                   </div>
                 </div>
               )}
 
               {groceryStep === 2 && (
-                <div className="space-y-3.5 animate-in fade-in">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-4 animate-in fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <h4 className="text-xs font-bold text-stone-900">
-                        Nguyên liệu đã có sẵn ở nhà:
+                      <h4 className="text-sm font-bold text-stone-900">
+                        Chọn nguyên liệu cần mua theo từng món ăn
                       </h4>
-                      <p className="text-[11px] text-stone-500">
-                        Tích chọn món đã có để hệ thống trừ ra, giúp bạn không mua dư thừa.
+                      <p className="text-xs text-stone-500">
+                        Tích chọn để thêm vào danh sách đi chợ. Món nào bạn đã có sẵn ở nhà chỉ cần bỏ tích.
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
-                        onClick={() => {
-                          const next = new Set(haveAtHome);
-                          aggregatedList.forEach((item) => {
-                            if (item.category === "Gia vị & Đồ khô") next.add(item.name);
-                          });
-                          setHaveAtHome(next);
-                          toast.success("Đã tích nhanh gia vị có sẵn!");
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-medium transition"
+                        onClick={handleSelectAllIngredients}
+                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition"
                       >
-                        🧂 Tích gia vị bếp
+                        ✓ Chọn tất cả
                       </button>
                       <button
                         type="button"
-                        onClick={() => setHaveAtHome(new Set())}
-                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 text-[11px] font-medium transition"
+                        onClick={handleDeselectAllIngredients}
+                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-semibold transition"
                       >
-                        Bỏ chọn
+                        ✕ Bỏ chọn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeselectPantrySpices}
+                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition"
+                        title="Bỏ tích các gia vị cơ bản như mắm, muối, tiêu, đường..."
+                      >
+                        🧂 Bỏ tích gia vị có sẵn
                       </button>
                     </div>
                   </div>
 
                   {/* Live Budget KPI Bar */}
-                  <div className="grid grid-cols-3 gap-2 p-2.5 rounded-2xl bg-stone-50 border border-stone-200/80 text-center">
+                  <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-stone-50 border border-stone-200/80 text-center">
                     <div>
-                      <p className="text-[10px] text-stone-500">Đã có ở nhà</p>
-                      <p className="text-xs font-bold text-emerald-700">{haveAtHome.size} món</p>
+                      <p className="text-[11px] text-stone-500 font-medium">Đã chọn đi chợ</p>
+                      <p className="text-sm font-bold text-[#00615f]">
+                        {selectedCount} / {allDishIngredients.length} món
+                      </p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-stone-500">Thực sự cần mua</p>
-                      <p className="text-xs font-bold text-[#00615f]">{neededIngredients.length} món</p>
+                      <p className="text-[11px] text-stone-500 font-medium">Chi phí dự kiến</p>
+                      <p className="text-sm font-bold text-stone-900">{formatVND(neededCost)}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-stone-500">Chi phí dự kiến</p>
-                      <p className="text-xs font-bold text-stone-900">{formatVND(neededCost)}</p>
+                      <p className="text-[11px] text-stone-500 font-medium">Đã có ở nhà</p>
+                      <p className="text-sm font-bold text-emerald-700">
+                        Tiết kiệm ~{formatVND(savedAmount)}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Interactive Ingredients List */}
-                  <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
-                    {aggregatedList.map((item, idx) => {
-                      const isHave = haveAtHome.has(item.name);
+                  {/* List of Dish Cards with Ingredients */}
+                  <div className="max-h-[48vh] overflow-y-auto space-y-3.5 pr-1">
+                    {plannedDishes.map((dish) => {
+                      const dishAllSelected = dish.ingredients.every((i) =>
+                        isSelectedEmpty ? true : selectedToBuy.has(i.id)
+                      );
+                      const dishSelectedCount = dish.ingredients.filter((i) =>
+                        isSelectedEmpty ? true : selectedToBuy.has(i.id)
+                      ).length;
+
                       return (
                         <div
-                          key={idx}
-                          onClick={() => handleToggleHaveAtHome(item.name)}
-                          className={`p-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between gap-2.5 ${
-                            isHave
-                              ? "bg-stone-50 border-stone-200 text-stone-400"
-                              : "bg-white border-stone-200/90 hover:border-[#00615f] text-stone-800 shadow-2xs"
-                          }`}
+                          key={dish.dishKey}
+                          className="rounded-2xl bg-stone-50/70 border border-stone-200/90 p-3.5 sm:p-4 space-y-3 shadow-2xs"
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={`size-5 rounded-md border flex items-center justify-center shrink-0 transition ${
-                              isHave ? "bg-emerald-600 border-emerald-600 text-white" : "border-stone-300 bg-white"
-                            }`}>
-                              {isHave && <Check className="size-3.5 stroke-[3]" />}
+                          {/* Dish Header */}
+                          <div className="flex items-start sm:items-center justify-between gap-3 pb-2.5 border-b border-stone-200/80">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <DishThumbnail src={dish.image} alt={dish.dishName} size="lg" />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h5 className="font-bold text-sm text-stone-900 truncate">
+                                    {dish.dishName}
+                                  </h5>
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-white border border-stone-200 text-stone-600">
+                                    {dish.dayLabel} · {dish.slotLabel}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-stone-500">
+                                  <span>{dish.calories} kcal</span>
+                                  <span>·</span>
+                                  <span className="font-semibold text-stone-800">~{formatVND(dish.cost)}</span>
+                                  <span>·</span>
+                                  <span className="text-[#00615f] font-medium">
+                                    Đã chọn {dishSelectedCount}/{dish.ingredients.length} nguyên liệu
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className={`text-xs font-medium truncate ${isHave ? "line-through text-stone-400" : "text-stone-900"}`}>
-                                {item.name}
-                              </p>
-                              <p className="text-[10px] text-stone-400 truncate">
-                                {item.category} • Từ: {item.meals.slice(0, 2).join(", ")}
-                              </p>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleDishIngredients(dish)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition shrink-0 ${
+                                dishAllSelected
+                                  ? "bg-stone-200/80 hover:bg-stone-300 text-stone-700"
+                                  : "bg-[#00615f] hover:bg-[#004e4c] text-white shadow-2xs"
+                              }`}
+                            >
+                              {dishAllSelected ? "Bỏ chọn món này" : "Chọn cả món"}
+                            </button>
                           </div>
-                          <div className="text-right shrink-0">
-                            <span className={`text-[11px] font-semibold ${isHave ? "line-through text-stone-400" : "text-[#00615f]"}`}>
-                              ~{formatVND(item.estimatedPrice)}
-                            </span>
-                            <span className="block text-[9px] text-stone-400">
-                              {isHave ? "Có sẵn" : "Cần mua"}
-                            </span>
+
+                          {/* Dish Ingredients Grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                            {dish.ingredients.map((ing) => {
+                              const isSelected = isSelectedEmpty ? true : selectedToBuy.has(ing.id);
+                              return (
+                                <div
+                                  key={ing.id}
+                                  onClick={() => handleToggleIngredient(ing.id)}
+                                  className={`p-2.5 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between gap-2.5 ${
+                                    isSelected
+                                      ? "bg-white border-[#00615f] text-stone-900 shadow-2xs ring-1 ring-[#00615f]/20"
+                                      : "bg-stone-100/80 border-stone-200 text-stone-400 hover:bg-stone-100"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div
+                                      className={`size-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                                        isSelected
+                                          ? "bg-[#00615f] border-[#00615f] text-white"
+                                          : "border-stone-300 bg-white"
+                                      }`}
+                                    >
+                                      {isSelected && <Check className="size-3 stroke-[3]" />}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p
+                                        className={`font-semibold truncate text-xs ${
+                                          isSelected ? "text-stone-900" : "line-through text-stone-400"
+                                        }`}
+                                      >
+                                        {ing.name}
+                                      </p>
+                                      <p className="text-[10px] text-stone-400 truncate">
+                                        {ing.amount || ing.category}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <span
+                                      className={`text-[11px] font-bold block ${
+                                        isSelected ? "text-[#00615f]" : "line-through text-stone-400"
+                                      }`}
+                                    >
+                                      ~{formatVND(ing.estimatedPrice)}
+                                    </span>
+                                    <span className="text-[9px] text-stone-400">
+                                      {isSelected ? "✓ Cần mua" : "Đã có sẵn"}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -1672,14 +1903,13 @@ export default function MealCalendarPage() {
                 const cartData = {
                   daysCount: effectiveDaysCount,
                   dateRangeStr: groceryRangeLabel,
-                  totalItems: aggregatedList.length,
+                  totalItems: neededIngredients.length,
                   neededItems: neededIngredients.map((item) => ({
                     name: item.name,
                     category: item.category,
                     estimatedPrice: item.estimatedPrice,
                     checked: false,
                   })),
-                  haveAtHome: Array.from(haveAtHome),
                   savedMoney: savedAmount,
                   neededCost: neededCost,
                   nearestStore: NEARBY_STORES[0],
