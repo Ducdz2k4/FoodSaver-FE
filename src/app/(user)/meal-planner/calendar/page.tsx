@@ -1135,7 +1135,7 @@ export default function MealCalendarPage() {
                       </span>
                     </div>
                     <p className="text-[11px] text-stone-500 mt-0.5">
-                      Lên danh sách nguyên liệu theo ngày, trừ đồ có sẵn & gợi ý điểm mua gần nhất trên bản đồ.
+                      Nếu bạn muốn chuẩn bị nguyên liệu tự nấu ở nhà, hãy trải nghiệm đi chợ cùng FoodSaver.
                     </p>
                   </div>
                 </div>
@@ -1168,7 +1168,7 @@ export default function MealCalendarPage() {
                   <div>
                     <h4 className="text-xs font-bold text-stone-900">Bắt đầu đi chợ</h4>
                     <p className="text-[11px] text-stone-500 mt-0.5">
-                      Lập danh sách mua sắm thực phẩm tươi 1 - 7 ngày & chuyển sang Radar bản đồ.
+                      Nếu bạn muốn chuẩn bị nguyên liệu tự nấu ở nhà, hãy trải nghiệm đi chợ cùng FoodSaver.
                     </p>
                   </div>
                 </div>
@@ -1452,10 +1452,10 @@ export default function MealCalendarPage() {
                     <Info className="size-4 text-[#00615f] shrink-0 mt-0.5" />
                     <div className="space-y-1 text-emerald-950">
                       <p className="font-bold">
-                        Lời khuyên dinh dưỡng từ FoodSaver:
+                        Nếu bạn muốn chuẩn bị nguyên liệu tự nấu ở nhà, hãy trải nghiệm đi chợ cùng FoodSaver:
                       </p>
                       <p className="text-[11px] leading-relaxed text-stone-600">
-                        Hệ thống khuyên bạn chỉ nên đi chợ cho <strong>tối đa 7 ngày</strong> (lý tưởng nhất là 3 ngày). Mua thực phẩm quá 7 ngày rau củ dễ mất vitamin, giảm độ tươi ngon và tăng nguy cơ lãng phí.
+                        Bên cạnh việc đặt ship món ăn trên hệ thống, nếu bạn muốn chuẩn bị nguyên liệu tươi sạch tự nấu tại nhà, hệ thống khuyên bạn nên lên kế hoạch đi chợ cho <strong>1 đến tối đa 7 ngày</strong> (tối ưu nhất 3 ngày) để món ăn luôn tươi ngon, đủ dưỡng chất và tránh lãng phí.
                       </p>
                     </div>
                   </div>
@@ -1855,7 +1855,7 @@ export default function MealCalendarPage() {
                 Sẵn sàng xuất phát đi chợ! 🛒
               </h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                Đã tổng hợp <strong>{neededIngredients.length} nguyên liệu</strong> cho <strong>{effectiveDaysCount} ngày</strong> ({groceryRangeLabel}). Hệ thống đã chuẩn bị radar bản đồ để dẫn đường đến đối tác gần nhất.
+                Nếu bạn muốn chuẩn bị nguyên liệu tự nấu ở nhà, hãy trải nghiệm đi chợ cùng FoodSaver. Đã chuẩn bị sẵn danh sách <strong>{neededIngredients.length} nguyên liệu</strong> cho <strong>{effectiveDaysCount} ngày</strong> ({groceryRangeLabel}) và đồng bộ lên bản đồ lân cận.
               </p>
             </div>
 
