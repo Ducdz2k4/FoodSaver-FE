@@ -13,6 +13,9 @@ import {
   Search,
   Check,
   Utensils,
+  ArrowRightLeft,
+  AlertCircle,
+  X,
 } from "lucide-react";
 import {
   useGetMonthMealPlansQuery,
@@ -21,6 +24,7 @@ import {
   useSaveMealPlanSlotMutation,
   useDeleteMealPlanSlotMutation,
   MealPlanSlotDTO,
+  DayPlanDTO,
   RecipeDTO,
 } from "@/redux/api/mealPlannerApi";
 import { toast } from "sonner";
@@ -52,6 +56,81 @@ function getFirstDayOfWeek(year: number, month: number) {
 
 function dateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function getDayNutritionEvaluation(calories: number, mealCount: number, dayPlan?: DayPlanDTO) {
+  if (mealCount === 0) {
+    return {
+      status: "EMPTY",
+      badge: "Chưa có món",
+      score: "--",
+      percentage: 0,
+      badgeColor: "bg-stone-100 text-stone-600",
+      progressColor: "bg-stone-300",
+      review: "Chưa có bữa ăn nào được xếp cho ngày này. Hãy chọn món từ danh sách gợi ý bên dưới.",
+    };
+  }
+
+  const percentage = Math.round((calories / 2000) * 100);
+
+  if (calories >= 1800 && calories <= 2200 && mealCount >= 3) {
+    return {
+      status: "PERFECT",
+      badge: "Rất tốt · Đạt chuẩn",
+      score: "9.5 / 10",
+      percentage,
+      badgeColor: "bg-emerald-50 text-emerald-800 border border-emerald-200/80",
+      progressColor: "bg-emerald-600",
+      review: `Lượng calo đạt ${percentage}% chuẩn khoa học (2,000 kcal), đủ ${mealCount} bữa giúp duy trì thể lực tốt và dinh dưỡng cân đối cả ngày.`,
+    };
+  }
+
+  if (calories >= 1600 && calories < 1800) {
+    return {
+      status: "GOOD",
+      badge: "Khá tốt · Hơi nhẹ",
+      score: "8.0 / 10",
+      percentage,
+      badgeColor: "bg-teal-50 text-teal-800 border border-teal-200/80",
+      progressColor: "bg-teal-600",
+      review: `Lượng calo đạt ${percentage}% mức chuẩn. Mức năng lượng vừa vặn, phù hợp cho người làm việc văn phòng hoặc muốn giữ dáng nhẹ nhàng.`,
+    };
+  }
+
+  if (calories < 1600) {
+    const missingSlot = dayPlan && !dayPlan.lunch ? "Trưa" : dayPlan && !dayPlan.dinner ? "Tối" : "Sáng";
+    return {
+      status: "LOW",
+      badge: "Chưa đạt · Thiếu calo",
+      score: "5.5 / 10",
+      percentage,
+      badgeColor: "bg-amber-50 text-amber-800 border border-amber-200/80",
+      progressColor: "bg-amber-500",
+      review: `Mới đạt ${calories} kcal (${percentage}% chuẩn). Bạn nên bổ sung thêm bữa ${missingSlot} để đủ năng lượng làm việc và học tập.`,
+    };
+  }
+
+  if (calories > 2200 && calories <= 2500) {
+    return {
+      status: "SLIGHTLY_HIGH",
+      badge: "Hơi dư calo nhẹ",
+      score: "7.5 / 10",
+      percentage,
+      badgeColor: "bg-sky-50 text-sky-800 border border-sky-200/80",
+      progressColor: "bg-sky-600",
+      review: `Đạt ${calories} kcal (${percentage}% chuẩn). Lượng năng lượng dồi dào, phù hợp nếu ngày này bạn có tập gym hoặc vận động thể chất nhiều.`,
+    };
+  }
+
+  return {
+    status: "EXCESS",
+    badge: "Vượt mức calo",
+    score: "6.0 / 10",
+    percentage,
+    badgeColor: "bg-rose-50 text-rose-800 border border-rose-200/80",
+    progressColor: "bg-rose-500",
+    review: `Đạt ${calories} kcal (${percentage}% chuẩn). Mức năng lượng hơi cao, bạn có thể cân nhắc đổi bữa tối sang món canh thanh đạm hơn.`,
+  };
 }
 
 function DishThumbnail({ src, alt, size = "md" }: { src?: string | null; alt: string; size?: "sm" | "md" | "lg" }) {
@@ -86,6 +165,13 @@ function DishThumbnail({ src, alt, size = "md" }: { src?: string | null; alt: st
   );
 }
 
+interface ReplaceModalData {
+  targetDay: number;
+  slot: "breakfast" | "lunch" | "dinner" | "snack";
+  newDish: RecipeDTO;
+  oldMeal: MealPlanSlotDTO;
+}
+
 export default function MealCalendarPage() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -93,10 +179,16 @@ export default function MealCalendarPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(now.getDate());
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
 
+  // Summary display tab: 'day' | 'month'
+  const [summaryView, setSummaryView] = useState<"day" | "month">("day");
+
   // Suggested Shelf Filter state
   const [shelfCategory, setShelfCategory] = useState("all");
   const [shelfSearch, setShelfSearch] = useState("");
   const [isShoppingListOpen, setIsShoppingListOpen] = useState(false);
+
+  // Replacement confirmation modal
+  const [replaceModal, setReplaceModal] = useState<ReplaceModalData | null>(null);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfWeek(year, month);
@@ -144,14 +236,31 @@ export default function MealCalendarPage() {
   const selectedKey = selectedDay ? dateKey(year, month, selectedDay) : null;
   const selectedPlan = selectedKey ? plans[selectedKey] : null;
 
-  // 1-Click Quick Add Dish from Shelf
-  const handleQuickAddDish = async (
-    dish: RecipeDTO,
-    slot: "breakfast" | "lunch" | "dinner" | "snack"
-  ) => {
-    const targetDay = selectedDay || today.getDate();
-    const targetKey = dateKey(year, month, targetDay);
+  // Selected Day Nutrition Data
+  const selectedDayMeals = (["breakfast", "lunch", "dinner", "snack"] as const).filter(
+    (k) => Boolean(selectedPlan?.[k])
+  );
+  const selectedDayCalories = selectedDayMeals.reduce(
+    (sum, k) => sum + (selectedPlan?.[k]?.calories || 0),
+    0
+  );
+  const selectedDayCost = selectedDayMeals.reduce(
+    (sum, k) => sum + (selectedPlan?.[k]?.cost || 0),
+    0
+  );
+  const selectedDayEval = getDayNutritionEvaluation(
+    selectedDayCalories,
+    selectedDayMeals.length,
+    selectedPlan || undefined
+  );
 
+  // Core function to save slot
+  const executeSaveSlot = async (
+    targetKey: string,
+    slot: "breakfast" | "lunch" | "dinner" | "snack",
+    dish: RecipeDTO,
+    targetDay: number
+  ) => {
     const slotNames = {
       breakfast: "Bữa sáng",
       lunch: "Bữa trưa",
@@ -176,7 +285,7 @@ export default function MealCalendarPage() {
       }).unwrap();
 
       toast.success(
-        `Đã thêm "${dish.name}" vào ${slotNames[slot]} ngày ${targetDay}/${month + 1}!`
+        `Đã lên món "${dish.name}" cho ${slotNames[slot]} ngày ${targetDay}/${month + 1}!`
       );
       if (!selectedDay) {
         setSelectedDay(targetDay);
@@ -184,6 +293,42 @@ export default function MealCalendarPage() {
     } catch {
       toast.error("Không thể lưu món ăn. Vui lòng thử lại");
     }
+  };
+
+  // Quick Add handler with replacement check
+  const handleQuickAddDish = async (
+    dish: RecipeDTO,
+    slot: "breakfast" | "lunch" | "dinner" | "snack"
+  ) => {
+    const targetDay = selectedDay || today.getDate();
+    const targetKey = dateKey(year, month, targetDay);
+    const existingSlot = plans[targetKey]?.[slot];
+
+    // Check if slot already has a dish
+    if (existingSlot && existingSlot.meal) {
+      setReplaceModal({
+        targetDay,
+        slot,
+        newDish: dish,
+        oldMeal: existingSlot,
+      });
+      return;
+    }
+
+    await executeSaveSlot(targetKey, slot, dish, targetDay);
+  };
+
+  // Confirm replacement
+  const handleConfirmReplace = async () => {
+    if (!replaceModal) return;
+    const targetKey = dateKey(year, month, replaceModal.targetDay);
+    await executeSaveSlot(
+      targetKey,
+      replaceModal.slot,
+      replaceModal.newDish,
+      replaceModal.targetDay
+    );
+    setReplaceModal(null);
   };
 
   const handleDeleteSlot = async (slotId?: string, slotName?: string) => {
@@ -200,7 +345,7 @@ export default function MealCalendarPage() {
     <div className="space-y-6">
       {/* ══════ TOP SECTION: CALENDAR + DAY DETAIL ══════ */}
       <div className="flex flex-col lg:flex-row gap-5">
-        {/* ═══ LEFT: CALENDAR ═══ */}
+        {/* ═══ LEFT: CALENDAR & DYNAMIC NUTRITION CARD ═══ */}
         <div className="lg:w-[420px] shrink-0">
           <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs overflow-visible relative">
             {/* Month navigation */}
@@ -212,7 +357,7 @@ export default function MealCalendarPage() {
                 <h2 className="text-sm font-bold text-stone-900 text-center">
                   {MONTHS[month]} {year}
                 </h2>
-                <p className="text-[10px] text-stone-400 text-center">Rê chuột vào ngày để xem thực đơn</p>
+                <p className="text-[10px] text-stone-400 text-center">Bấm vào ngày để xem calo & đánh giá</p>
               </div>
               <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-stone-100 transition text-stone-600">
                 <ChevronRight className="size-4" />
@@ -257,7 +402,10 @@ export default function MealCalendarPage() {
                     onMouseLeave={() => setHoveredDay(null)}
                   >
                     <button
-                      onClick={() => setSelectedDay(day)}
+                      onClick={() => {
+                        setSelectedDay(day);
+                        setSummaryView("day");
+                      }}
                       className={`w-full aspect-square rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center relative p-1 ${
                         isSelected
                           ? "bg-[#00615f] text-white shadow-xs font-semibold z-10 scale-105"
@@ -364,35 +512,118 @@ export default function MealCalendarPage() {
             </div>
           </div>
 
-          {/* Unified Monthly summary */}
-          <div className="mt-3.5 rounded-2xl bg-white border border-stone-200/80 shadow-xs p-4 space-y-3">
-            <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider">
-              Tổng kết tháng {month + 1}
-            </h3>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-                <p className="text-[10px] text-stone-500 font-medium">Chi phí ước tính</p>
-                <p className="text-base font-bold text-[#00615f]">{formatVND(summary.totalCost)}</p>
+          {/* ══════ DYNAMIC SUMMARY CARD (CLICK VÀO NGÀY HIỂN THỊ CALO & ĐÁNH GIÁ) ══════ */}
+          <div className="mt-3.5 rounded-2xl bg-white border border-stone-200/80 shadow-xs p-4 space-y-3.5">
+            {/* View Switcher Tabs */}
+            <div className="flex items-center justify-between">
+              <div className="flex p-0.5 rounded-lg bg-stone-100 text-xs font-semibold">
+                <button
+                  onClick={() => setSummaryView("day")}
+                  className={`px-3 py-1 rounded-md transition-all ${
+                    summaryView === "day"
+                      ? "bg-white text-stone-900 shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  Ngày {selectedDay || today.getDate()}
+                </button>
+                <button
+                  onClick={() => setSummaryView("month")}
+                  className={`px-3 py-1 rounded-md transition-all ${
+                    summaryView === "month"
+                      ? "bg-white text-stone-900 shadow-xs"
+                      : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  Cả tháng {month + 1}
+                </button>
               </div>
-              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-                <p className="text-[10px] text-stone-500 font-medium">Tổng calo</p>
-                <p className="text-base font-bold text-stone-800">
-                  {(summary.totalCalories || 0).toLocaleString()} kcal
-                </p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-                <p className="text-[10px] text-stone-500 font-medium">Ngày đã lên lịch</p>
-                <p className="text-base font-bold text-stone-800">
-                  {summary.plannedDays} / {daysInMonth} ngày
-                </p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-                <p className="text-[10px] text-stone-500 font-medium">Nguyên liệu cần mua</p>
-                <p className="text-base font-bold text-stone-800">
-                  {summary.ingredientCount} loại
-                </p>
-              </div>
+
+              {summaryView === "day" && (
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${selectedDayEval.badgeColor}`}>
+                  {selectedDayEval.badge}
+                </span>
+              )}
             </div>
+
+            {summaryView === "day" ? (
+              /* ─── DAY VIEW: CALORIES & NUTRITION ASSESSMENT ─── */
+              <div className="space-y-3">
+                {/* Progress bar vs 2,000 kcal target */}
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-semibold text-stone-700">Mục tiêu calo ngày {selectedDay}:</span>
+                    <span className="font-bold text-stone-900">
+                      {selectedDayCalories.toLocaleString()} / 2,000 kcal{" "}
+                      <span className="text-stone-400 font-normal">({selectedDayEval.percentage}%)</span>
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-stone-100 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${selectedDayEval.progressColor}`}
+                      style={{ width: `${Math.min(100, selectedDayEval.percentage)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* 4 Stat Boxes for Selected Day */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                    <p className="text-[10px] text-stone-500 font-medium">Năng lượng ngày</p>
+                    <p className="text-base font-bold text-stone-900">{selectedDayCalories} kcal</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                    <p className="text-[10px] text-stone-500 font-medium">Đánh giá dinh dưỡng</p>
+                    <p className="text-base font-bold text-[#00615f]">{selectedDayEval.score}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                    <p className="text-[10px] text-stone-500 font-medium">Chi phí ngày {selectedDay}</p>
+                    <p className="text-base font-bold text-stone-900">{formatVND(selectedDayCost)}</p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                    <p className="text-[10px] text-stone-500 font-medium">Bữa đã lên lịch</p>
+                    <p className="text-base font-bold text-stone-900">{selectedDayMeals.length} / 4 bữa</p>
+                  </div>
+                </div>
+
+                {/* Detailed Nutritional Review */}
+                <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100 text-xs">
+                  <p className="font-semibold text-stone-800 flex items-center gap-1.5 mb-1 text-[11px]">
+                    <Sparkles className="size-3 text-[#00615f]" />
+                    Đánh giá &amp; Lời khuyên dinh dưỡng:
+                  </p>
+                  <p className="text-[11px] text-stone-600 leading-relaxed">
+                    {selectedDayEval.review}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              /* ─── MONTH VIEW: MONTH SUMMARY ─── */
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                  <p className="text-[10px] text-stone-500 font-medium">Chi phí ước tính</p>
+                  <p className="text-base font-bold text-[#00615f]">{formatVND(summary.totalCost)}</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                  <p className="text-[10px] text-stone-500 font-medium">Tổng calo tháng</p>
+                  <p className="text-base font-bold text-stone-800">
+                    {(summary.totalCalories || 0).toLocaleString()} kcal
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                  <p className="text-[10px] text-stone-500 font-medium">Ngày đã lên lịch</p>
+                  <p className="text-base font-bold text-stone-800">
+                    {summary.plannedDays} / {daysInMonth} ngày
+                  </p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                  <p className="text-[10px] text-stone-500 font-medium">Nguyên liệu cần mua</p>
+                  <p className="text-base font-bold text-stone-800">
+                    {summary.ingredientCount} loại
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -412,7 +643,7 @@ export default function MealCalendarPage() {
                     Thực đơn Ngày {selectedDay} {MONTHS[month]} {year}
                   </h2>
                   <p className="text-xs text-stone-500">
-                    Bấm các nút chọn ở danh sách món bên dưới để đổi món nhanh
+                    Bấm các nút chọn ở danh sách bên dưới để thêm hoặc thay thế món nhanh
                   </p>
                 </div>
               </div>
@@ -481,21 +712,13 @@ export default function MealCalendarPage() {
                   <div>
                     <p className="text-[11px] font-medium text-stone-500">Tổng chi tiêu ngày {selectedDay}</p>
                     <p className="text-lg font-bold text-[#00615f]">
-                      {formatVND(
-                        [selectedPlan.breakfast, selectedPlan.lunch, selectedPlan.dinner, selectedPlan.snack]
-                          .filter(Boolean)
-                          .reduce((sum, s) => sum + (s?.cost || 0), 0)
-                      )}
+                      {formatVND(selectedDayCost)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[11px] font-medium text-stone-500">Tổng năng lượng</p>
+                    <p className="text-[11px] font-medium text-stone-500">Tổng năng lượng ngày</p>
                     <p className="text-lg font-bold text-stone-800">
-                      {[selectedPlan.breakfast, selectedPlan.lunch, selectedPlan.dinner, selectedPlan.snack]
-                        .filter(Boolean)
-                        .reduce((sum, s) => sum + (s?.calories || 0), 0)
-                        .toLocaleString()}{" "}
-                      kcal
+                      {selectedDayCalories.toLocaleString()} kcal
                     </p>
                   </div>
                 </div>
@@ -550,7 +773,7 @@ export default function MealCalendarPage() {
               Gợi ý món ăn · Chọn nhanh cho Ngày {selectedDay || today.getDate()} {MONTHS[month]}
             </h3>
             <p className="text-xs text-stone-500">
-              Bấm 1-chạm vào bữa bạn muốn lên lịch cho ngày đang chọn
+              Bấm 1-chạm vào bữa bạn muốn lên lịch (nếu bữa đó đã có món, hệ thống sẽ hỏi bạn có muốn thay thế không)
             </p>
           </div>
 
@@ -639,7 +862,7 @@ export default function MealCalendarPage() {
                     )}
                   </div>
 
-                  {/* Unified Segmented Action Bar (No rainbow buttons!) */}
+                  {/* Unified Segmented Action Bar */}
                   <div className="mt-2 pt-2 border-t border-stone-100">
                     <p className="text-[9px] font-semibold text-stone-400 mb-1 text-center">
                       Thêm vào ngày {selectedDay || today.getDate()}:
@@ -685,6 +908,86 @@ export default function MealCalendarPage() {
           </div>
         )}
       </section>
+
+      {/* ══════ POPUP: CONFIRM REPLACE DISH MODAL ══════ */}
+      {replaceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl border border-stone-200 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+                  <ArrowRightLeft className="size-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-stone-900">
+                    Thay thế món trong thực đơn?
+                  </h3>
+                  <p className="text-[10px] text-stone-500">
+                    Bữa {SLOT_META[replaceModal.slot].label} ngày {replaceModal.targetDay}/{month + 1}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setReplaceModal(null)}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-600 transition"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Bữa này hiện đã có món ăn. Bạn có muốn thay thế bằng món mới chọn không?
+            </p>
+
+            {/* Comparison Cards */}
+            <div className="space-y-2">
+              {/* Old dish */}
+              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center gap-2.5">
+                <DishThumbnail src={replaceModal.oldMeal.image} alt={replaceModal.oldMeal.meal} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-semibold text-stone-400 uppercase">Món hiện tại</p>
+                  <p className="text-xs font-bold text-stone-800 truncate">{replaceModal.oldMeal.meal}</p>
+                  <p className="text-[10px] text-stone-500">{replaceModal.oldMeal.calories} kcal · {formatVND(replaceModal.oldMeal.cost)}</p>
+                </div>
+              </div>
+
+              {/* Arrow */}
+              <div className="text-center text-stone-400">
+                <span className="text-xs font-bold">↓ thay bằng</span>
+              </div>
+
+              {/* New dish */}
+              <div className="p-2.5 rounded-xl bg-[#00615f]/5 border border-[#00615f]/20 flex items-center gap-2.5">
+                <DishThumbnail src={replaceModal.newDish.partnerImage || replaceModal.newDish.image} alt={replaceModal.newDish.name} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-semibold text-[#00615f] uppercase">Món mới chọn</p>
+                  <p className="text-xs font-bold text-stone-900 truncate">{replaceModal.newDish.name}</p>
+                  <p className="text-[10px] text-stone-600 font-medium">{replaceModal.newDish.calories} kcal · {formatVND(replaceModal.newDish.cost)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => setReplaceModal(null)}
+                className="flex-1 py-2 px-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition"
+              >
+                Giữ món cũ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReplace}
+                disabled={isSaving}
+                className="flex-1 py-2 px-3 rounded-xl bg-[#00615f] hover:bg-[#004d4b] text-white text-xs font-semibold transition shadow-xs"
+              >
+                Thay thế món
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════ SHOPPING LIST MODAL ══════ */}
       {isShoppingListOpen && (
