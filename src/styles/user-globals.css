@@ -425,3 +425,122 @@ a[class~="bg-teal-600"] svg,
 [data-slot="button"][data-variant="success"] svg {
   color: #ffffff !important;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   STREAMDOWN COMPONENT STYLING (FIX TRANSPARENCY, DROPDOWNS & MODALS)
+   ══════════════════════════════════════════════════════════════ */
+
+/* 1. Table Wrapper Container */
+[data-streamdown="table-wrapper"] {
+  background-color: #ffffff !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04) !important;
+  margin: 0.875rem 0 !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+/* 2. Table Header Controls (Copy, Download, Fullscreen Buttons) */
+[data-streamdown="table-wrapper"] > div:first-child {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.25rem !important;
+  padding: 0.375rem 0.5rem !important;
+  background-color: #fbfbfa !important;
+  border-bottom: 1px solid #f0eeec !important;
+  border-top-left-radius: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+}
+
+[data-streamdown="table-wrapper"] button {
+  color: #78716c !important;
+  border-radius: 0.375rem !important;
+  padding: 0.25rem 0.375rem !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-streamdown="table-wrapper"] button:hover {
+  background-color: #e7e5e4 !important;
+  color: #1c1917 !important;
+}
+
+/* 3. Popover / Dropdown Menu (Markdown, CSV, TSV) - FIX TRANSPARENCY */
+[data-streamdown="table-wrapper"] .absolute,
+.streamdown-wrapper .absolute {
+  background-color: #ffffff !important;
+  border: 1px solid #d6d3d1 !important;
+  border-radius: 0.625rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  min-width: 140px !important;
+  z-index: 50 !important;
+  overflow: hidden !important;
+  padding: 0.25rem 0 !important;
+  opacity: 1 !important;
+}
+
+/* Dropdown buttons */
+[data-streamdown="table-wrapper"] .absolute button,
+.streamdown-wrapper .absolute button {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  text-align: left !important;
+  padding: 0.5rem 0.875rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  color: #292524 !important;
+  background-color: #ffffff !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+  border: none !important;
+  border-radius: 0 !important;
+  opacity: 1 !important;
+}
+
+[data-streamdown="table-wrapper"] .absolute button:hover,
+.streamdown-wrapper .absolute button:hover {
+  background-color: #f5f5f4 !important;
+  color: #00615f !important;
+  font-weight: 600 !important;
+}
+
+/* 4. Fullscreen Table Modal (Phóng to) */
+[data-streamdown="table-fullscreen"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  background-color: #ffffff !important;
+  padding: 1.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: auto !important;
+}
+
+[data-streamdown="table-fullscreen"] [data-streamdown="table-wrapper"] {
+  height: 100% !important;
+  margin: 0 !important;
+  border: 1px solid #e7e5e4 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 5. Link Safety Dialog */
+[data-streamdown="link-safety-modal"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+[data-streamdown="link-safety-modal"] > div {
+  background-color: #ffffff !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15) !important;
+  padding: 1.5rem !important;
+}

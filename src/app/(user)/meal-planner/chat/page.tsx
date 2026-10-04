@@ -374,7 +374,7 @@ export default function MealPlannerChatPage() {
                   <div
                     className={`rounded-2xl px-4 py-3 ${
                       msg.role === "assistant"
-                        ? "bg-stone-50 border border-stone-200/80 text-stone-800"
+                        ? "bg-white border border-stone-200/90 text-stone-800 shadow-xs relative"
                         : "bg-[#00615f] text-white shadow-xs"
                     }`}
                   >
