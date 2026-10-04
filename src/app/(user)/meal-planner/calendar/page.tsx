@@ -32,10 +32,10 @@ const MONTHS = [
 ];
 
 const SLOT_META = {
-  breakfast: { label: "Sáng", icon: "🌅", color: "emerald" },
-  lunch: { label: "Trưa", icon: "☀️", color: "orange" },
-  dinner: { label: "Tối", icon: "🌙", color: "sky" },
-  snack: { label: "Snack", icon: "🍎", color: "violet" },
+  breakfast: { label: "Sáng", icon: "🌅" },
+  lunch: { label: "Trưa", icon: "☀️" },
+  dinner: { label: "Tối", icon: "🌙" },
+  snack: { label: "Snack", icon: "🍎" },
 } as const;
 
 function formatVND(n: number) {
@@ -60,20 +60,20 @@ function DishThumbnail({ src, alt, size = "md" }: { src?: string | null; alt: st
 
   const sizeClasses = {
     sm: "size-8 rounded-lg text-sm",
-    md: "size-11 rounded-xl text-lg",
-    lg: "size-16 rounded-xl text-2xl",
+    md: "size-10 rounded-lg text-base",
+    lg: "size-14 rounded-xl text-xl",
   }[size];
 
   if (!isUrl || hasError) {
     return (
-      <div className={`${sizeClasses} bg-stone-100 flex items-center justify-center shrink-0 border border-stone-200 select-none`}>
+      <div className={`${sizeClasses} bg-stone-100 flex items-center justify-center shrink-0 border border-stone-200 select-none text-stone-400`}>
         {src && !isUrl ? src : "🍲"}
       </div>
     );
   }
 
   return (
-    <div className={`${sizeClasses} overflow-hidden shrink-0 border border-stone-200 relative bg-stone-100`}>
+    <div className={`${sizeClasses} overflow-hidden shrink-0 border border-stone-200/80 relative bg-stone-100`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -199,37 +199,37 @@ export default function MealCalendarPage() {
   return (
     <div className="space-y-6">
       {/* ══════ TOP SECTION: CALENDAR + DAY DETAIL ══════ */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* ═══ LEFT: CALENDAR ═══ */}
-        <div className="lg:w-[440px] shrink-0">
-          <div className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm overflow-visible relative">
+        <div className="lg:w-[420px] shrink-0">
+          <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs overflow-visible relative">
             {/* Month navigation */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-              <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-stone-100 transition">
-                <ChevronLeft className="size-4 text-stone-600" />
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-stone-100">
+              <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-stone-100 transition text-stone-600">
+                <ChevronLeft className="size-4" />
               </button>
               <div>
-                <h2 className="text-sm font-black text-stone-900 text-center">
+                <h2 className="text-sm font-bold text-stone-900 text-center">
                   {MONTHS[month]} {year}
                 </h2>
                 <p className="text-[10px] text-stone-400 text-center">Rê chuột vào ngày để xem thực đơn</p>
               </div>
-              <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-stone-100 transition">
-                <ChevronRight className="size-4 text-stone-600" />
+              <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-stone-100 transition text-stone-600">
+                <ChevronRight className="size-4" />
               </button>
             </div>
 
             {/* Day headers */}
-            <div className="grid grid-cols-7 text-center px-3 pt-3">
+            <div className="grid grid-cols-7 text-center px-2.5 pt-2.5">
               {DAYS.map((d) => (
-                <div key={d} className="text-[10px] font-bold text-stone-400 uppercase py-1">
+                <div key={d} className="text-[10px] font-semibold text-stone-400 uppercase py-1">
                   {d}
                 </div>
               ))}
             </div>
 
             {/* Day grid */}
-            <div className="grid grid-cols-7 px-3 pb-4 relative">
+            <div className="grid grid-cols-7 px-2.5 pb-3.5 relative">
               {Array.from({ length: firstDay }).map((_, i) => (
                 <div key={`empty-${i}`} />
               ))}
@@ -245,7 +245,6 @@ export default function MealCalendarPage() {
                 const isSelected = selectedDay === day;
                 const isHovered = hoveredDay === day;
 
-                // Column position for smart tooltip placement (0 to 6)
                 const colIdx = (firstDay + i) % 7;
                 const tooltipAlign =
                   colIdx >= 5 ? "right-0" : colIdx <= 1 ? "left-0" : "left-1/2 -translate-x-1/2";
@@ -259,30 +258,30 @@ export default function MealCalendarPage() {
                   >
                     <button
                       onClick={() => setSelectedDay(day)}
-                      className={`w-full aspect-square rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center relative p-1 ${
+                      className={`w-full aspect-square rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center relative p-1 ${
                         isSelected
-                          ? "bg-[#00615f] text-white shadow-md scale-105 z-10"
+                          ? "bg-[#00615f] text-white shadow-xs font-semibold z-10 scale-105"
                           : isToday
-                          ? "bg-[#00615f]/10 text-[#00615f] font-black border border-[#00615f]/30"
+                          ? "bg-stone-100 text-[#00615f] font-bold border border-[#00615f]/30"
                           : "text-stone-700 hover:bg-stone-100"
                       }`}
                     >
                       <span>{day}</span>
 
-                      {/* Mini Slot Badges */}
+                      {/* Clean Mini Indicators */}
                       {hasPlan && (
                         <div className="flex items-center gap-0.5 mt-0.5">
                           {planKeys.slice(0, 3).map((slotKey) => (
                             <span
                               key={slotKey}
-                              className="text-[9px] leading-none"
+                              className="text-[8px] leading-none"
                               title={SLOT_META[slotKey].label}
                             >
                               {SLOT_META[slotKey].icon}
                             </span>
                           ))}
                           {planKeys.length > 3 && (
-                            <span className="text-[8px] font-bold text-stone-500">
+                            <span className="text-[7px] font-bold text-stone-400">
                               +{planKeys.length - 3}
                             </span>
                           )}
@@ -290,29 +289,29 @@ export default function MealCalendarPage() {
                       )}
                     </button>
 
-                    {/* ══════ RICH HOVER TOOLTIP ══════ */}
+                    {/* ══════ CALM RICH HOVER TOOLTIP ══════ */}
                     {isHovered && hasPlan && (
                       <div
-                        className={`absolute bottom-full mb-2 z-50 ${tooltipAlign} w-72 pointer-events-none transition-all duration-200 animate-in fade-in zoom-in-95`}
+                        className={`absolute bottom-full mb-2 z-50 ${tooltipAlign} w-72 pointer-events-none transition-all duration-150 animate-in fade-in zoom-in-95`}
                       >
-                        <div className="rounded-2xl bg-white/95 backdrop-blur-md p-3.5 shadow-2xl border border-stone-200/90 text-left space-y-2.5">
+                        <div className="rounded-xl bg-white p-3.5 shadow-xl border border-stone-200/90 text-left space-y-2">
                           {/* Tooltip Header */}
                           <div className="flex items-center justify-between pb-2 border-b border-stone-100">
                             <div>
-                              <p className="text-xs font-black text-stone-900">
-                                Thực đơn ngày {day} {MONTHS[month]}
+                              <p className="text-xs font-bold text-stone-900">
+                                Ngày {day} {MONTHS[month]}
                               </p>
-                              <p className="text-[10px] text-stone-500">
+                              <p className="text-[10px] text-stone-400">
                                 {planKeys.length} bữa đã lên lịch
                               </p>
                             </div>
                             <div className="text-right">
-                              <span className="text-xs font-black text-[#00615f]">
+                              <span className="text-xs font-bold text-[#00615f]">
                                 {formatVND(
                                   planKeys.reduce((sum, k) => sum + (dayPlan[k]?.cost || 0), 0)
                                 )}
                               </span>
-                              <p className="text-[10px] font-semibold text-orange-600">
+                              <p className="text-[10px] text-stone-500 font-medium">
                                 {planKeys
                                   .reduce((sum, k) => sum + (dayPlan[k]?.calories || 0), 0)
                                   .toLocaleString()}{" "}
@@ -329,7 +328,7 @@ export default function MealCalendarPage() {
                               return (
                                 <div
                                   key={k}
-                                  className="flex items-center gap-2 p-1.5 rounded-xl bg-stone-50 border border-stone-100"
+                                  className="flex items-center gap-2 p-1.5 rounded-lg bg-stone-50 border border-stone-100"
                                 >
                                   <DishThumbnail
                                     src={slotData.image}
@@ -337,18 +336,18 @@ export default function MealCalendarPage() {
                                     size="sm"
                                   />
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-bold text-stone-400">
+                                    <p className="text-[9px] font-semibold text-stone-400 uppercase tracking-wide">
                                       {meta.icon} {meta.label}
                                     </p>
-                                    <p className="text-xs font-bold text-stone-800 truncate">
+                                    <p className="text-xs font-semibold text-stone-900 truncate">
                                       {slotData.meal}
                                     </p>
                                   </div>
                                   <div className="text-right shrink-0">
-                                    <p className="text-[10px] font-bold text-orange-600">
+                                    <p className="text-[10px] font-medium text-stone-500">
                                       {slotData.calories} kcal
                                     </p>
-                                    <p className="text-[10px] font-black text-[#00615f]">
+                                    <p className="text-[10px] font-bold text-stone-900">
                                       {formatVND(slotData.cost)}
                                     </p>
                                   </div>
@@ -365,32 +364,31 @@ export default function MealCalendarPage() {
             </div>
           </div>
 
-          {/* Monthly summary */}
-          <div className="mt-4 rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm p-4 space-y-3">
-            <h3 className="text-xs font-black text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="size-3.5 text-[#00615f]" />
-              Tổng kết ngân sách & calo tháng
+          {/* Unified Monthly summary */}
+          <div className="mt-3.5 rounded-2xl bg-white border border-stone-200/80 shadow-xs p-4 space-y-3">
+            <h3 className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+              Tổng kết tháng {month + 1}
             </h3>
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100/60">
-                <p className="text-[10px] text-stone-500">Chi phí ước tính</p>
-                <p className="text-base font-black text-[#00615f]">{formatVND(summary.totalCost)}</p>
+              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                <p className="text-[10px] text-stone-500 font-medium">Chi phí ước tính</p>
+                <p className="text-base font-bold text-[#00615f]">{formatVND(summary.totalCost)}</p>
               </div>
-              <div className="p-2.5 rounded-xl bg-orange-50/60 border border-orange-100/60">
-                <p className="text-[10px] text-stone-500">Tổng calo</p>
-                <p className="text-base font-black text-orange-600">
+              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                <p className="text-[10px] text-stone-500 font-medium">Tổng calo</p>
+                <p className="text-base font-bold text-stone-800">
                   {(summary.totalCalories || 0).toLocaleString()} kcal
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-sky-50/60 border border-sky-100/60">
-                <p className="text-[10px] text-stone-500">Ngày đã lên lịch</p>
-                <p className="text-base font-black text-sky-600">
+              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                <p className="text-[10px] text-stone-500 font-medium">Ngày đã lên lịch</p>
+                <p className="text-base font-bold text-stone-800">
                   {summary.plannedDays} / {daysInMonth} ngày
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-violet-50/60 border border-violet-100/60">
-                <p className="text-[10px] text-stone-500">Nguyên liệu cần mua</p>
-                <p className="text-base font-black text-violet-600">
+              <div className="p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                <p className="text-[10px] text-stone-500 font-medium">Nguyên liệu cần mua</p>
+                <p className="text-base font-bold text-stone-800">
                   {summary.ingredientCount} loại
                 </p>
               </div>
@@ -401,26 +399,26 @@ export default function MealCalendarPage() {
         {/* ═══ RIGHT: DAY DETAIL ═══ */}
         <div className="flex-1">
           {isPlansLoading ? (
-            <div className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm p-12 text-center">
-              <Loader2 className="size-8 mx-auto animate-spin text-[#00615f] mb-3" />
+            <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-12 text-center">
+              <Loader2 className="size-6 mx-auto animate-spin text-[#00615f] mb-2" />
               <p className="text-xs text-stone-500">Đang tải lịch ăn uống...</p>
             </div>
           ) : selectedDay && selectedPlan && Object.keys(selectedPlan).length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div className="flex items-center justify-between pb-1 border-b border-stone-200/80">
                 <div>
-                  <h2 className="text-lg font-black text-stone-900 flex items-center gap-2">
-                    <Utensils className="size-5 text-[#00615f]" />
+                  <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
+                    <Utensils className="size-4 text-[#00615f]" />
                     Thực đơn Ngày {selectedDay} {MONTHS[month]} {year}
                   </h2>
                   <p className="text-xs text-stone-500">
-                    Bấm các nút "+ Sáng / Trưa / Tối / Snack" ở danh sách bên dưới để đổi món nhanh
+                    Bấm các nút chọn ở danh sách món bên dưới để đổi món nhanh
                   </p>
                 </div>
               </div>
 
-              {/* Meal cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Meal cards (Unified calm styling) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(["breakfast", "lunch", "dinner", "snack"] as const).map((slotKey) => {
                   const data = selectedPlan[slotKey] as MealPlanSlotDTO | undefined;
                   if (!data) return null;
@@ -430,20 +428,21 @@ export default function MealCalendarPage() {
                   return (
                     <div
                       key={slotKey}
-                      className="rounded-2xl bg-white/90 backdrop-blur border border-stone-200/80 shadow-sm p-4 transition-all hover:shadow-md flex flex-col justify-between"
+                      className="rounded-xl bg-white border border-stone-200/80 shadow-xs p-3.5 transition-all flex flex-col justify-between"
                     >
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2.5">
                         <DishThumbnail src={data.image} alt={data.meal} size="md" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+                          <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
                             {meta.icon} {meta.label}
                           </p>
-                          <h3 className="text-sm font-black text-stone-900 truncate">{data.meal}</h3>
+                          <h3 className="text-xs font-bold text-stone-900 truncate mt-0.5">{data.meal}</h3>
                           <div className="mt-1 flex items-center gap-2 text-xs">
-                            <span className="font-semibold text-orange-600">
-                              🔥 {data.calories} kcal
+                            <span className="text-stone-500 text-[11px] font-medium">
+                              {data.calories} kcal
                             </span>
-                            <span className="font-bold text-[#00615f]">
+                            <span className="text-stone-300">·</span>
+                            <span className="font-bold text-stone-900 text-xs">
                               {formatVND(data.cost)}
                             </span>
                           </div>
@@ -451,20 +450,20 @@ export default function MealCalendarPage() {
                         {data.id && (
                           <button
                             onClick={() => handleDeleteSlot(data.id, meta.label)}
-                            className="p-1.5 rounded-lg hover:bg-rose-50 text-stone-400 hover:text-rose-500 transition shrink-0"
+                            className="p-1 rounded-md hover:bg-stone-100 text-stone-400 hover:text-rose-500 transition shrink-0"
                             title={`Xóa ${meta.label}`}
                           >
-                            <Trash2 className="size-4" />
+                            <Trash2 className="size-3.5" />
                           </button>
                         )}
                       </div>
 
                       {ings.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1 pt-2 border-t border-stone-100">
+                        <div className="mt-2.5 flex flex-wrap gap-1 pt-2 border-t border-stone-100">
                           {ings.map((ing, idx) => (
                             <span
                               key={idx}
-                              className="px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 text-[10px] font-medium"
+                              className="px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 text-[10px]"
                             >
                               {ing}
                             </span>
@@ -477,11 +476,11 @@ export default function MealCalendarPage() {
               </div>
 
               {/* Day cost & nutrition summary */}
-              <div className="rounded-2xl bg-[#00615f]/5 border border-[#00615f]/20 p-4">
+              <div className="rounded-xl bg-stone-50 border border-stone-200/80 p-3.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-bold text-stone-600">Tổng chi tiêu ngày {selectedDay}</p>
-                    <p className="text-xl font-black text-[#00615f]">
+                    <p className="text-[11px] font-medium text-stone-500">Tổng chi tiêu ngày {selectedDay}</p>
+                    <p className="text-lg font-bold text-[#00615f]">
                       {formatVND(
                         [selectedPlan.breakfast, selectedPlan.lunch, selectedPlan.dinner, selectedPlan.snack]
                           .filter(Boolean)
@@ -490,8 +489,8 @@ export default function MealCalendarPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-stone-600">Tổng năng lượng</p>
-                    <p className="text-xl font-black text-orange-600">
+                    <p className="text-[11px] font-medium text-stone-500">Tổng năng lượng</p>
+                    <p className="text-lg font-bold text-stone-800">
                       {[selectedPlan.breakfast, selectedPlan.lunch, selectedPlan.dinner, selectedPlan.snack]
                         .filter(Boolean)
                         .reduce((sum, s) => sum + (s?.calories || 0), 0)
@@ -502,74 +501,73 @@ export default function MealCalendarPage() {
                 </div>
               </div>
 
-              {/* Shopping list banner */}
-              <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200/50 p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <ShoppingCart className="size-6 text-[#00615f]" />
+              {/* Shopping list banner (Calm) */}
+              <div className="rounded-xl bg-white border border-stone-200/80 p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <ShoppingCart className="size-5 text-[#00615f]" />
                   <div>
-                    <p className="text-xs font-bold text-stone-800">
+                    <p className="text-xs font-semibold text-stone-800">
                       Danh sách đi chợ tháng {month + 1}
                     </p>
-                    <p className="text-[10px] text-stone-500">
-                      Tổng hợp {summary.ingredientCount} nguyên liệu từ thực đơn đã chọn
+                    <p className="text-[11px] text-stone-500">
+                      {summary.ingredientCount} nguyên liệu từ các món đã lên lịch
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsShoppingListOpen(true)}
-                  className="px-3.5 py-1.5 rounded-full bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-sm"
+                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-[#00615f] text-white text-xs font-medium transition-colors"
                 >
                   Xem danh sách
                 </button>
               </div>
             </div>
           ) : selectedDay ? (
-            <div className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm p-8 text-center space-y-3">
-              <CalendarIcon className="size-10 mx-auto text-[#00615f]/40" />
-              <p className="text-sm font-bold text-stone-800">
+            <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-8 text-center space-y-2">
+              <CalendarIcon className="size-8 mx-auto text-stone-300" />
+              <p className="text-sm font-semibold text-stone-800">
                 Chưa có món nào cho ngày {selectedDay} {MONTHS[month]}
               </p>
               <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                Chọn ngay từ danh sách món gợi ý phong phú phía dưới: bấm "+ Sáng", "+ Trưa", "+ Tối" hoặc "+ Snack" để xếp lịch 1-chạm mà không cần nhập tay!
+                Chọn món từ danh sách gợi ý bên dưới để thêm nhanh vào ngày này.
               </p>
             </div>
           ) : (
-            <div className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm p-8 text-center">
-              <CalendarIcon className="size-10 mx-auto text-stone-300 mb-2" />
-              <p className="text-sm font-bold text-stone-700">Chọn một ngày trên lịch</p>
-              <p className="text-xs text-stone-400 mt-1">để xem chi tiết hoặc thêm thực đơn</p>
+            <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-8 text-center">
+              <CalendarIcon className="size-8 mx-auto text-stone-300 mb-1.5" />
+              <p className="text-sm font-medium text-stone-700">Chọn một ngày trên lịch</p>
+              <p className="text-xs text-stone-400">để xem chi tiết hoặc thêm thực đơn</p>
             </div>
           )}
         </div>
       </div>
 
       {/* ══════ BOTTOM SECTION: QUICK DISH RECOMMENDATION SHELF ══════ */}
-      <section className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm p-5 space-y-4">
+      <section className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-5 space-y-3.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100">
           <div>
-            <h3 className="text-base font-black text-stone-900 flex items-center gap-2">
-              <Sparkles className="size-4 text-amber-500" />
-              Thực đơn gợi ý - Chọn nhanh cho Ngày {selectedDay || today.getDate()} {MONTHS[month]}
+            <h3 className="text-sm font-bold text-stone-900">
+              Gợi ý món ăn · Chọn nhanh cho Ngày {selectedDay || today.getDate()} {MONTHS[month]}
             </h3>
             <p className="text-xs text-stone-500">
-              Chọn nhanh các món ngon đầy đủ calo & giá tiền. Bấm 1-chạm để thêm vào bữa ăn mong muốn!
+              Bấm 1-chạm vào bữa bạn muốn lên lịch cho ngày đang chọn
             </p>
           </div>
 
           {/* Quick search input */}
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-60">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-stone-400" />
             <input
               type="text"
               value={shelfSearch}
               onChange={(e) => setShelfSearch(e.target.value)}
-              placeholder="Tìm nhanh món (bò, cá, xôi...)"
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-stone-50 border border-stone-200 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f]"
+              placeholder="Tìm món (bò, cá, xôi...)"
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-stone-50 border border-stone-200 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-[#00615f] focus:border-[#00615f]"
             />
           </div>
         </div>
 
-        {/* Shelf Category Tabs */}
+        {/* Shelf Category Tabs (Neutral) */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           {[
             { key: "all", label: "Tất cả" },
@@ -577,16 +575,16 @@ export default function MealCalendarPage() {
             { key: "com", label: "Cơm & Mặn" },
             { key: "bun-pho", label: "Bún / Phở" },
             { key: "canh", label: "Món Canh" },
-            { key: "an-vat", label: "Ăn vặt / Tráng miệng" },
+            { key: "an-vat", label: "Ăn vặt" },
             { key: "chay", label: "Món Chay" },
-            { key: "salad", label: "Salad Healthy" },
+            { key: "salad", label: "Salad" },
           ].map((cat) => (
             <button
               key={cat.key}
               onClick={() => setShelfCategory(cat.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition shrink-0 ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition shrink-0 ${
                 shelfCategory === cat.key
-                  ? "bg-[#00615f] text-white shadow-sm"
+                  ? "bg-[#00615f] text-white shadow-xs"
                   : "bg-stone-100 text-stone-600 hover:bg-stone-200"
               }`}
             >
@@ -606,27 +604,28 @@ export default function MealCalendarPage() {
             Không tìm thấy món phù hợp với từ khóa này.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-1">
             {recipes.map((dish) => {
               const photo = dish.partnerImage || dish.image;
               return (
                 <div
                   key={dish.id}
-                  className="group rounded-2xl bg-white border border-stone-200/80 shadow-sm hover:shadow-lg transition-all duration-300 p-3.5 flex flex-col justify-between"
+                  className="group rounded-xl bg-white border border-stone-200/80 shadow-xs hover:shadow-sm transition-all duration-150 p-3 flex flex-col justify-between"
                 >
                   <div>
                     {/* Thumbnail & Title */}
-                    <div className="flex items-start gap-3 mb-2.5">
+                    <div className="flex items-start gap-2.5 mb-2">
                       <DishThumbnail src={photo} alt={dish.name} size="md" />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-bold text-xs text-stone-900 truncate group-hover:text-[#00615f] transition-colors">
                           {dish.name}
                         </h4>
                         <div className="flex items-center gap-2 mt-1 text-[11px]">
-                          <span className="font-bold text-orange-600">
-                            🔥 {dish.calories} kcal
+                          <span className="text-stone-500 font-medium">
+                            {dish.calories} kcal
                           </span>
-                          <span className="font-extrabold text-[#00615f]">
+                          <span className="text-stone-300">·</span>
+                          <span className="font-bold text-stone-900">
                             ~{formatVND(dish.cost)}
                           </span>
                         </div>
@@ -634,22 +633,22 @@ export default function MealCalendarPage() {
                     </div>
 
                     {dish.partnerStoreName && (
-                      <p className="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md mb-2 truncate">
+                      <p className="text-[10px] text-stone-500 bg-stone-50 px-2 py-0.5 rounded-md mb-2 truncate">
                         🏪 {dish.partnerStoreName}
                       </p>
                     )}
                   </div>
 
-                  {/* 1-Click Action Buttons */}
+                  {/* Unified Segmented Action Bar (No rainbow buttons!) */}
                   <div className="mt-2 pt-2 border-t border-stone-100">
-                    <p className="text-[10px] font-semibold text-stone-400 mb-1.5 text-center">
+                    <p className="text-[9px] font-semibold text-stone-400 mb-1 text-center">
                       Thêm vào ngày {selectedDay || today.getDate()}:
                     </p>
-                    <div className="grid grid-cols-4 gap-1">
+                    <div className="grid grid-cols-4 gap-1 p-0.5 bg-stone-100 rounded-lg">
                       <button
                         onClick={() => handleQuickAddDish(dish, "breakfast")}
                         disabled={isSaving}
-                        className="py-1 px-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white text-[10px] font-bold transition text-center shadow-xs"
+                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
                         title="Thêm vào Bữa Sáng"
                       >
                         + Sáng
@@ -657,7 +656,7 @@ export default function MealCalendarPage() {
                       <button
                         onClick={() => handleQuickAddDish(dish, "lunch")}
                         disabled={isSaving}
-                        className="py-1 px-1.5 rounded-lg bg-orange-50 hover:bg-orange-600 text-orange-700 hover:text-white text-[10px] font-bold transition text-center shadow-xs"
+                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
                         title="Thêm vào Bữa Trưa"
                       >
                         + Trưa
@@ -665,7 +664,7 @@ export default function MealCalendarPage() {
                       <button
                         onClick={() => handleQuickAddDish(dish, "dinner")}
                         disabled={isSaving}
-                        className="py-1 px-1.5 rounded-lg bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white text-[10px] font-bold transition text-center shadow-xs"
+                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
                         title="Thêm vào Bữa Tối"
                       >
                         + Tối
@@ -673,7 +672,7 @@ export default function MealCalendarPage() {
                       <button
                         onClick={() => handleQuickAddDish(dish, "snack")}
                         disabled={isSaving}
-                        className="py-1 px-1.5 rounded-lg bg-violet-50 hover:bg-violet-600 text-violet-700 hover:text-white text-[10px] font-bold transition text-center shadow-xs"
+                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
                         title="Thêm vào Bữa Ăn Vặt"
                       >
                         + Snack
@@ -689,12 +688,12 @@ export default function MealCalendarPage() {
 
       {/* ══════ SHOPPING LIST MODAL ══════ */}
       {isShoppingListOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-stone-200 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-stone-200 space-y-3.5">
             <div className="flex items-center justify-between pb-2 border-b border-stone-100">
               <div className="flex items-center gap-2">
-                <ShoppingCart className="size-5 text-[#00615f]" />
-                <h3 className="font-bold text-base text-stone-900">
+                <ShoppingCart className="size-4 text-[#00615f]" />
+                <h3 className="font-bold text-sm text-stone-900">
                   Danh sách nguyên liệu tháng {month + 1}
                 </h3>
               </div>
@@ -707,16 +706,16 @@ export default function MealCalendarPage() {
             </div>
 
             <p className="text-xs text-stone-500">
-              Tổng hợp {summary.shoppingList.length} nguyên liệu cho các bữa ăn bạn đã lên lịch trong tháng:
+              Tổng hợp {summary.shoppingList.length} nguyên liệu từ các bữa ăn bạn đã lên lịch:
             </p>
 
-            <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+            <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
               {summary.shoppingList.map((ing, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-stone-50 text-xs text-stone-700"
+                  className="flex items-center gap-2 py-1.5 px-2.5 rounded-lg bg-stone-50 text-xs text-stone-700"
                 >
-                  <Check className="size-3.5 text-[#00615f]" />
+                  <Check className="size-3 text-[#00615f]" />
                   <span>{ing}</span>
                 </div>
               ))}
@@ -725,7 +724,7 @@ export default function MealCalendarPage() {
             <div className="pt-2 border-t border-stone-100 flex justify-end">
               <button
                 onClick={() => setIsShoppingListOpen(false)}
-                className="px-4 py-2 rounded-xl bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition"
+                className="px-4 py-1.5 rounded-lg bg-stone-900 hover:bg-[#00615f] text-white text-xs font-medium transition-colors"
               >
                 Đóng
               </button>
