@@ -33,6 +33,7 @@ import {
   useClearChatSessionMutation,
 } from "@/redux/api/mealPlannerApi";
 import { toast } from "sonner";
+import { Streamdown } from "streamdown";
 
 interface Message {
   id: string;
@@ -353,7 +354,7 @@ export default function MealPlannerChatPage() {
 
           {/* Messages Feed */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
-            {messages.map((msg) => (
+            {messages.map((msg, index) => (
               <div
                 key={msg.id}
                 className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
@@ -377,18 +378,17 @@ export default function MealPlannerChatPage() {
                         : "bg-[#00615f] text-white shadow-xs"
                     }`}
                   >
-                    <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                      {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, idx) => {
-                        if (part.startsWith("**") && part.endsWith("**")) {
-                          return (
-                            <strong key={idx} className="font-bold">
-                              {part.slice(2, -2)}
-                            </strong>
-                          );
-                        }
-                        return <span key={idx}>{part}</span>;
-                      })}
-                    </div>
+                    {msg.role === "assistant" ? (
+                      <div className="text-xs sm:text-sm leading-relaxed streamdown-wrapper">
+                        <Streamdown mode={isTyping && index === messages.length - 1 ? "streaming" : "static"}>
+                          {msg.content}
+                        </Streamdown>
+                      </div>
+                    ) : (
+                      <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                        {msg.content}
+                      </div>
+                    )}
 
                     <p
                       className={`text-[9px] mt-1.5 text-right ${
