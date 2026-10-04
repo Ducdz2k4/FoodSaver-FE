@@ -160,6 +160,43 @@ export const mealPlannerApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["CommunityPost"],
     }),
+
+    // 4. AI Chatbot Agent + JEV
+    sendChatMessage: builder.mutation<
+      {
+        success: boolean;
+        data: {
+          reply: string;
+          intent: string;
+          richCards?: any;
+          quickSuggestions: string[];
+          profileContext: any;
+        };
+      },
+      { message: string; sessionId?: string }
+    >({
+      query: (body) => ({
+        url: "/api/v1/chat/message",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    getChatMemory: builder.query<{ success: boolean; data: any[] }, { sessionId?: string }>({
+      query: (params) => {
+        const q = params?.sessionId ? `?sessionId=${params.sessionId}` : "";
+        return `/api/v1/chat/memory${q}`;
+      },
+      providesTags: ["User"],
+    }),
+
+    clearChatSession: builder.mutation<{ success: boolean }, { sessionId?: string }>({
+      query: (body) => ({
+        url: "/api/v1/chat/session",
+        method: "DELETE",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -173,4 +210,7 @@ export const {
   useGetCommunityPostsQuery,
   useCreateCommunityPostMutation,
   useToggleLikePostMutation,
+  useSendChatMessageMutation,
+  useGetChatMemoryQuery,
+  useClearChatSessionMutation,
 } = mealPlannerApi;

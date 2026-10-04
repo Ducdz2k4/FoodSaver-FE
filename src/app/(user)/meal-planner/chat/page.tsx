@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Send,
   Bot,
@@ -13,13 +15,32 @@ import {
   Loader2,
   RotateCcw,
   Lightbulb,
+  AlertTriangle,
+  ArrowRight,
+  Store,
+  Calendar as CalendarIcon,
+  Tag,
+  CheckCircle2,
+  Sliders,
+  Trash2,
+  Eye,
+  X,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  useSendChatMessageMutation,
+  useGetChatMemoryQuery,
+  useClearChatSessionMutation,
+} from "@/redux/api/mealPlannerApi";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  richCards?: any;
+  quickSuggestions?: string[];
 }
 
 const QUICK_PROMPTS = [
@@ -27,195 +48,230 @@ const QUICK_PROMPTS = [
   { icon: ShoppingCart, label: "Kế hoạch chi tiêu 1.5 triệu/tháng", prompt: "Giúp mình lập kế hoạch tài chính chi tiêu ăn uống trong tháng với ngân sách 1.5 triệu" },
   { icon: MapPin, label: "Chợ nào rẻ nhất ở Sài Gòn?", prompt: "Những chợ đầu mối nào ở Sài Gòn bán rau củ, thịt cá giá rẻ nhất?" },
   { icon: ChefHat, label: "Thực đơn 1 tuần cho 2 người < 500K", prompt: "Lên thực đơn ăn uống 1 tuần cho 2 người với chi phí dưới 500K" },
+  { icon: Sparkles, label: "Ăn 1 tháng với 100k được không?", prompt: "Làm sao để ăn 1 tháng với 100k?" },
 ];
 
-const MOCK_RESPONSES: Record<string, string> = {
-  "Làm sao để ăn chỉ với 50.000đ một ngày mà vẫn đủ dinh dưỡng?": `**Hoàn toàn được!** Đây là gợi ý phân bổ 50K/ngày cho 1 người:
-
-🌅 **Bữa sáng (10K):**
-- Xôi đậu xanh tự nấu hoặc bánh mì trứng ốp la
-
-☀️ **Bữa trưa (20K):**
-- Cơm rang trứng dưa bò + canh rau
-- Hoặc bún xào thịt heo / đậu hũ xào rau củ
-
-🌙 **Bữa tối (15K):**
-- Canh chua cá lóc + cơm trắng
-- Hoặc mì gói nấu thêm rau, trứng, đậu hũ
-
-🍎 **Snack (5K):**
-- 1 quả chuối hoặc khoai lang luộc
-
-💡 **Mẹo tiết kiệm:**
-- Mua rau củ ở chợ truyền thống vào sáng sớm, tránh siêu thị
-- Nấu cơm gạo giá rẻ (15K - 18K/kg)
-- Mua trứng theo vỉ 30 quả (giá ~85K, chỉ ~2.8K/quả)
-- Meal prep cuối tuần để tiết kiệm gas/điện và thời gian`,
-
-  "Giúp mình lập kế hoạch tài chính chi tiêu ăn uống trong tháng với ngân sách 1.5 triệu": `**Kế hoạch chi tiêu 1.5 triệu/tháng** 📊
-
-📌 **Ngân sách bình quân:** ~50K/ngày × 30 ngày = 1.5 triệu
-
-**Phân bổ theo tuần (375K/tuần):**
-
-🛒 **Đi chợ 1 lần/tuần:**
-- Gạo (5kg): 70K → dùng 2 tuần = 35K/tuần
-- Thịt heo/gà: 100K (mua theo kg, chia nhỏ từng túi cấp đông)
-- Trứng (vỉ 30): 85K → dùng 2 tuần = 42K/tuần
-- Rau củ quả theo mùa: 60K/tuần
-- Gia vị, dầu ăn, nước mắm: 25K/tuần
-- Đậu hũ, bún, mì: 35K/tuần
-- Quỹ dự phòng: 78K/tuần
-
-**💡 Nguyên tắc vàng:**
-1. Ghi chép chi tiêu mỗi ngày
-2. Mua đồ khô số lượng lớn (gạo, mì, dầu ăn)
-3. Tận dụng các deal giảm giá giải cứu thực phẩm FoodSaver
-4. Nấu 1 lần ăn 2 bữa (meal-prep)
-5. Hạn chế tối đa đặt đồ ăn ngoài và nước ngọt`,
-
-  "Những chợ đầu mối nào ở Sài Gòn bán rau củ, thịt cá giá rẻ nhất?": `**Top chợ đầu mối giá rẻ tại TP.HCM** 🏪
-
-1. **Chợ đầu mối Hóc Môn** 🥇
-   - Rau củ quả, thịt heo lớn nhất phía Tây Bắc
-   - Giá sỉ cực tốt, mở từ 2h sáng
-   - Rẻ hơn chợ lẻ 30-40%
-
-2. **Chợ đầu mối Nông sản Thủ Đức**
-   - Trái cây, rau củ khu vực phía Đông
-   - Giá sỉ trái cây theo thùng/rổ rất rẻ
-
-3. **Chợ đầu mối Bình Điền** (Quận 8)
-   - Chợ hải sản, thịt tươi sống lớn nhất miền Nam
-   - Hải sản tươi rói, giá siêu mềm khi mua từ 3-5kg
-
-4. **Chợ Bà Chiểu & Chợ Tân Định**
-   - Tiện cho người sống ở khu trung tâm, nhiều sạp bán rau củ bình dân
-
-💡 **Lưu ý:** Nên đi vào khung 5h - 7h sáng để chọn đồ mới về tươi nhất. Rủ bạn bè hoặc hàng xóm mua chung để chia giá sỉ!`,
-};
-
-function getAIResponse(input: string): string {
-  const match = Object.entries(MOCK_RESPONSES).find(([key]) =>
-    input.toLowerCase().includes(key.toLowerCase().slice(0, 15))
-  );
-  if (match) return match[1];
-
-  return `Cảm ơn câu hỏi của bạn! 🤖
-
-Mình đã ghi nhận câu hỏi: "${input}"
-
-Để tối ưu chi tiêu ăn uống hàng ngày, bạn có thể:
-1. 🍳 Xem **công thức & thực đơn** tại tab Thực đơn
-2. 📅 Theo dõi **lịch ăn tháng** để kiểm soát chi phí từng ngày
-3. 👥 Tham khảo kinh nghiệm từ **cộng đồng chia sẻ**
-4. 💡 Thử các câu hỏi gợi ý bên cạnh để nhận phân bổ ngân sách chi tiết!`;
+function formatVND(n: number) {
+  return (n || 0).toLocaleString("vi-VN") + "đ";
 }
 
-export default function MealChatPage() {
+export default function MealPlannerChatPage() {
+  const router = useRouter();
+  const [sessionId, setSessionId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome",
+      id: "welcome-1",
       role: "assistant",
-      content: `Xin chào! 👋 Mình là **Trợ lý Tài chính Ăn uống** của FoodSaver.
-
-Mình có thể hỗ trợ bạn:
-- 💰 Lập kế hoạch chi tiêu ăn uống hàng tháng theo ngân sách
-- 🔍 Tìm nơi mua nguyên liệu giá rẻ & chợ đầu mối uy tín
-- 📋 Gợi ý thực đơn tiết kiệm (ví dụ: làm sao ăn 50K/ngày)
-- 🧮 Tính toán chi phí ăn uống tối ưu cho cá nhân và gia đình
-
-Hãy chọn câu hỏi gợi ý hoặc nhập thắc mắc bên dưới nhé!`,
+      content:
+        "Xin chào! Mình là **Trợ lý Tài chính & Dinh dưỡng FoodSaver** (vận hành bởi Agent JEV System One).\n\nMình có thể giúp bạn:\n1. **Đánh giá tính khả thi tài chính** (như ăn 50k/ngày, 100k cho cả tháng...).\n2. **Đàm phán và tối ưu ngân sách** dựa trên giá nguyên liệu thực tế.\n3. **Săn suất ăn giải cứu cận date** giá siêu rẻ từ đối tác FoodSaver gần bạn.\n\nBạn đang cần lên kế hoạch chi tiêu như thế nào?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Initialize unique sessionId from localStorage or generate one
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    let sId = localStorage.getItem("foodsaver_chat_session_id");
+    if (!sId) {
+      sId = "session_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+      localStorage.setItem("foodsaver_chat_session_id", sId);
+    }
+    setSessionId(sId);
+  }, []);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  // API Hooks
+  const [sendMessageMutation] = useSendChatMessageMutation();
+  const { data: memoryRes, refetch: refetchMemory } = useGetChatMemoryQuery(
+    { sessionId },
+    { skip: !sessionId }
+  );
+  const [clearSessionMutation] = useClearChatSessionMutation();
+
+  const userFacts = memoryRes?.data || [];
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
+
+  const handleSend = async (userText: string) => {
+    const trimmed = userText.trim();
+    if (!trimmed || isTyping) return;
 
     const userMsg: Message = {
-      id: `user-${Date.now()}`,
+      id: "u_" + Date.now(),
       role: "user",
-      content: text.trim(),
+      content: trimmed,
       timestamp: new Date(),
     };
+
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = getAIResponse(text.trim());
-      const aiMsg: Message = {
-        id: `ai-${Date.now()}`,
-        role: "assistant",
-        content: response,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMsg]);
+    try {
+      // Attempt SSE Streaming first
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+      const response = await fetch(`${apiBase}/api/v1/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: trimmed, sessionId }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("SSE Stream fallback needed");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let streamedReply = "";
+      let richCards: any = null;
+      let quickSuggestions: string[] = [];
+
+      const botMsgId = "bot_" + Date.now();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: botMsgId,
+          role: "assistant",
+          content: "",
+          timestamp: new Date(),
+        },
+      ]);
+
+      let doneReading = false;
+      while (!doneReading) {
+        const { value, done } = await reader.read();
+        doneReading = done;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const parsed = JSON.parse(line.replace("data: ", "").trim());
+                if (parsed.type === "token") {
+                  streamedReply += parsed.content;
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === botMsgId ? { ...m, content: streamedReply } : m
+                    )
+                  );
+                } else if (parsed.type === "done") {
+                  richCards = parsed.richCards;
+                  quickSuggestions = parsed.quickSuggestions || [];
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === botMsgId
+                        ? { ...m, richCards, quickSuggestions }
+                        : m
+                    )
+                  );
+                }
+              } catch {
+                // Ignore partial JSON
+              }
+            }
+          }
+        }
+      }
+
       setIsTyping(false);
-    }, 700 + Math.random() * 800);
+      refetchMemory();
+    } catch {
+      // Fallback to standard REST mutation
+      try {
+        const res = await sendMessageMutation({
+          message: trimmed,
+          sessionId,
+        }).unwrap();
+
+        const botReply: Message = {
+          id: "bot_" + Date.now(),
+          role: "assistant",
+          content: res.data.reply,
+          timestamp: new Date(),
+          richCards: res.data.richCards,
+          quickSuggestions: res.data.quickSuggestions,
+        };
+        setMessages((prev) => [...prev, botReply]);
+        refetchMemory();
+      } catch (err: any) {
+        toast.error("Không thể kết nối đến Trợ lý AI. Vui lòng thử lại sau");
+      } finally {
+        setIsTyping(false);
+      }
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(input);
+    handleSend(input);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendMessage(input);
+      handleSend(input);
     }
   };
 
-  const resetChat = () => {
-    setMessages([
-      {
-        id: "welcome-reset",
-        role: "assistant",
-        content: "Cuộc trò chuyện đã được làm mới! 🔄 Hãy hỏi mình bất kỳ câu hỏi nào về chi tiêu hoặc thực đơn nhé.",
-        timestamp: new Date(),
-      },
-    ]);
+  const handleResetChat = async () => {
+    try {
+      await clearSessionMutation({ sessionId }).unwrap();
+      setMessages([
+        {
+          id: "welcome-reset",
+          role: "assistant",
+          content: "Đã làm mới cuộc hội thoại! Bạn muốn mình hỗ trợ gì tiếp theo?",
+          timestamp: new Date(),
+        },
+      ]);
+      toast.success("Đã làm mới phiên hội thoại");
+    } catch {
+      setMessages([]);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Quick Prompts & Tips */}
+    <div className="space-y-4">
+      {/* ══════ MAIN GRID: 4 COLS SIDEBAR + 8 COLS CHAT ══════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left: Quick Prompts & AI Memory Badge */}
         <div className="lg:col-span-4 space-y-4">
-          <div className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-[#00615f]" />
-              <h3 className="text-xs font-black text-stone-900 uppercase tracking-wider">
-                Câu hỏi tài chính thường gặp
+          {/* Quick Prompts Panel */}
+          <div className="rounded-2xl bg-white border border-stone-200/90 shadow-xs p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+              <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="size-3.5 text-[#00615f]" />
+                <span>Câu hỏi gợi ý nhanh</span>
               </h3>
             </div>
-            <p className="text-xs text-stone-500 leading-relaxed">
-              Bấm nhanh vào các câu hỏi bên dưới để nhận ngay lời khuyên phân bổ ngân sách:
-            </p>
-            <div className="space-y-2 pt-1">
-              {QUICK_PROMPTS.map((qp, idx) => {
-                const Icon = qp.icon;
+
+            <div className="space-y-1.5">
+              {QUICK_PROMPTS.map((item, idx) => {
+                const Icon = item.icon;
                 return (
                   <button
                     key={idx}
-                    onClick={() => sendMessage(qp.prompt)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-stone-50/80 hover:bg-emerald-50/70 border border-stone-200/60 hover:border-[#00615f]/30 text-left transition-all group"
+                    onClick={() => handleSend(item.prompt)}
+                    disabled={isTyping}
+                    className="w-full flex items-center gap-2.5 p-2.5 rounded-xl bg-stone-50 hover:bg-emerald-50/70 border border-stone-200/60 hover:border-[#00615f]/30 text-left transition-all group disabled:opacity-50 cursor-pointer"
                   >
-                    <div className="shrink-0 size-8 rounded-lg bg-[#00615f]/10 text-[#00615f] flex items-center justify-center group-hover:bg-[#00615f] group-hover:text-white transition">
-                      <Icon className="size-4" />
+                    <div className="shrink-0 size-7 rounded-lg bg-[#00615f]/10 text-[#00615f] flex items-center justify-center group-hover:bg-[#00615f] group-hover:text-white transition">
+                      <Icon className="size-3.5" />
                     </div>
-                    <span className="text-xs font-semibold text-stone-700 leading-snug group-hover:text-[#00615f]">
-                      {qp.label}
+                    <span className="text-xs font-medium text-stone-700 group-hover:text-[#00615f] transition line-clamp-1">
+                      {item.label}
                     </span>
                   </button>
                 );
@@ -223,36 +279,72 @@ Hãy chọn câu hỏi gợi ý hoặc nhập thắc mắc bên dưới nhé!`,
             </div>
           </div>
 
-          <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-sky-50 border border-emerald-200/50 p-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="size-4 text-emerald-600" />
-              <h4 className="text-xs font-bold text-stone-800">Mẹo lập ngân sách</h4>
+          {/* AI Memory Transparency Card */}
+          <div className="rounded-2xl bg-white border border-stone-200/90 shadow-xs p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-stone-900">
+                <Sliders className="size-3.5 text-[#00615f]" />
+                <span>Bộ nhớ cá nhân hóa</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-[#00615f] border border-emerald-200/80">
+                {userFacts.length} ký ức
+              </span>
+            </div>
+
+            <p className="text-[11px] text-stone-500 leading-relaxed">
+              Trợ lý JEV tự động ghi nhớ sở thích, xưng hô và ngân sách của bạn để tư vấn phù hợp hơn mà không làm lộ dữ liệu.
+            </p>
+
+            <button
+              onClick={() => setIsMemoryModalOpen(true)}
+              className="w-full py-2 px-3 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100 text-stone-700 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Eye className="size-3.5 text-stone-500" />
+              <span>Xem những gì bot đã nhớ</span>
+            </button>
+          </div>
+
+          {/* Pro-Tips Callout */}
+          <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-amber-50/50 border border-emerald-200/60 p-4 space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Lightbulb className="size-4 text-[#00615f]" />
+              <h4 className="text-xs font-bold text-stone-900">Quy tắc vàng tiết kiệm</h4>
             </div>
             <p className="text-[11px] text-stone-600 leading-relaxed">
-              Áp dụng quy tắc <strong>50/30/20</strong>: Tối đa 50% thu nhập cho nhu cầu thiết yếu (bao gồm ăn uống). Tiết kiệm chi phí ăn uống là cách nhanh nhất để tăng số dư cuối tháng!
+              Kết hợp mua nguyên liệu giá sỉ tại chợ truyền thống đầu tuần + săn suất ăn cận date giờ vàng FoodSaver cuối ngày sẽ giảm ngay 40% chi phí ăn uống!
             </p>
           </div>
         </div>
 
-        {/* Right: Interactive Chat */}
-        <div className="lg:col-span-8 flex flex-col h-[650px] rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm overflow-hidden">
+        {/* Right: Interactive Chat Stream Feed */}
+        <div className="lg:col-span-8 flex flex-col h-[680px] rounded-3xl bg-white border border-stone-200/90 shadow-xs overflow-hidden">
           {/* Chat Header */}
-          <div className="px-5 py-3.5 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
+          <div className="px-5 py-3.5 border-b border-stone-100 flex items-center justify-between bg-stone-50/60">
             <div className="flex items-center gap-3">
-              <div className="size-9 rounded-full bg-gradient-to-br from-[#00615f] to-[#089184] flex items-center justify-center text-white shadow-sm">
+              <div className="size-9 rounded-xl bg-[#00615f] text-white flex items-center justify-center shadow-xs">
                 <Bot className="size-5" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-stone-900">Trợ lý Tài chính Ăn uống AI</h2>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-stone-900">
+                    Trợ lý Tài chính & Dinh dưỡng FoodSaver
+                  </h2>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-[#00615f]">
+                    JEV Engine
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] text-stone-500">Trực tuyến · Sẵn sàng tư vấn chi tiêu</span>
+                  <span className="text-[10px] text-stone-500">
+                    Trực tuyến · Tư vấn chi tiêu &amp; Suất ăn cận date
+                  </span>
                 </div>
               </div>
             </div>
+
             <button
-              onClick={resetChat}
-              className="p-2 rounded-xl hover:bg-stone-200/60 text-stone-400 hover:text-stone-700 transition"
+              onClick={handleResetChat}
+              className="p-2 rounded-xl hover:bg-stone-200/60 text-stone-400 hover:text-stone-700 transition cursor-pointer"
               title="Làm mới trò chuyện"
             >
               <RotateCcw className="size-4" />
@@ -267,56 +359,202 @@ Hãy chọn câu hỏi gợi ý hoặc nhập thắc mắc bên dưới nhé!`,
                 className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
               >
                 <div
-                  className={`shrink-0 size-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                  className={`shrink-0 size-8 rounded-xl flex items-center justify-center text-xs font-bold ${
                     msg.role === "assistant"
-                      ? "bg-gradient-to-br from-[#00615f] to-[#089184] text-white shadow-sm"
-                      : "bg-stone-800 text-white"
+                      ? "bg-[#00615f] text-white shadow-xs"
+                      : "bg-stone-900 text-white"
                   }`}
                 >
                   {msg.role === "assistant" ? <Bot className="size-4" /> : <User className="size-4" />}
                 </div>
 
-                <div
-                  className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-4 py-3 ${
-                    msg.role === "assistant"
-                      ? "bg-stone-50 border border-stone-200/80 text-stone-800"
-                      : "bg-[#00615f] text-white shadow-sm"
-                  }`}
-                >
-                  <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                    {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, idx) => {
-                      if (part.startsWith("**") && part.endsWith("**")) {
-                        return (
-                          <strong key={idx} className="font-bold">
-                            {part.slice(2, -2)}
-                          </strong>
-                        );
-                      }
-                      return <span key={idx}>{part}</span>;
-                    })}
-                  </div>
-                  <p
-                    className={`text-[9px] mt-1.5 ${
-                      msg.role === "assistant" ? "text-stone-400" : "text-emerald-100"
+                <div className="max-w-[85%] sm:max-w-[80%] space-y-2.5">
+                  {/* Bubble text */}
+                  <div
+                    className={`rounded-2xl px-4 py-3 ${
+                      msg.role === "assistant"
+                        ? "bg-stone-50 border border-stone-200/80 text-stone-800"
+                        : "bg-[#00615f] text-white shadow-xs"
                     }`}
                   >
-                    {msg.timestamp.toLocaleTimeString("vi-VN", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                    <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                      {msg.content.split(/(\*\*[^*]+\*\*)/).map((part, idx) => {
+                        if (part.startsWith("**") && part.endsWith("**")) {
+                          return (
+                            <strong key={idx} className="font-bold">
+                              {part.slice(2, -2)}
+                            </strong>
+                          );
+                        }
+                        return <span key={idx}>{part}</span>;
+                      })}
+                    </div>
+
+                    <p
+                      className={`text-[9px] mt-1.5 text-right ${
+                        msg.role === "assistant" ? "text-stone-400" : "text-emerald-100"
+                      }`}
+                    >
+                      {msg.timestamp.toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+
+                  {/* ══════ RICH CARDS EMBEDDED IN CHAT ══════ */}
+                  {msg.richCards && (
+                    <div className="space-y-2.5 animate-in fade-in zoom-in-95">
+                      {/* Rich Card Type 1: Feasibility Negotiation */}
+                      {msg.richCards.type === "feasibility_negotiation" && (
+                        <div className="rounded-2xl border border-amber-200/90 bg-amber-50/60 p-3.5 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                              <AlertTriangle className="size-3 text-amber-700" />
+                              <span>ĐỀ XUẤT ĐIỀU CHỈNH KHẢ THI</span>
+                            </span>
+                            <span className="text-[10px] font-bold text-amber-900">
+                              Điểm JEV: {msg.richCards.data.score}/1.0
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="p-2.5 rounded-xl bg-white border border-amber-200/60">
+                              <p className="text-[10px] text-stone-500">Phương án 1 (Rút ngắn ngày)</p>
+                              <p className="text-xs font-bold text-stone-900 mt-0.5">
+                                Ăn đủ chất trong {msg.richCards.data.realisticDays} ngày
+                              </p>
+                              <Button
+                                size="xs"
+                                variant="default"
+                                onClick={() =>
+                                  handleSend(
+                                    `Lên thực đơn ăn đủ chất trong ${msg.richCards.data.realisticDays} ngày với ${formatVND(
+                                      msg.richCards.data.requestedBudget
+                                    )}`
+                                  )
+                                }
+                                className="w-full mt-2 rounded-lg text-[10px] font-bold h-6"
+                              >
+                                Chọn phương án này
+                              </Button>
+                            </div>
+
+                            <div className="p-2.5 rounded-xl bg-white border border-amber-200/60">
+                              <p className="text-[10px] text-stone-500">Phương án 2 (Đủ 30 ngày)</p>
+                              <p className="text-xs font-bold text-[#00615f] mt-0.5">
+                                Điều chỉnh lên {formatVND(msg.richCards.data.recommendedMinTotal)}
+                              </p>
+                              <Button
+                                size="xs"
+                                variant="outline"
+                                onClick={() =>
+                                  handleSend(
+                                    `Lập kế hoạch ăn uống 30 ngày với mức tối thiểu ${formatVND(
+                                      msg.richCards.data.recommendedMinTotal
+                                    )}`
+                                  )
+                                }
+                                className="w-full mt-2 rounded-lg text-[10px] font-bold h-6"
+                              >
+                                Chọn phương án này
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Rich Card Type 2: Deals List */}
+                      {msg.richCards.type === "deals_list" && Array.isArray(msg.richCards.data) && (
+                        <div className="rounded-2xl border border-stone-200 bg-white p-3 space-y-2">
+                          <p className="text-[11px] font-bold text-stone-800 flex items-center gap-1.5">
+                            <Store className="size-3.5 text-[#00615f]" />
+                            <span>Suất ăn giải cứu khớp ngân sách:</span>
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {msg.richCards.data.map((deal: any) => (
+                              <div
+                                key={deal.id}
+                                className="p-2.5 rounded-xl border border-stone-200/80 bg-stone-50 flex items-center justify-between gap-2"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-stone-900 truncate">
+                                    {deal.title}
+                                  </p>
+                                  <p className="text-[11px] text-[#00615f] font-bold mt-0.5">
+                                    {formatVND(deal.discountPrice)}
+                                  </p>
+                                </div>
+                                <Button
+                                  asChild
+                                  size="xs"
+                                  variant="default"
+                                  className="rounded-lg text-[10px] font-bold h-6 px-2 shrink-0"
+                                >
+                                  <Link href={`/checkout/${deal.id}`}>Giữ món</Link>
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Rich Card Type 3: Schedule Preview */}
+                      {msg.richCards.type === "schedule_preview" && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-3.5 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#00615f] flex items-center gap-1">
+                              <CalendarIcon className="size-3.5" />
+                              <span>Thực đơn {msg.richCards.data.days} ngày đề xuất</span>
+                            </span>
+                            <span className="text-[11px] font-bold text-stone-800">
+                              ~{formatVND(msg.richCards.data.dailyBudget)}/ngày
+                            </span>
+                          </div>
+
+                          <Button
+                            asChild
+                            variant="default"
+                            size="sm"
+                            className="w-full rounded-xl font-bold gap-1.5 text-xs shadow-xs"
+                          >
+                            <Link href="/meal-planner/calendar">
+                              <CalendarIcon className="size-3.5" />
+                              <span>Mở lịch ăn tháng để áp dụng</span>
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Quick Suggestion Pills */}
+                  {msg.quickSuggestions && msg.quickSuggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {msg.quickSuggestions.map((sug, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSend(sug)}
+                          className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-[#00615f] hover:text-white text-stone-700 text-[11px] font-medium transition cursor-pointer"
+                        >
+                          {sug}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
 
             {isTyping && (
               <div className="flex gap-3 items-center">
-                <div className="shrink-0 size-8 rounded-full bg-gradient-to-br from-[#00615f] to-[#089184] flex items-center justify-center text-white">
+                <div className="shrink-0 size-8 rounded-xl bg-[#00615f] flex items-center justify-center text-white">
                   <Bot className="size-4" />
                 </div>
                 <div className="rounded-2xl bg-stone-50 border border-stone-200/80 px-4 py-3 flex items-center gap-2 text-xs text-stone-500">
                   <Loader2 className="size-3.5 animate-spin text-[#00615f]" />
-                  <span>Đang tính toán ngân sách và câu trả lời...</span>
+                  <span>JEV Guard đang phân tích tính khả thi và tính toán chi phí...</span>
                 </div>
               </div>
             )}
@@ -331,25 +569,88 @@ Hãy chọn câu hỏi gợi ý hoặc nhập thắc mắc bên dưới nhé!`,
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Nhập câu hỏi (ví dụ: làm sao ăn 50K một ngày, thực đơn 1 tháng 2 triệu...)..."
+                placeholder="Nhập câu hỏi (ví dụ: làm sao ăn 50K/ngày, 100k cho cả tháng 30 ngày, tìm quán gần đây...)..."
                 rows={1}
-                className="flex-1 px-4 py-3 rounded-xl bg-stone-50 border border-stone-200 text-xs sm:text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f] transition resize-none"
+                className="flex-1 px-4 py-3 rounded-2xl bg-stone-50 border border-stone-200 text-xs sm:text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f] transition resize-none"
               />
-              <button
+              <Button
                 type="submit"
+                variant="default"
                 disabled={!input.trim() || isTyping}
-                className="shrink-0 px-4 sm:px-5 rounded-xl bg-[#00615f] text-white flex items-center justify-center gap-1.5 text-xs font-bold hover:bg-[#004d4b] disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md"
+                className="shrink-0 px-4 sm:px-5 rounded-2xl font-bold gap-1.5 shadow-md h-auto py-3 cursor-pointer"
               >
                 <Send className="size-4" />
                 <span className="hidden sm:inline">Gửi</span>
-              </button>
+              </Button>
             </form>
             <p className="text-center text-[10px] text-stone-400 mt-2">
-              Trợ lý tài chính hỗ trợ phân bổ chi phí và gợi ý địa điểm mua sắm thông minh.
+              Vận hành bởi FoodSaver Agent JEV System One · Không hard-code · Chấm điểm khả thi thực tế.
             </p>
           </div>
         </div>
       </div>
+
+      {/* ══════ MODAL: USER AI MEMORY TRANSPARENCY ══════ */}
+      {isMemoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white border border-stone-200 shadow-2xl p-6 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <div className="size-8 rounded-xl bg-emerald-50 text-[#00615f] flex items-center justify-center">
+                  <Sliders className="size-4" />
+                </div>
+                <h3 className="text-sm font-bold text-stone-900">
+                  Bộ nhớ AI của bạn
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsMemoryModalOpen(false)}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-500">
+              Đây là các thông tin và thói quen mà AI đã ghi nhận trong các cuộc hội thoại để cá nhân hóa câu trả lời.
+            </p>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {userFacts.length === 0 ? (
+                <div className="p-6 text-center text-xs text-stone-400 bg-stone-50 rounded-2xl border border-dashed border-stone-200">
+                  Chưa có thông tin cá nhân nào được lưu.
+                </div>
+              ) : (
+                userFacts.map((fact: any) => (
+                  <div
+                    key={fact.key}
+                    className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div>
+                      <p className="font-bold text-stone-800">{fact.key}</p>
+                      <p className="text-stone-600 mt-0.5">"{fact.value}"</p>
+                    </div>
+                    <span className="text-[10px] font-semibold text-[#00615f] bg-emerald-50 px-2 py-0.5 rounded">
+                      Độ tin cậy: {Math.round(fact.confidence * 100)}%
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-stone-100 flex items-center justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsMemoryModalOpen(false)}
+                className="rounded-xl px-4"
+              >
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
