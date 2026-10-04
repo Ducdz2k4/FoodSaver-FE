@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Loader2, ShoppingBag } from "lucide-react";
