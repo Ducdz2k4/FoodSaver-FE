@@ -43,6 +43,7 @@ import {
 } from "@/redux/api/mealPlannerApi";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
 import { ListingDTO } from "@/types/contract";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 const DAYS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -515,13 +516,17 @@ function DayRescueDealsRadar({
                     <span>Bản đồ</span>
                   </Link>
 
-                  <Link
-                    href={`/checkout/${listing.id}`}
-                    className="flex-1 px-3 py-1.5 rounded-lg bg-[#00615f] hover:bg-[#004e4c] text-white text-[11px] font-semibold transition shadow-xs flex items-center justify-center gap-1 text-center"
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="default"
+                    className="flex-1 rounded-lg text-[11px] font-semibold h-7"
                   >
-                    <ShoppingBag className="size-3" />
-                    <span>Đặt ship / Cứu món</span>
-                  </Link>
+                    <Link href={`/checkout/${listing.id}`}>
+                      <ShoppingBag className="size-3" />
+                      <span>Đặt ship / Cứu món</span>
+                    </Link>
+                  </Button>
                 </div>
               </div>
             );
@@ -1466,14 +1471,16 @@ export default function MealCalendarPage() {
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={handleOpenGroceryModal}
-                  className="px-4 py-2 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 shrink-0"
+                  variant="default"
+                  size="sm"
+                  className="rounded-xl px-4 py-2 text-xs font-semibold shrink-0 gap-1.5"
                 >
                   <ShoppingCart className="size-3.5" />
                   <span>Bắt đầu đi chợ</span>
-                </button>
+                </Button>
               </div>
 
               {/* ═══ DAY RESCUE DEALS RADAR (GIẢI CỨU THEO THỰC ĐƠN NGÀY) ═══ */}
@@ -1507,14 +1514,16 @@ export default function MealCalendarPage() {
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={handleOpenGroceryModal}
-                  className="px-4 py-2 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 shrink-0"
+                  variant="default"
+                  size="sm"
+                  className="rounded-xl px-4 py-2 text-xs font-semibold shrink-0 gap-1.5"
                 >
                   <ShoppingCart className="size-3.5" />
                   <span>Bắt đầu đi chợ</span>
-                </button>
+                </Button>
               </div>
 
               {/* ═══ DAY RESCUE DEALS RADAR (GỢI Ý CỨU MÓN GẦN BẠN) ═══ */}

@@ -57,6 +57,8 @@
 
 :root {
   color-scheme: light;
+  --primary: #00615f;
+  --primary-foreground: #ffffff;
   --color-tgtg-green: #00615f;
   --color-tgtg-green-hover: #089184;
   --color-tgtg-green-dark: #013d3c;
@@ -256,4 +258,52 @@ html body[data-scroll-locked] .width-before-scroll-bar {
 
 .animate-flash-sale {
   animation: flashSaleJumpGlow 1.6s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+}
+
+
+/* =========================================================
+   DESIGN SYSTEM: GREEN BUTTON ACCESSIBILITY & CONTRAST
+   Tất cả các nút màu xanh (brand #00615f, emerald, teal)
+   luôn có chữ trắng tinh (text-white) để đảm bảo độ tương phản cao,
+   dễ đọc trên toàn bộ hệ thống.
+========================================================= */
+button[class~="bg-[#00615f]"],
+a[class~="bg-[#00615f]"],
+button[class~="bg-emerald-600"],
+button[class~="bg-emerald-700"],
+button[class~="bg-emerald-800"],
+a[class~="bg-emerald-600"],
+a[class~="bg-emerald-700"],
+a[class~="bg-emerald-800"],
+button[class~="bg-teal-600"],
+button[class~="bg-teal-700"],
+button[class~="bg-teal-800"],
+a[class~="bg-teal-600"],
+a[class~="bg-teal-700"],
+a[class~="bg-teal-800"],
+.btn-primary,
+.btn-green,
+.btn-tgtg,
+[data-slot="button"][data-variant="default"]:not(.admin-root *),
+[data-slot="button"][data-variant="primary"],
+[data-slot="button"][data-variant="green"],
+[data-slot="button"][data-variant="tgtg"],
+[data-slot="button"][data-variant="emerald"],
+[data-slot="button"][data-variant="success"] {
+  color: #ffffff !important;
+}
+
+button[class~="bg-[#00615f]"] svg,
+a[class~="bg-[#00615f]"] svg,
+button[class~="bg-emerald-600"] svg,
+a[class~="bg-emerald-600"] svg,
+button[class~="bg-teal-600"] svg,
+a[class~="bg-teal-600"] svg,
+[data-slot="button"][data-variant="default"]:not(.admin-root *) svg,
+[data-slot="button"][data-variant="primary"] svg,
+[data-slot="button"][data-variant="green"] svg,
+[data-slot="button"][data-variant="tgtg"] svg,
+[data-slot="button"][data-variant="emerald"] svg,
+[data-slot="button"][data-variant="success"] svg {
+  color: #ffffff !important;
 }
