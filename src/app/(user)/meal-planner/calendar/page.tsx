@@ -867,11 +867,11 @@ export default function MealCalendarPage() {
                     <p className="text-[9px] font-semibold text-stone-400 mb-1 text-center">
                       Thêm vào ngày {selectedDay || today.getDate()}:
                     </p>
-                    <div className="grid grid-cols-4 gap-1 p-0.5 bg-stone-100 rounded-lg">
+                    <div className="grid grid-cols-4 gap-0.5 p-0.5 bg-stone-100 rounded-lg">
                       <button
                         onClick={() => handleQuickAddDish(dish, "breakfast")}
                         disabled={isSaving}
-                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
+                        className="py-1 px-0.5 text-[9px] font-medium text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center whitespace-nowrap"
                         title="Thêm vào Bữa Sáng"
                       >
                         + Sáng
@@ -879,7 +879,7 @@ export default function MealCalendarPage() {
                       <button
                         onClick={() => handleQuickAddDish(dish, "lunch")}
                         disabled={isSaving}
-                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
+                        className="py-1 px-0.5 text-[9px] font-medium text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center whitespace-nowrap"
                         title="Thêm vào Bữa Trưa"
                       >
                         + Trưa
@@ -887,7 +887,7 @@ export default function MealCalendarPage() {
                       <button
                         onClick={() => handleQuickAddDish(dish, "dinner")}
                         disabled={isSaving}
-                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
+                        className="py-1 px-0.5 text-[9px] font-medium text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center whitespace-nowrap"
                         title="Thêm vào Bữa Tối"
                       >
                         + Tối
@@ -895,7 +895,7 @@ export default function MealCalendarPage() {
                       <button
                         onClick={() => handleQuickAddDish(dish, "snack")}
                         disabled={isSaving}
-                        className="py-1 text-[10px] font-semibold text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center"
+                        className="py-1 px-0.5 text-[9px] font-medium text-stone-700 hover:bg-[#00615f] hover:text-white rounded-md transition-colors text-center whitespace-nowrap"
                         title="Thêm vào Bữa Ăn Vặt"
                       >
                         + Snack
