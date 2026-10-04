@@ -2,6 +2,7 @@
 
 import React, { use, useState, useEffect } from "react";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -18,12 +19,18 @@ import {
   Truck,
   ShoppingBag,
   CreditCard,
+  MessageSquare,
+  KeyRound,
+  Check,
+  PackageCheck,
 } from "lucide-react";
 import {
   useGetOrderByIdQuery,
   useCancelOrderMutation,
   useLockOrderMutation,
+  useCustomerConfirmReceiptMutation,
 } from "@/redux/api/orderApi";
+import { OrderChatModal } from "@/components/common/OrderChatModal";
 import { toast } from "sonner";
 
 export default function OrderDetailPage({
@@ -34,15 +41,17 @@ export default function OrderDetailPage({
   const resolvedParams = use(params);
 
   // Fetch real order from backend
-  const { data: realOrder, isLoading } = useGetOrderByIdQuery(resolvedParams.id);
+  const { data: realOrder, isLoading, refetch } = useGetOrderByIdQuery(resolvedParams.id);
   const order = realOrder;
 
   const [cancelOrderMutation, { isLoading: isCancelling }] = useCancelOrderMutation();
   const [lockOrderMutation] = useLockOrderMutation();
+  const [confirmReceiptMutation, { isLoading: isConfirmingReceipt }] = useCustomerConfirmReceiptMutation();
 
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("Bận đột xuất không kịp ghé lấy");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [hygieneChecked, setHygieneChecked] = useState(true);
@@ -62,7 +71,6 @@ export default function OrderDetailPage({
 
     setIsLockedState(true);
     lockOrderMutation(order.id).unwrap().catch(() => {});
-    toast.info("Đơn hàng đã chốt sau 5 giây! Trạng thái đã được khóa (Không được hủy đơn nữa).");
   }, [countdownSeconds, isLockedState, order, lockOrderMutation]);
 
   useEffect(() => {
@@ -90,6 +98,7 @@ export default function OrderDetailPage({
   if (!order) return notFound();
 
   const orderStatus = order.status;
+  const isPickup = order.fulfillmentType === "PICKUP" || order.fulfillmentType === "STORE_PICKUP";
 
   const handleCancelOrder = async () => {
     if (isLockedState || order.isLocked) {
@@ -103,8 +112,22 @@ export default function OrderDetailPage({
       }).unwrap();
       setCancelModalOpen(false);
       toast.info("Đã hủy đơn hàng thành công.");
+      refetch();
     } catch (err: any) {
       toast.error(err?.data?.message || "Không thể hủy đơn hàng");
+    }
+  };
+
+  const handleCustomerConfirmReceipt = async () => {
+    try {
+      await confirmReceiptMutation({
+        id: order.id,
+        note: "Khách hàng xác nhận đã nhận đủ món",
+      }).unwrap();
+      toast.success("✓ Xác nhận nhận hàng thành công! Đơn hàng đã hoàn tất.");
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Xác nhận nhận hàng thất bại");
     }
   };
 
@@ -117,12 +140,23 @@ export default function OrderDetailPage({
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-28 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <Link
-          href="/orders"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00615f] hover:underline"
-        >
-          <ArrowLeft className="w-4 h-4" /> Danh sách đơn của bạn
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link
+            href="/orders"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00615f] hover:underline"
+          >
+            <ArrowLeft className="w-4 h-4" /> Danh sách đơn của bạn
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setChatModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-stone-200 text-xs font-bold text-[#00615f] shadow-sm hover:bg-stone-50 transition"
+          >
+            <MessageSquare className="size-3.5 text-[#00615f]" />
+            <span>Nhắn tin với quán</span>
+          </button>
+        </div>
 
         {/* 5-second countdown lock banner */}
         {!isLockedState && countdownSeconds > 0 && (
@@ -142,18 +176,48 @@ export default function OrderDetailPage({
           </div>
         )}
 
+        {/* Notification banner when Partner has handed over */}
+        {orderStatus === "HANDED_OVER" && (
+          <div className="bg-emerald-600 text-white p-4 rounded-3xl shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <PackageCheck className="size-8 shrink-0 text-emerald-200" />
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base">Quán đã bàn giao món ăn!</h3>
+                <p className="text-xs text-emerald-100">
+                  Vui lòng kiểm tra kỹ món ăn và bấm nút xác nhận dưới đây để hoàn tất đơn hàng.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={isConfirmingReceipt}
+              onClick={handleCustomerConfirmReceipt}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-white text-emerald-800 hover:bg-emerald-50 text-xs font-black shadow-md transition flex items-center justify-center gap-2 shrink-0"
+            >
+              {isConfirmingReceipt ? (
+                <Loader2 className="size-4 animate-spin text-emerald-700" />
+              ) : (
+                <Check className="size-4 text-emerald-700" />
+              )}
+              <span>✓ Tôi đã nhận đủ món (Xác nhận hoàn tất)</span>
+            </button>
+          </div>
+        )}
+
         {/* Card chính */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-sm text-center space-y-4">
           <div
             className={`size-14 rounded-full flex items-center justify-center mx-auto ${
-              orderStatus === "CANCELLED"
+              orderStatus === "CANCELLED" || orderStatus === "REJECTED" || orderStatus === "EXPIRED"
                 ? "bg-rose-100 text-rose-700"
                 : orderStatus === "COMPLETED"
                 ? "bg-emerald-100 text-emerald-700"
+                : orderStatus === "HANDED_OVER"
+                ? "bg-amber-100 text-amber-700"
                 : "bg-emerald-100 text-emerald-700"
             }`}
           >
-            {orderStatus === "CANCELLED" ? (
+            {orderStatus === "CANCELLED" || orderStatus === "REJECTED" || orderStatus === "EXPIRED" ? (
               <XCircle className="size-8" />
             ) : (
               <CheckCircle2 className="size-8" />
@@ -164,9 +228,19 @@ export default function OrderDetailPage({
             <h1 className="text-xl sm:text-2xl font-black text-[#00615f]">
               {orderStatus === "CANCELLED"
                 ? "Đơn Hàng Đã Bị Hủy"
+                : orderStatus === "REJECTED"
+                ? "Quán Đã Từ Chối Đơn"
+                : orderStatus === "EXPIRED"
+                ? "Đơn Hàng Đã Quá Hạn (No-Show)"
+                : orderStatus === "HANDED_OVER"
+                ? "Quán Đã Bàn Giao Món"
                 : orderStatus === "COMPLETED"
-                ? "Đơn Hàng Đã Hoàn Tất"
-                : "Đặt Hàng Thành Công!"}
+                ? "Đơn Hàng Đã Hoàn Tất!"
+                : orderStatus === "READY"
+                ? "Món Đã Sẵn Sàng - Hãy Đến Lấy!"
+                : orderStatus === "ACCEPTED" || orderStatus === "PREPARING"
+                ? "Quán Đang Chuẩn Bị Món"
+                : "Đặt Giữ Món Thành Công!"}
             </h1>
             <p className="text-xs sm:text-sm text-stone-600">
               Mã đơn hàng:{" "}
@@ -174,21 +248,37 @@ export default function OrderDetailPage({
             </p>
           </div>
 
-          {/* QR Code / Thanh toán QR hệ thống */}
-          {orderStatus !== "CANCELLED" && (
+          {/* OTP Code Box for Store Pickup */}
+          {isPickup && order.pickupOtp && orderStatus !== "CANCELLED" && orderStatus !== "REJECTED" && orderStatus !== "EXPIRED" && (
+            <div className="bg-emerald-50 border-2 border-emerald-200 p-5 rounded-3xl max-w-sm mx-auto text-center space-y-2 shadow-sm">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-800">
+                <KeyRound className="size-4 text-emerald-600" />
+                <span>MÃ OTP LẤY MÓN TẠI QUẦY</span>
+              </div>
+              <div className="text-3xl sm:text-4xl font-mono font-black text-[#00615f] tracking-widest bg-white py-2 px-4 rounded-2xl border border-emerald-100 shadow-inner">
+                {order.pickupOtp}
+              </div>
+              <p className="text-[11px] text-emerald-700 font-medium">
+                Đọc mã 6 số này cho nhân viên quán để xác thực bàn giao món ăn.
+              </p>
+            </div>
+          )}
+
+          {/* QR Code */}
+          {orderStatus !== "CANCELLED" && orderStatus !== "REJECTED" && orderStatus !== "EXPIRED" && (
             <div className="bg-stone-50 border border-stone-200 p-6 rounded-3xl max-w-xs mx-auto space-y-3">
               <div className="size-44 bg-white p-3 mx-auto rounded-2xl border border-stone-300 shadow-inner flex flex-col items-center justify-center">
                 <QrCode className="size-32 text-stone-800" />
                 <span className="font-mono text-[10px] font-bold text-stone-500 tracking-widest mt-1">
-                  {order.orderNumber}
+                  {order.pickupQrCode || order.orderNumber}
                 </span>
               </div>
               <p className="text-xs text-stone-500 font-medium">
-                {order.paymentMethod === "SYSTEM_QR"
-                  ? "Quét mã QR VietQR hệ thống để thanh toán đơn"
-                  : order.fulfillmentType === "DELIVERY"
-                  ? "Mã nhận hàng đối soát với shipper"
-                  : "Đưa mã QR cho quán khi đến nhận đồ"}
+                {order.paymentMethod === "SYSTEM_QR" || order.paymentMethod === "ONLINE"
+                  ? "Mã QR đối soát đơn hàng trên hệ thống"
+                  : isPickup
+                  ? "Đưa mã QR cho nhân viên quét khi nhận đồ"
+                  : "Mã nhận hàng đối soát với quán khi giao"}
               </p>
             </div>
           )}
@@ -201,33 +291,54 @@ export default function OrderDetailPage({
             </div>
 
             <div className="flex justify-between py-1">
+              <span className="text-stone-500">Cửa hàng:</span>
+              <span className="font-bold text-stone-900 text-right">{order.partnerName}</span>
+            </div>
+
+            <div className="flex justify-between py-1">
               <span className="text-stone-500">Hình thức nhận:</span>
               <span className="font-bold text-[#00615f] flex items-center gap-1">
-                {order.fulfillmentType === "DELIVERY" ? (
+                {isPickup ? (
                   <>
-                    <Truck className="size-3.5" /> Giao hàng tận nơi
+                    <ShoppingBag className="size-3.5" /> Tới quán lấy (Store Pickup)
                   </>
                 ) : (
                   <>
-                    <ShoppingBag className="size-3.5" /> Tự đến quán lấy
+                    <Truck className="size-3.5" /> Quán tự giao hàng (Partner Delivery)
                   </>
                 )}
               </span>
             </div>
 
-            {order.fulfillmentType === "DELIVERY" && order.deliveryAddress && (
+            {isPickup ? (
               <div className="flex justify-between py-1">
-                <span className="text-stone-500">Địa chỉ giao:</span>
-                <span className="font-bold text-stone-900 text-right max-w-xs truncate">
-                  {order.deliveryAddress}
+                <span className="text-stone-500">Địa chỉ lấy đồ:</span>
+                <span className="font-bold text-stone-900 text-right max-w-xs">
+                  {order.partnerAddress || "Địa chỉ quán"}
                 </span>
               </div>
+            ) : (
+              order.deliveryAddress && (
+                <div className="flex justify-between py-1">
+                  <span className="text-stone-500">Địa chỉ giao:</span>
+                  <span className="font-bold text-stone-900 text-right max-w-xs truncate">
+                    {order.deliveryAddress}
+                  </span>
+                </div>
+              )
             )}
+
+            <div className="flex justify-between py-1">
+              <span className="text-stone-500">Khung giờ hẹn:</span>
+              <span className="font-bold text-stone-900">{order.pickupTimeWindow}</span>
+            </div>
 
             <div className="flex justify-between py-1">
               <span className="text-stone-500">Phương thức thanh toán:</span>
               <span className="font-bold text-stone-900">
-                {order.paymentMethod === "SYSTEM_QR" ? "QR Hệ Thống FoodSaver" : "Tiền mặt khi nhận (COD)"}
+                {order.paymentMethod === "SYSTEM_QR" || order.paymentMethod === "ONLINE"
+                  ? "Trực tuyến (ONLINE - Ký quỹ Escrow)"
+                  : "Tiền mặt khi nhận (CASH / COD)"}
               </span>
             </div>
 
@@ -237,16 +348,23 @@ export default function OrderDetailPage({
             </div>
 
             <div className="flex justify-between py-1">
-              <span className="text-stone-500">Tiền món:</span>
-              <span>{(order.unitPrice * order.quantity).toLocaleString("vi-VN")}đ</span>
+              <span className="text-stone-500">Tiền món ăn:</span>
+              <span>{(order.merchandiseTotal || (order.unitPrice * order.quantity)).toLocaleString("vi-VN")}đ</span>
             </div>
 
             <div className="flex justify-between py-1">
-              <span className="text-stone-500">Phí giao hàng:</span>
+              <span className="text-stone-500">Phí giao hàng (100% thuộc quán):</span>
               <span className="font-bold text-stone-900">
                 {order.shippingFee > 0 ? `${order.shippingFee.toLocaleString("vi-VN")}đ` : "0đ (Tự lấy)"}
               </span>
             </div>
+
+            {order.discountAmount ? (
+              <div className="flex justify-between py-1 text-emerald-700">
+                <span>Mã giảm giá ({order.discountCode || "Khuyến mãi"}):</span>
+                <span>-{order.discountAmount.toLocaleString("vi-VN")}đ</span>
+              </div>
+            ) : null}
 
             <div className="flex justify-between py-2 border-t border-stone-100 text-base font-black">
               <span>Tổng thanh toán:</span>
@@ -256,13 +374,24 @@ export default function OrderDetailPage({
 
           {/* Action Buttons */}
           <div className="pt-4 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <a
-              href="tel:02838383838"
-              className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition flex items-center justify-center gap-1.5"
-            >
-              <Phone className="size-3.5 text-[#00615f]" />
-              <span>Gọi hotline quán</span>
-            </a>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setChatModalOpen(true)}
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition flex items-center justify-center gap-1.5"
+              >
+                <MessageSquare className="size-3.5 text-[#00615f]" />
+                <span>Nhắn tin với quán</span>
+              </button>
+
+              <a
+                href="tel:02838383838"
+                className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold transition flex items-center justify-center gap-1.5"
+              >
+                <Phone className="size-3.5 text-[#00615f]" />
+                <span>Hotline</span>
+              </a>
+            </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {orderStatus === "PENDING" && !isLockedState && (
@@ -276,14 +405,26 @@ export default function OrderDetailPage({
                 </button>
               )}
 
-              {orderStatus !== "CANCELLED" && (
+              {orderStatus === "HANDED_OVER" && (
+                <button
+                  type="button"
+                  disabled={isConfirmingReceipt}
+                  onClick={handleCustomerConfirmReceipt}
+                  className="flex-1 sm:flex-none px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 className="size-3.5" />
+                  <span>Xác nhận đã nhận món</span>
+                </button>
+              )}
+
+              {orderStatus === "COMPLETED" && (
                 <button
                   type="button"
                   onClick={() => setReviewModalOpen(true)}
-                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5"
+                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5"
                 >
-                  <CheckCircle2 className="size-3.5" />
-                  <span>Đã nhận & Đánh giá</span>
+                  <Star className="size-3.5" />
+                  <span>Đánh giá món ăn</span>
                 </button>
               )}
             </div>
@@ -409,11 +550,11 @@ export default function OrderDetailPage({
                   onClick={() => setReviewModalOpen(false)}
                   className="px-4 py-2 text-xs font-bold text-stone-500 hover:bg-stone-100 rounded-xl"
                 >
-                  Để sau
+                  Bỏ qua
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold bg-[#00615f] hover:bg-[#089184] text-white rounded-xl shadow-md"
+                  className="px-4 py-2 text-xs font-bold bg-[#00615f] hover:bg-[#089184] text-white rounded-xl shadow-sm"
                 >
                   Gửi đánh giá
                 </button>
@@ -422,6 +563,17 @@ export default function OrderDetailPage({
           </div>
         </div>
       )}
+
+      {/* Order Chat Modal */}
+      <OrderChatModal
+        orderId={order.id}
+        orderNumber={order.orderNumber}
+        partnerName={order.partnerName}
+        customerName={order.customerName}
+        currentUserRole="CUSTOMER"
+        isOpen={chatModalOpen}
+        onClose={() => setChatModalOpen(false)}
+      />
     </div>
   );
 }
