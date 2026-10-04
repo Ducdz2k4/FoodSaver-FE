@@ -17,6 +17,7 @@ import {
   Lightbulb,
   AlertTriangle,
   ArrowRight,
+  ArrowDown,
   Store,
   Calendar as CalendarIcon,
   Tag,
@@ -73,7 +74,10 @@ export default function MealPlannerChatPage() {
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const isUserScrolledUpRef = useRef(false);
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
 
   // Initialize unique sessionId from localStorage or generate one
   useEffect(() => {
@@ -95,13 +99,58 @@ export default function MealPlannerChatPage() {
 
   const userFacts = memoryRes?.data || [];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const adjustTextareaHeight = () => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const maxHeight = 88; // ~3 lines
+    const scrollHeight = textarea.scrollHeight;
+    const nextHeight = Math.min(scrollHeight, maxHeight);
+    textarea.style.height = `${Math.max(42, nextHeight)}px`;
+    textarea.style.overflowY = scrollHeight > maxHeight ? "auto" : "hidden";
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    adjustTextareaHeight();
+  };
+
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    // If user scrolled up by more than 60px from the bottom
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    const isUp = distanceFromBottom > 60;
+    isUserScrolledUpRef.current = isUp;
+    setShowScrollBottomBtn(isUp);
+  };
+
+  const scrollToBottom = (smooth = true) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    isUserScrolledUpRef.current = false;
+    setShowScrollBottomBtn(false);
+    if (smooth) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth",
+      });
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
+  };
+
+  // Only auto-scroll down if user has NOT scrolled up to read earlier content
+  // Directly modifies container.scrollTop so the outer window / main layout NEVER scrolls!
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+    if (!isUserScrolledUpRef.current) {
+      const container = messagesContainerRef.current;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [messages]);
 
   const handleSend = async (userText: string) => {
     const trimmed = userText.trim();
@@ -318,7 +367,7 @@ export default function MealPlannerChatPage() {
         </div>
 
         {/* Right: Interactive Chat Stream Feed */}
-        <div className="lg:col-span-8 flex flex-col h-[680px] rounded-3xl bg-white border border-stone-200/90 shadow-xs overflow-hidden">
+        <div className="lg:col-span-8 flex flex-col h-[680px] rounded-3xl bg-white border border-stone-200/90 shadow-xs overflow-hidden relative">
           {/* Chat Header */}
           <div className="px-5 py-3.5 border-b border-stone-100 flex items-center justify-between bg-stone-50/60">
             <div className="flex items-center gap-3">
@@ -353,7 +402,7 @@ export default function MealPlannerChatPage() {
           </div>
 
           {/* Messages Feed */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          <div ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
             {messages.map((msg, index) => (
               <div
                 key={msg.id}
