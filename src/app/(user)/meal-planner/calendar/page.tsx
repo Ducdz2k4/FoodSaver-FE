@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Calendar as CalendarIcon,
   Flame,
@@ -16,6 +17,17 @@ import {
   ArrowRightLeft,
   AlertCircle,
   X,
+  MapPin,
+  Navigation,
+  Store,
+  Info,
+  Plus,
+  Minus,
+  CheckCircle2,
+  ArrowRight,
+  RotateCcw,
+  Zap,
+  Tag,
 } from "lucide-react";
 import {
   useGetMonthMealPlansQuery,
@@ -172,7 +184,112 @@ interface ReplaceModalData {
   oldMeal: MealPlanSlotDTO;
 }
 
+const DEFAULT_STAPLE_INGREDIENTS = [
+  { name: "Trứng gà tươi", category: "Trứng & Sữa", estimatedPrice: 16000, meals: ["Bữa sáng dinh dưỡng"] },
+  { name: "Rau cải thìa / cải ngọt", category: "Rau củ & Quả", estimatedPrice: 12000, meals: ["Món canh & xào thanh đạm"] },
+  { name: "Ức gà phi lê sạch", category: "Thịt & Thủy sản", estimatedPrice: 38000, meals: ["Bữa trưa / tối giàu đạm"] },
+  { name: "Cà chua bi & Xà lách", category: "Rau củ & Quả", estimatedPrice: 15000, meals: ["Salad tươi bổ sung chất xơ"] },
+  { name: "Gia vị cơ bản (Dầu mè, Tiêu, Nước mắm)", category: "Gia vị & Đồ khô", estimatedPrice: 10000, meals: ["Gia vị nấu nướng"] },
+];
+
+function inferCategory(name: string): string {
+  const lower = name.toLowerCase();
+  if (
+    lower.includes("thịt") ||
+    lower.includes("bò") ||
+    lower.includes("gà") ||
+    lower.includes("heo") ||
+    lower.includes("cá") ||
+    lower.includes("tôm") ||
+    lower.includes("sườn") ||
+    lower.includes("chả") ||
+    lower.includes("hải sản")
+  ) {
+    return "Thịt & Thủy sản";
+  }
+  if (
+    lower.includes("rau") ||
+    lower.includes("cà chua") ||
+    lower.includes("cà rốt") ||
+    lower.includes("dưa") ||
+    lower.includes("hành") ||
+    lower.includes("tỏi") ||
+    lower.includes("ớt") ||
+    lower.includes("nấm") ||
+    lower.includes("ngò") ||
+    lower.includes("giá") ||
+    lower.includes("cải") ||
+    lower.includes("khoai") ||
+    lower.includes("bắp") ||
+    lower.includes("chuối") ||
+    lower.includes("táo")
+  ) {
+    return "Rau củ & Quả";
+  }
+  if (
+    lower.includes("trứng") ||
+    lower.includes("sữa") ||
+    lower.includes("bơ") ||
+    lower.includes("phô mai")
+  ) {
+    return "Trứng & Sữa";
+  }
+  if (
+    lower.includes("mắm") ||
+    lower.includes("muối") ||
+    lower.includes("đường") ||
+    lower.includes("tiêu") ||
+    lower.includes("dầu") ||
+    lower.includes("tương") ||
+    lower.includes("gạo") ||
+    lower.includes("mì") ||
+    lower.includes("bún") ||
+    lower.includes("bột") ||
+    lower.includes("sốt") ||
+    lower.includes("giấm")
+  ) {
+    return "Gia vị & Đồ khô";
+  }
+  return "Thực phẩm tươi";
+}
+
+function inferPrice(name: string, category: string): number {
+  const lower = name.toLowerCase();
+  if (category === "Thịt & Thủy sản") return 35000;
+  if (category === "Trứng & Sữa") return 16000;
+  if (category === "Gia vị & Đồ khô") {
+    if (lower.includes("gạo") || lower.includes("dầu")) return 22000;
+    return 9000;
+  }
+  if (category === "Rau củ & Quả") return 14000;
+  return 18000;
+}
+
+const NEARBY_STORES = [
+  {
+    id: "greenmart",
+    name: "GreenMart - Siêu Thị Nông Sản Sạch",
+    distanceKm: 0.6,
+    address: "45 Lê Duẩn, P. Bến Nghé, Quận 1",
+    matchPercentage: 92,
+    badge: "Đối tác chiến lược · Giảm đến 40%",
+    lat: 10.7769,
+    lng: 106.695,
+  },
+  {
+    id: "coopfood",
+    name: "Co.op Food Mini Đa Kao",
+    distanceKm: 1.2,
+    address: "18 Đinh Tiên Hoàng, P. Đa Kao, Quận 1",
+    matchPercentage: 85,
+    badge: "Thực phẩm tươi trong ngày",
+    lat: 10.785,
+    lng: 106.698,
+  },
+];
+
 export default function MealCalendarPage() {
+  const router = useRouter();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -185,7 +302,14 @@ export default function MealCalendarPage() {
   // Suggested Shelf Filter state
   const [shelfCategory, setShelfCategory] = useState("all");
   const [shelfSearch, setShelfSearch] = useState("");
-  const [isShoppingListOpen, setIsShoppingListOpen] = useState(false);
+
+  // Smart Grocery Planning Wizard & Urgency Popup
+  const [isGroceryWizardOpen, setIsGroceryWizardOpen] = useState(false);
+  const [groceryStep, setGroceryStep] = useState<1 | 2 | 3>(1);
+  const [groceryDaysMode, setGroceryDaysMode] = useState<"today" | "3days" | "7days" | "custom">("3days");
+  const [customDays, setCustomDays] = useState<number>(3);
+  const [haveAtHome, setHaveAtHome] = useState<Set<string>>(new Set());
+  const [isUrgentGoShoppingOpen, setIsUrgentGoShoppingOpen] = useState(false);
 
   // Replacement confirmation modal
   const [replaceModal, setReplaceModal] = useState<ReplaceModalData | null>(null);
@@ -220,6 +344,119 @@ export default function MealCalendarPage() {
     plannedDays: 0,
     ingredientCount: 0,
     shoppingList: [],
+  };
+
+  // Grocery Wizard calculations
+  const effectiveDaysCount =
+    groceryDaysMode === "today"
+      ? 1
+      : groceryDaysMode === "3days"
+      ? 3
+      : groceryDaysMode === "7days"
+      ? 7
+      : Math.min(Math.max(Number(customDays) || 1, 1), 7);
+
+  const startDay = selectedDay || today.getDate();
+  const groceryDates = Array.from({ length: effectiveDaysCount }).map((_, i) => {
+    const d = new Date(year, month, startDay + i);
+    const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+    const label = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const dayName = DAYS[d.getDay()];
+    return { date: d, key, label, dayName, dayNum: d.getDate() };
+  });
+
+  const groceryRangeLabel =
+    effectiveDaysCount === 1
+      ? `${groceryDates[0].dayName} (${groceryDates[0].label})`
+      : `Từ ${groceryDates[0].dayName} (${groceryDates[0].label}) đến ${groceryDates[groceryDates.length - 1].dayName} (${groceryDates[groceryDates.length - 1].label}) · ${effectiveDaysCount} ngày`;
+
+  // Aggregate ingredients for selected dates
+  const aggregatedIngredientsMap = new Map<
+    string,
+    {
+      name: string;
+      category: string;
+      estimatedPrice: number;
+      meals: Set<string>;
+      dates: Set<string>;
+    }
+  >();
+
+  let plannedMealsCountInWindow = 0;
+
+  groceryDates.forEach((gd) => {
+    const plan = plans[gd.key];
+    if (!plan) return;
+    (["breakfast", "lunch", "dinner", "snack"] as const).forEach((slotKey) => {
+      const slot = plan[slotKey];
+      if (!slot) return;
+      plannedMealsCountInWindow++;
+      const slotIngredients = Array.isArray(slot.ingredients) ? slot.ingredients : [];
+      slotIngredients.forEach((ingName) => {
+        const cleanName = String(ingName).trim();
+        if (!cleanName) return;
+        if (!aggregatedIngredientsMap.has(cleanName)) {
+          const cat = inferCategory(cleanName);
+          const price = inferPrice(cleanName, cat);
+          aggregatedIngredientsMap.set(cleanName, {
+            name: cleanName,
+            category: cat,
+            estimatedPrice: price,
+            meals: new Set([slot.meal]),
+            dates: new Set([gd.label]),
+          });
+        } else {
+          const existing = aggregatedIngredientsMap.get(cleanName)!;
+          existing.meals.add(slot.meal);
+          existing.dates.add(gd.label);
+        }
+      });
+    });
+  });
+
+  // Fallback staples if user has planned few or no meals yet:
+  if (aggregatedIngredientsMap.size < 4) {
+    DEFAULT_STAPLE_INGREDIENTS.forEach((item) => {
+      if (!aggregatedIngredientsMap.has(item.name)) {
+        aggregatedIngredientsMap.set(item.name, {
+          name: item.name,
+          category: item.category,
+          estimatedPrice: item.estimatedPrice,
+          meals: new Set(item.meals),
+          dates: new Set([groceryDates[0].label]),
+        });
+      }
+    });
+  }
+
+  const aggregatedList = Array.from(aggregatedIngredientsMap.values()).map((item) => ({
+    name: item.name,
+    category: item.category,
+    estimatedPrice: item.estimatedPrice,
+    meals: Array.from(item.meals),
+    dates: Array.from(item.dates),
+  }));
+
+  const neededIngredients = aggregatedList.filter((item) => !haveAtHome.has(item.name));
+  const savedAmount = Array.from(haveAtHome).reduce((sum, name) => {
+    const found = aggregatedList.find((x) => x.name === name);
+    return sum + (found ? found.estimatedPrice : 15000);
+  }, 0);
+  const neededCost = neededIngredients.reduce((sum, item) => sum + item.estimatedPrice, 0);
+
+  const handleOpenGroceryModal = () => {
+    setIsGroceryWizardOpen(true);
+    setGroceryStep(1);
+  };
+
+  const handleToggleHaveAtHome = (name: string) => {
+    const next = new Set(haveAtHome);
+    if (next.has(name)) {
+      next.delete(name);
+    } else {
+      next.add(name);
+    }
+    setHaveAtHome(next);
   };
 
   const prevMonth = () => {
@@ -724,36 +961,68 @@ export default function MealCalendarPage() {
                 </div>
               </div>
 
-              {/* Shopping list banner (Calm) */}
-              <div className="rounded-xl bg-white border border-stone-200/80 p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <ShoppingCart className="size-5 text-[#00615f]" />
+              {/* Smart Grocery Start Banner */}
+              <div className="rounded-2xl bg-white border border-stone-200/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="size-9 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center shrink-0 text-[#00615f]">
+                    <ShoppingCart className="size-4" />
+                  </div>
                   <div>
-                    <p className="text-xs font-semibold text-stone-800">
-                      Danh sách đi chợ tháng {month + 1}
-                    </p>
-                    <p className="text-[11px] text-stone-500">
-                      {summary.ingredientCount} nguyên liệu từ các món đã lên lịch
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-stone-900">
+                        Bắt đầu đi chợ
+                      </h4>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                        Khuyên dùng 1 - 7 ngày
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
+                      Lên danh sách nguyên liệu theo ngày, trừ đồ có sẵn & gợi ý điểm mua gần nhất trên bản đồ.
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsShoppingListOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-[#00615f] text-white text-xs font-medium transition-colors"
+                  type="button"
+                  onClick={handleOpenGroceryModal}
+                  className="px-4 py-2 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  Xem danh sách
+                  <ShoppingCart className="size-3.5" />
+                  <span>Bắt đầu đi chợ</span>
                 </button>
               </div>
             </div>
           ) : selectedDay ? (
-            <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-8 text-center space-y-2">
-              <CalendarIcon className="size-8 mx-auto text-stone-300" />
-              <p className="text-sm font-semibold text-stone-800">
-                Chưa có món nào cho ngày {selectedDay} {MONTHS[month]}
-              </p>
-              <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                Chọn món từ danh sách gợi ý bên dưới để thêm nhanh vào ngày này.
-              </p>
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-8 text-center space-y-2">
+                <CalendarIcon className="size-8 mx-auto text-stone-300" />
+                <p className="text-sm font-semibold text-stone-800">
+                  Chưa có món nào cho ngày {selectedDay} {MONTHS[month]}
+                </p>
+                <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                  Chọn món từ danh sách gợi ý bên dưới để thêm nhanh vào ngày này, hoặc bắt đầu lên kế hoạch đi chợ thông minh.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white border border-stone-200/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="size-9 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center shrink-0 text-[#00615f]">
+                    <ShoppingCart className="size-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-900">Bắt đầu đi chợ</h4>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
+                      Lập danh sách mua sắm thực phẩm tươi 1 - 7 ngày & chuyển sang Radar bản đồ.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenGroceryModal}
+                  className="px-4 py-2 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-semibold shadow-xs transition flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <ShoppingCart className="size-3.5" />
+                  <span>Bắt đầu đi chợ</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="rounded-2xl bg-white border border-stone-200/80 shadow-xs p-8 text-center">
@@ -990,46 +1259,460 @@ export default function MealCalendarPage() {
       )}
 
       {/* ══════ SHOPPING LIST MODAL ══════ */}
-      {isShoppingListOpen && (
+      {isGroceryWizardOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl border border-stone-200 space-y-3.5">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="size-4 text-[#00615f]" />
-                <h3 className="font-bold text-sm text-stone-900">
-                  Danh sách nguyên liệu tháng {month + 1}
-                </h3>
+          <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl border border-stone-200 space-y-5 max-h-[90vh] flex flex-col">
+            {/* Wizard Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="size-8 rounded-xl bg-emerald-50 text-[#00615f] border border-emerald-200/80 flex items-center justify-center">
+                  <ShoppingCart className="size-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-stone-900">
+                    Lên kế hoạch đi chợ thông minh
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Bước {groceryStep}/3: {groceryStep === 1 ? "Chọn thời gian" : groceryStep === 2 ? "Lọc đồ có sẵn" : "Gợi ý điểm mua"}
+                  </p>
+                </div>
               </div>
               <button
-                onClick={() => setIsShoppingListOpen(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-stone-600 transition"
+                onClick={() => setIsGroceryWizardOpen(false)}
+                className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-stone-500">
-              Tổng hợp {summary.shoppingList.length} nguyên liệu từ các bữa ăn bạn đã lên lịch:
-            </p>
+            {/* Modal Body: Step by Step */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {groceryStep === 1 && (
+                <div className="space-y-4 animate-in fade-in">
+                  {/* System Recommendation Advice Callout */}
+                  <div className="rounded-2xl bg-emerald-50/70 border border-emerald-200/80 p-3.5 flex items-start gap-3 text-xs">
+                    <Info className="size-4 text-[#00615f] shrink-0 mt-0.5" />
+                    <div className="space-y-1 text-emerald-950">
+                      <p className="font-bold">
+                        Lời khuyên dinh dưỡng từ FoodSaver:
+                      </p>
+                      <p className="text-[11px] leading-relaxed text-stone-600">
+                        Hệ thống khuyên bạn chỉ nên đi chợ cho <strong>tối đa 7 ngày</strong> (lý tưởng nhất là 3 ngày). Mua thực phẩm quá 7 ngày rau củ dễ mất vitamin, giảm độ tươi ngon và tăng nguy cơ lãng phí.
+                      </p>
+                    </div>
+                  </div>
 
-            <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
-              {summary.shoppingList.map((ing, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 py-1.5 px-2.5 rounded-lg bg-stone-50 text-xs text-stone-700"
-                >
-                  <Check className="size-3 text-[#00615f]" />
-                  <span>{ing}</span>
+                  {/* Preset Options */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-stone-700 block">
+                      Chọn khoảng thời gian đi chợ:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setGroceryDaysMode("today")}
+                        className={`p-3 rounded-2xl border text-left transition flex items-center justify-between ${
+                          groceryDaysMode === "today"
+                            ? "bg-emerald-50/60 border-[#00615f] text-stone-900 ring-2 ring-[#00615f]/20"
+                            : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div>
+                          <p className="text-xs font-bold">⚡ Hôm nay (1 ngày)</p>
+                          <p className="text-[11px] text-stone-500">Chỉ mua cho các bữa trong ngày</p>
+                        </div>
+                        {groceryDaysMode === "today" && <Check className="size-4 text-[#00615f]" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setGroceryDaysMode("3days")}
+                        className={`p-3 rounded-2xl border text-left transition flex items-center justify-between ${
+                          groceryDaysMode === "3days"
+                            ? "bg-emerald-50/60 border-[#00615f] text-stone-900 ring-2 ring-[#00615f]/20"
+                            : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-bold">🗓️ 3 ngày tới</p>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#00615f] text-white">
+                              Khuyên dùng ⭐
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-500">Độ tươi & dinh dưỡng tốt nhất</p>
+                        </div>
+                        {groceryDaysMode === "3days" && <Check className="size-4 text-[#00615f]" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setGroceryDaysMode("7days")}
+                        className={`p-3 rounded-2xl border text-left transition flex items-center justify-between ${
+                          groceryDaysMode === "7days"
+                            ? "bg-emerald-50/60 border-[#00615f] text-stone-900 ring-2 ring-[#00615f]/20"
+                            : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-bold">📅 7 ngày tới</p>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-stone-200 text-stone-700">
+                              Tối đa
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-500">Chuẩn bảo quản lạnh 1 tuần</p>
+                        </div>
+                        {groceryDaysMode === "7days" && <Check className="size-4 text-[#00615f]" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setGroceryDaysMode("custom")}
+                        className={`p-3 rounded-2xl border text-left transition flex items-center justify-between ${
+                          groceryDaysMode === "custom"
+                            ? "bg-emerald-50/60 border-[#00615f] text-stone-900 ring-2 ring-[#00615f]/20"
+                            : "bg-white border-stone-200 text-stone-700 hover:bg-stone-50"
+                        }`}
+                      >
+                        <div>
+                          <p className="text-xs font-bold">✏️ Tự nhập số ngày</p>
+                          <p className="text-[11px] text-stone-500">Nhập từ 1 đến 7 ngày</p>
+                        </div>
+                        {groceryDaysMode === "custom" && <Check className="size-4 text-[#00615f]" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Custom Days Input Stepper */}
+                  {groceryDaysMode === "custom" && (
+                    <div className="rounded-2xl bg-stone-50 border border-stone-200 p-3.5 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-stone-800">Số ngày muốn đi chợ:</p>
+                        <p className="text-[11px] text-stone-500">Giới hạn từ 1 đến tối đa 7 ngày</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setCustomDays(Math.max(1, customDays - 1))}
+                          disabled={customDays <= 1}
+                          className="size-8 rounded-lg bg-white border border-stone-200 flex items-center justify-center text-stone-700 hover:bg-stone-100 disabled:opacity-40 transition"
+                        >
+                          <Minus className="size-3.5" />
+                        </button>
+                        <span className="font-bold text-base text-stone-900 min-w-8 text-center">
+                          {customDays} ngày
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCustomDays(Math.min(7, customDays + 1))}
+                          disabled={customDays >= 7}
+                          className="size-8 rounded-lg bg-white border border-stone-200 flex items-center justify-center text-stone-700 hover:bg-stone-100 disabled:opacity-40 transition"
+                        >
+                          <Plus className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Period & Meals Preview Card */}
+                  <div className="rounded-2xl bg-stone-50 border border-stone-200/80 p-3.5 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-stone-500 font-medium">Khoảng thời gian:</span>
+                      <span className="font-bold text-stone-800">{groceryRangeLabel}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-stone-500 font-medium">Bữa ăn đã lên lịch:</span>
+                      <span className="font-bold text-[#00615f]">{plannedMealsCountInWindow} bữa ăn</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-stone-500 font-medium">Tổng nguyên liệu ước tính:</span>
+                      <span className="font-bold text-stone-800">{aggregatedList.length} nguyên liệu</span>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {groceryStep === 2 && (
+                <div className="space-y-3.5 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-900">
+                        Nguyên liệu đã có sẵn ở nhà:
+                      </h4>
+                      <p className="text-[11px] text-stone-500">
+                        Tích chọn món đã có để hệ thống trừ ra, giúp bạn không mua dư thừa.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = new Set(haveAtHome);
+                          aggregatedList.forEach((item) => {
+                            if (item.category === "Gia vị & Đồ khô") next.add(item.name);
+                          });
+                          setHaveAtHome(next);
+                          toast.success("Đã tích nhanh gia vị có sẵn!");
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-medium transition"
+                      >
+                        🧂 Tích gia vị bếp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHaveAtHome(new Set())}
+                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 text-[11px] font-medium transition"
+                      >
+                        Bỏ chọn
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Live Budget KPI Bar */}
+                  <div className="grid grid-cols-3 gap-2 p-2.5 rounded-2xl bg-stone-50 border border-stone-200/80 text-center">
+                    <div>
+                      <p className="text-[10px] text-stone-500">Đã có ở nhà</p>
+                      <p className="text-xs font-bold text-emerald-700">{haveAtHome.size} món</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-stone-500">Thực sự cần mua</p>
+                      <p className="text-xs font-bold text-[#00615f]">{neededIngredients.length} món</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-stone-500">Chi phí dự kiến</p>
+                      <p className="text-xs font-bold text-stone-900">{formatVND(neededCost)}</p>
+                    </div>
+                  </div>
+
+                  {/* Interactive Ingredients List */}
+                  <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+                    {aggregatedList.map((item, idx) => {
+                      const isHave = haveAtHome.has(item.name);
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => handleToggleHaveAtHome(item.name)}
+                          className={`p-2.5 rounded-xl border cursor-pointer transition flex items-center justify-between gap-2.5 ${
+                            isHave
+                              ? "bg-stone-50 border-stone-200 text-stone-400"
+                              : "bg-white border-stone-200/90 hover:border-[#00615f] text-stone-800 shadow-2xs"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className={`size-5 rounded-md border flex items-center justify-center shrink-0 transition ${
+                              isHave ? "bg-emerald-600 border-emerald-600 text-white" : "border-stone-300 bg-white"
+                            }`}>
+                              {isHave && <Check className="size-3.5 stroke-[3]" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className={`text-xs font-medium truncate ${isHave ? "line-through text-stone-400" : "text-stone-900"}`}>
+                                {item.name}
+                              </p>
+                              <p className="text-[10px] text-stone-400 truncate">
+                                {item.category} • Từ: {item.meals.slice(0, 2).join(", ")}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`text-[11px] font-semibold ${isHave ? "line-through text-stone-400" : "text-[#00615f]"}`}>
+                              ~{formatVND(item.estimatedPrice)}
+                            </span>
+                            <span className="block text-[9px] text-stone-400">
+                              {isHave ? "Có sẵn" : "Cần mua"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {groceryStep === 3 && (
+                <div className="space-y-3.5 animate-in fade-in">
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-900">
+                      Gợi ý điểm mua nguyên liệu gần nhất:
+                    </h4>
+                    <p className="text-[11px] text-stone-500">
+                      Hệ thống tự động quét các đối tác lân cận có nguyên liệu sạch đạt chuẩn ATTP.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {NEARBY_STORES.map((store) => (
+                      <div
+                        key={store.id}
+                        className="p-3.5 rounded-2xl bg-white border border-stone-200 hover:border-[#00615f] shadow-xs transition space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Store className="size-4 text-[#00615f]" />
+                            <span className="text-xs font-bold text-stone-900">{store.name}</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Cách {store.distanceKm} km
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-stone-500">{store.address}</p>
+                        <div className="flex items-center justify-between pt-1 border-t border-stone-100 text-[11px]">
+                          <span className="text-stone-600 font-medium">
+                            Khớp {store.matchPercentage}% danh sách nguyên liệu
+                          </span>
+                          <span className="text-[#00615f] font-semibold">{store.badge}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="pt-2 border-t border-stone-100 flex justify-end">
+            {/* Wizard Footer Controls */}
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-between shrink-0">
               <button
-                onClick={() => setIsShoppingListOpen(false)}
-                className="px-4 py-1.5 rounded-lg bg-stone-900 hover:bg-[#00615f] text-white text-xs font-medium transition-colors"
+                type="button"
+                onClick={() => {
+                  if (groceryStep > 1) setGroceryStep((groceryStep - 1) as any);
+                  else setIsGroceryWizardOpen(false);
+                }}
+                className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-medium transition"
               >
-                Đóng
+                {groceryStep === 1 ? "Đóng" : "Quay lại"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (groceryStep < 3) {
+                    setGroceryStep((groceryStep + 1) as any);
+                  } else {
+                    setIsGroceryWizardOpen(false);
+                    setIsUrgentGoShoppingOpen(true);
+                  }
+                }}
+                className="px-5 py-2 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+              >
+                <span>{groceryStep === 3 ? "Xem tóm tắt & Đi chợ" : "Tiếp tục"}</span>
+                <ArrowRight className="size-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════ POPUP "ĐI CHỢ NGAY" (URGENT PULSE ANIMATION) ══════ */}
+      {isUrgentGoShoppingOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-stone-200/90 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#00615f] border border-emerald-200/80 text-xs font-bold">
+                <Sparkles className="size-3.5 text-[#00615f]" />
+                <span>RADAR ĐI CHỢ ĐÃ SẴN SÀNG</span>
+              </div>
+              <button
+                onClick={() => setIsUrgentGoShoppingOpen(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-700 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-stone-900">
+                Sẵn sàng xuất phát đi chợ! 🛒
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Đã tổng hợp <strong>{neededIngredients.length} nguyên liệu</strong> cho <strong>{effectiveDaysCount} ngày</strong> ({groceryRangeLabel}). Hệ thống đã chuẩn bị radar bản đồ để dẫn đường đến đối tác gần nhất.
+              </p>
+            </div>
+
+            {/* Highlights Card */}
+            <div className="rounded-2xl bg-stone-50 border border-stone-200 p-3.5 space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Nguyên liệu cần mua:</span>
+                <span className="font-bold text-[#00615f]">{neededIngredients.length} món</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Chi phí ước tính:</span>
+                <span className="font-bold text-stone-900">~{formatVND(neededCost)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-stone-500">Đã tiết kiệm (đồ có sẵn):</span>
+                <span className="font-bold text-emerald-700">~{formatVND(savedAmount)}</span>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-stone-200/80">
+                <span className="text-stone-500">Điểm đến tối ưu:</span>
+                <span className="font-bold text-stone-800">GreenMart (Cách 0.6 km)</span>
+              </div>
+            </div>
+
+            {/* Ingredients Preview Chips */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {neededIngredients.slice(0, 5).map((ing, idx) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 rounded-lg bg-stone-100 text-stone-700 text-[11px] font-medium"
+                >
+                  {ing.name}
+                </span>
+              ))}
+              {neededIngredients.length > 5 && (
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[11px] font-bold">
+                  +{neededIngredients.length - 5} món khác
+                </span>
+              )}
+            </div>
+
+            {/* ═══ THE PULSING CTA BUTTON: "ĐI CHỢ NGAY TRÊN BẢN ĐỒ" ═══ */}
+            <button
+              type="button"
+              onClick={() => {
+                const cartData = {
+                  daysCount: effectiveDaysCount,
+                  dateRangeStr: groceryRangeLabel,
+                  totalItems: aggregatedList.length,
+                  neededItems: neededIngredients.map((item) => ({
+                    name: item.name,
+                    category: item.category,
+                    estimatedPrice: item.estimatedPrice,
+                    checked: false,
+                  })),
+                  haveAtHome: Array.from(haveAtHome),
+                  savedMoney: savedAmount,
+                  neededCost: neededCost,
+                  nearestStore: NEARBY_STORES[0],
+                  createdAt: Date.now(),
+                };
+                try {
+                  localStorage.setItem("foodsaver_shopping_cart", JSON.stringify(cartData));
+                } catch (e) {
+                  console.error("Failed to save shopping cart:", e);
+                }
+                setIsUrgentGoShoppingOpen(false);
+                toast.success("Đã đồng bộ danh sách đi chợ vào Radar bản đồ!");
+                router.push("/map?fromPlanner=true");
+              }}
+              className="group relative w-full py-3.5 px-6 rounded-2xl bg-[#00615f] hover:bg-[#004e4c] text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-[#00615f]/25 transition-all active:scale-[0.98] animate-pulse ring-4 ring-[#00615f]/30 hover:ring-[#00615f]/60 flex items-center justify-center gap-2 overflow-hidden cursor-pointer"
+            >
+              <Navigation className="size-4 animate-bounce shrink-0" />
+              <span>ĐI CHỢ NGAY TRÊN BẢN ĐỒ</span>
+              <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform shrink-0" />
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none" />
+            </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUrgentGoShoppingOpen(false);
+                  setIsGroceryWizardOpen(true);
+                  setGroceryStep(2);
+                }}
+                className="text-[11px] text-stone-500 hover:text-stone-800 transition"
+              >
+                ◀ Xem lại danh sách nguyên liệu
               </button>
             </div>
           </div>

@@ -9,6 +9,11 @@ import {
   ShoppingBag,
   Sparkles,
   Layers,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  ShoppingCart,
+  ArrowLeft,
 } from "lucide-react";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingDTO, FoodCategory } from "@/types/contract";
@@ -18,12 +23,92 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
+interface GroceryCartItem {
+  name: string;
+  category?: string;
+  estimatedPrice?: number;
+  checked: boolean;
+}
+
+interface GroceryCartData {
+  daysCount: number;
+  dateRangeStr: string;
+  totalItems: number;
+  neededItems: GroceryCartItem[];
+  haveAtHome?: string[];
+  savedMoney?: number;
+  neededCost?: number;
+  nearestStore?: {
+    id?: string;
+    name: string;
+    distanceKm: number;
+    address?: string;
+    badge?: string;
+    lat: number;
+    lng: number;
+  };
+  createdAt?: number;
+}
+
 export default function FoodMapPage() {
   const [selectedListing, setSelectedListing] = useState<ListingDTO | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<FoodCategory | "ALL">("ALL");
   const [radiusKm, setRadiusKm] = useState<number>(3);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Smart Grocery Radar integration from Meal Planner
+  const [groceryCart, setGroceryCart] = useState<GroceryCartData | null>(null);
+  const [isGroceryRadarOpen, setIsGroceryRadarOpen] = useState(true);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("foodsaver_shopping_cart");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && Array.isArray(parsed.neededItems) && parsed.neededItems.length > 0) {
+          setGroceryCart(parsed);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load grocery cart:", e);
+    }
+  }, []);
+
+  const handleToggleGroceryItem = (idx: number) => {
+    if (!groceryCart) return;
+    const nextItems = [...groceryCart.neededItems];
+    nextItems[idx] = {
+      ...nextItems[idx],
+      checked: !nextItems[idx].checked,
+    };
+    const nextCart = { ...groceryCart, neededItems: nextItems };
+    setGroceryCart(nextCart);
+    try {
+      localStorage.setItem("foodsaver_shopping_cart", JSON.stringify(nextCart));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleClearGroceryCart = () => {
+    try {
+      localStorage.removeItem("foodsaver_shopping_cart");
+    } catch (e) {
+      console.error(e);
+    }
+    setGroceryCart(null);
+  };
+
+  const handleFlyToNearestStore = () => {
+    if (mapRef.current && groceryCart?.nearestStore) {
+      mapRef.current.flyTo({
+        center: [groceryCart.nearestStore.lng, groceryCart.nearestStore.lat],
+        zoom: 15.5,
+        speed: 1.2,
+      });
+    }
+  };
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -182,6 +267,46 @@ export default function FoodMapPage() {
           </div>
         </div>
 
+        {/* Smart Grocery Trip Top Banner (Active Shopping Session) */}
+        {groceryCart && (
+          <div className="rounded-3xl bg-white border border-stone-200/90 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center shrink-0 text-[#00615f]">
+                <ShoppingCart className="size-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-stone-900">
+                    Đang thực hiện chuyến đi chợ: {groceryCart.neededItems.filter((i) => i.checked).length}/{groceryCart.neededItems.length} món đã mua
+                  </p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    {groceryCart.daysCount} ngày
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-500 mt-0.5">
+                  Lập từ Lịch ăn ({groceryCart.dateRangeStr}) · Điểm mua tối ưu: {groceryCart.nearestStore?.name || "GreenMart (0.6 km)"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsGroceryRadarOpen(!isGroceryRadarOpen)}
+                className="px-3.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition"
+              >
+                {isGroceryRadarOpen ? "Thu gọn radar" : "Mở checklist đi chợ"}
+              </button>
+              <Link
+                href="/meal-planner/calendar"
+                className="px-3.5 py-1.5 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-xs"
+              >
+                <ArrowLeft className="size-3.5" />
+                <span>Về Lịch ăn</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Map Grid Canvas + Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Main Mapbox Container (8 cols) */}
@@ -215,6 +340,143 @@ export default function FoodMapPage() {
               ref={mapContainerRef}
               className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px]"
             />
+
+            {/* Floating Shopping Radar Checklist Drawer */}
+            {groceryCart && (
+              <>
+                {!isGroceryRadarOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsGroceryRadarOpen(true)}
+                    className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-200/90 shadow-xl flex items-center gap-2 text-xs font-bold text-[#00615f] hover:bg-stone-50 transition cursor-pointer"
+                  >
+                    <ShoppingCart className="size-4" />
+                    <span>Radar Đi Chợ: {groceryCart.neededItems.filter((i) => i.checked).length}/{groceryCart.neededItems.length} món</span>
+                    <ChevronUp className="size-3.5 text-stone-400" />
+                  </button>
+                ) : (
+                  <div className="absolute bottom-4 left-4 z-20 max-w-sm w-[calc(100%-2rem)] sm:w-84 bg-white/95 backdrop-blur-md rounded-2xl border border-stone-200/90 shadow-2xl p-3.5 space-y-3 animate-in fade-in">
+                    <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                      <div className="flex items-center gap-2">
+                        <ShoppingCart className="size-4 text-[#00615f]" />
+                        <div>
+                          <h4 className="text-xs font-bold text-stone-900">
+                            Checklist Đi Chợ ({groceryCart.neededItems.filter((i) => i.checked).length}/{groceryCart.neededItems.length})
+                          </h4>
+                          <p className="text-[10px] text-stone-500">
+                            {groceryCart.daysCount} ngày · {groceryCart.nearestStore?.name || "GreenMart (0.6 km)"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsGroceryRadarOpen(false)}
+                        className="p-1 rounded-lg text-stone-400 hover:text-stone-700 transition"
+                      >
+                        <ChevronDown className="size-4" />
+                      </button>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1">
+                      <div className="w-full h-1.5 rounded-full bg-stone-100 overflow-hidden">
+                        <div
+                          className="h-full bg-[#00615f] transition-all duration-300"
+                          style={{
+                            width: `${Math.round(
+                              (groceryCart.neededItems.filter((i) => i.checked).length /
+                                Math.max(1, groceryCart.neededItems.length)) *
+                                100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-stone-500">
+                        <span>Tiến độ mua sắm</span>
+                        <span className="font-bold text-[#00615f]">
+                          {Math.round(
+                            (groceryCart.neededItems.filter((i) => i.checked).length /
+                              Math.max(1, groceryCart.neededItems.length)) *
+                              100
+                          )}%
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Checklist items */}
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                      {groceryCart.neededItems.map((item, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => handleToggleGroceryItem(idx)}
+                          className={`p-2 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between gap-2 ${
+                            item.checked
+                              ? "bg-stone-50 border-stone-200 text-stone-400"
+                              : "bg-white border-stone-200 text-stone-800 hover:border-[#00615f]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div
+                              className={`size-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                                item.checked
+                                  ? "bg-emerald-600 border-emerald-600 text-white"
+                                  : "border-stone-300 bg-white"
+                              }`}
+                            >
+                              {item.checked && <Check className="size-3 stroke-[3]" />}
+                            </div>
+                            <span
+                              className={`truncate text-xs font-medium ${
+                                item.checked ? "line-through text-stone-400" : "text-stone-900"
+                              }`}
+                            >
+                              {item.name}
+                            </span>
+                          </div>
+                          {item.estimatedPrice && (
+                            <span
+                              className={`text-[10px] shrink-0 font-medium ${
+                                item.checked ? "line-through text-stone-400" : "text-stone-500"
+                              }`}
+                            >
+                              ~{item.estimatedPrice.toLocaleString("vi-VN")}đ
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Completed All celebration */}
+                    {groceryCart.neededItems.length > 0 &&
+                      groceryCart.neededItems.every((i) => i.checked) && (
+                        <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold text-center">
+                          🎉 Tuyệt vời! Bạn đã mua đủ nguyên liệu cho {groceryCart.daysCount} ngày!
+                        </div>
+                      )}
+
+                    {/* Drawer Action buttons */}
+                    <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={handleFlyToNearestStore}
+                        className="py-1.5 px-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-[11px] font-semibold transition flex items-center gap-1"
+                      >
+                        <MapPin className="size-3 text-[#00615f]" />
+                        <span>Ghim điểm mua</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleClearGroceryCart}
+                        className="text-[11px] text-stone-400 hover:text-rose-600 transition"
+                      >
+                        Xong chuyến đi
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Right Sidebar: Selected Food Popup & Quick Action (4 cols) */}
