@@ -13,7 +13,7 @@ export function MealPlannerTabs() {
       href: "/meal-planner",
       label: "Thực đơn & Công thức",
       icon: ChefHat,
-      badge: "8 món",
+      badge: "16 món",
       isActive: pathname === "/meal-planner",
     },
     {
@@ -41,7 +41,7 @@ export function MealPlannerTabs() {
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white/80 backdrop-blur-md border border-stone-200/80 shadow-sm overflow-x-auto scrollbar-hide">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white border border-stone-200/80 shadow-xs overflow-x-auto scrollbar-hide">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active = tab.isActive;
@@ -49,16 +49,16 @@ export function MealPlannerTabs() {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 ${
+              className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-lg font-semibold text-xs sm:text-sm transition-colors duration-150 ${
                 active
-                  ? "bg-[#00615f] text-white shadow-md shadow-[#00615f]/20 scale-[1.01]"
-                  : "text-stone-600 hover:text-[#00615f] hover:bg-stone-50"
+                  ? "bg-[#00615f] text-white shadow-xs"
+                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
               }`}
             >
-              <Icon className={`size-4 ${active ? "text-[#79e4a7]" : "text-stone-400"}`} />
+              <Icon className={`size-4 ${active ? "text-white" : "text-stone-400"}`} />
               <span>{tab.label}</span>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold transition-colors ${
+                className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
                   active
                     ? "bg-white/20 text-white"
                     : "bg-stone-100 text-stone-500"
