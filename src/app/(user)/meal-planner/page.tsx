@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 import {
   ChefHat,
   Flame,
@@ -10,36 +9,18 @@ import {
   Search,
   Leaf,
   Heart,
-  Calendar,
-  MessageCircle,
   ChevronRight,
   Star,
   ShoppingCart,
-  ArrowRight,
   Sparkles,
   Apple,
   Beef,
   Egg,
   Carrot,
   Fish,
+  Loader2,
 } from "lucide-react";
-
-/* ─── static recipe data (will connect to API later) ─── */
-interface Recipe {
-  id: string;
-  name: string;
-  image: string;
-  calories: number;
-  cookTime: number;
-  servings: number;
-  cost: number;
-  category: string;
-  tags: string[];
-  ingredients: { name: string; amount: string; estimatedPrice: number }[];
-  steps: string[];
-  rating: number;
-  reviews: number;
-}
+import { useGetRecipesQuery, RecipeDTO } from "@/redux/api/mealPlannerApi";
 
 const CATEGORIES = [
   { key: "all", label: "Tất cả", icon: Sparkles },
@@ -50,231 +31,6 @@ const CATEGORIES = [
   { key: "an-vat", label: "Ăn vặt", icon: Apple },
   { key: "canh", label: "Canh / Soup", icon: Fish },
   { key: "salad", label: "Salad", icon: Carrot },
-];
-
-const RECIPES: Recipe[] = [
-  {
-    id: "1",
-    name: "Cơm tấm sườn bì chả",
-    image: "🍚",
-    calories: 650,
-    cookTime: 35,
-    servings: 2,
-    cost: 35000,
-    category: "com",
-    tags: ["protein cao", "no lâu"],
-    ingredients: [
-      { name: "Sườn heo", amount: "300g", estimatedPrice: 25000 },
-      { name: "Gạo tấm", amount: "200g", estimatedPrice: 5000 },
-      { name: "Bì heo", amount: "100g", estimatedPrice: 8000 },
-      { name: "Trứng", amount: "2 quả", estimatedPrice: 6000 },
-      { name: "Đồ chua", amount: "1 chén", estimatedPrice: 3000 },
-      { name: "Nước mắm pha", amount: "50ml", estimatedPrice: 2000 },
-    ],
-    steps: [
-      "Ướp sườn với sả, tỏi, nước mắm, đường 30 phút",
-      "Nấu cơm tấm bằng gạo tấm",
-      "Nướng / chiên sườn đến vàng đều",
-      "Chiên trứng ốp la, trộn bì",
-      "Bày cơm ra đĩa, xếp sườn, bì, chả, trứng lên trên",
-    ],
-    rating: 4.8,
-    reviews: 124,
-  },
-  {
-    id: "2",
-    name: "Bún bò Huế",
-    image: "🍜",
-    calories: 520,
-    cookTime: 60,
-    servings: 4,
-    cost: 30000,
-    category: "bun-pho",
-    tags: ["đậm đà", "truyền thống"],
-    ingredients: [
-      { name: "Bắp bò", amount: "500g", estimatedPrice: 40000 },
-      { name: "Giò heo", amount: "300g", estimatedPrice: 20000 },
-      { name: "Bún tươi", amount: "500g", estimatedPrice: 10000 },
-      { name: "Sả", amount: "5 cây", estimatedPrice: 3000 },
-      { name: "Mắm ruốc", amount: "2 muỗng", estimatedPrice: 5000 },
-      { name: "Rau sống", amount: "1 bó", estimatedPrice: 5000 },
-    ],
-    steps: [
-      "Ninh xương bò, giò heo 2 tiếng lấy nước dùng",
-      "Phi sả băm, thêm mắm ruốc tạo màu",
-      "Nêm nếm vừa ăn, thêm ớt sa tế",
-      "Trụng bún, xếp thịt bò, giò heo lên trên",
-      "Chan nước dùng nóng, ăn kèm rau sống",
-    ],
-    rating: 4.9,
-    reviews: 256,
-  },
-  {
-    id: "3",
-    name: "Cơm rang dưa bò",
-    image: "🍳",
-    calories: 480,
-    cookTime: 15,
-    servings: 1,
-    cost: 25000,
-    category: "com",
-    tags: ["nhanh", "tiết kiệm"],
-    ingredients: [
-      { name: "Cơm nguội", amount: "1 bát to", estimatedPrice: 3000 },
-      { name: "Thịt bò", amount: "100g", estimatedPrice: 15000 },
-      { name: "Dưa chua", amount: "50g", estimatedPrice: 3000 },
-      { name: "Hành lá", amount: "2 cây", estimatedPrice: 1000 },
-      { name: "Trứng", amount: "1 quả", estimatedPrice: 3000 },
-      { name: "Gia vị", amount: "ít", estimatedPrice: 2000 },
-    ],
-    steps: [
-      "Xào thịt bò tái với tỏi, dầu hào",
-      "Cho dưa chua vào xào nhanh",
-      "Thêm cơm nguội, đảo đều lửa lớn",
-      "Nêm nước mắm, tiêu vừa ăn",
-      "Rắc hành lá, ăn kèm trứng ốp la",
-    ],
-    rating: 4.6,
-    reviews: 89,
-  },
-  {
-    id: "4",
-    name: "Phở bò tái nạm",
-    image: "🍲",
-    calories: 450,
-    cookTime: 90,
-    servings: 4,
-    cost: 28000,
-    category: "bun-pho",
-    tags: ["truyền thống", "ấm bụng"],
-    ingredients: [
-      { name: "Xương bò", amount: "1kg", estimatedPrice: 35000 },
-      { name: "Thịt bò tái", amount: "200g", estimatedPrice: 25000 },
-      { name: "Nạm bò", amount: "200g", estimatedPrice: 20000 },
-      { name: "Bánh phở", amount: "400g", estimatedPrice: 10000 },
-      { name: "Hành tây", amount: "1 củ", estimatedPrice: 3000 },
-      { name: "Gừng, quế, hồi", amount: "ít", estimatedPrice: 5000 },
-    ],
-    steps: [
-      "Ninh xương bò 3-4 tiếng, vớt bọt",
-      "Nướng hành tây, gừng rồi cho vào nồi",
-      "Thêm quế, hồi, nêm nước mắm",
-      "Trụng bánh phở, xếp thịt tái, nạm",
-      "Chan nước dùng sôi, ăn kèm giá, rau thơm",
-    ],
-    rating: 4.9,
-    reviews: 312,
-  },
-  {
-    id: "5",
-    name: "Canh chua cá lóc",
-    image: "🐟",
-    calories: 280,
-    cookTime: 25,
-    servings: 3,
-    cost: 32000,
-    category: "canh",
-    tags: ["nhẹ bụng", "vitamin"],
-    ingredients: [
-      { name: "Cá lóc", amount: "400g", estimatedPrice: 25000 },
-      { name: "Thơm (dứa)", amount: "1/2 trái", estimatedPrice: 5000 },
-      { name: "Cà chua", amount: "2 trái", estimatedPrice: 4000 },
-      { name: "Đậu bắp", amount: "100g", estimatedPrice: 3000 },
-      { name: "Me", amount: "30g", estimatedPrice: 3000 },
-      { name: "Rau ngò om", amount: "1 bó", estimatedPrice: 2000 },
-    ],
-    steps: [
-      "Nấu nước dùng với me, thơm, cà chua",
-      "Cho cá lóc vào nấu chín",
-      "Thêm đậu bắp, giá đỗ",
-      "Nêm nước mắm, đường vừa ăn",
-      "Rắc ngò om, ăn kèm cơm trắng",
-    ],
-    rating: 4.7,
-    reviews: 78,
-  },
-  {
-    id: "6",
-    name: "Bánh mì ốp la",
-    image: "🥖",
-    calories: 380,
-    cookTime: 10,
-    servings: 1,
-    cost: 15000,
-    category: "an-sang",
-    tags: ["nhanh", "rẻ", "tiện"],
-    ingredients: [
-      { name: "Bánh mì", amount: "1 ổ", estimatedPrice: 3000 },
-      { name: "Trứng", amount: "2 quả", estimatedPrice: 6000 },
-      { name: "Pate", amount: "1 muỗng", estimatedPrice: 3000 },
-      { name: "Rau, dưa leo", amount: "ít", estimatedPrice: 2000 },
-      { name: "Nước tương, ớt", amount: "ít", estimatedPrice: 1000 },
-    ],
-    steps: [
-      "Chiên trứng ốp la 2 quả",
-      "Nướng giòn bánh mì",
-      "Phết pate vào ruột bánh",
-      "Kẹp trứng, rau, dưa leo",
-      "Rưới nước tương, ớt tùy khẩu vị",
-    ],
-    rating: 4.5,
-    reviews: 203,
-  },
-  {
-    id: "7",
-    name: "Gỏi cuốn tôm thịt",
-    image: "🥬",
-    calories: 220,
-    cookTime: 20,
-    servings: 2,
-    cost: 22000,
-    category: "chay",
-    tags: ["healthy", "ít calo"],
-    ingredients: [
-      { name: "Bánh tráng", amount: "10 cái", estimatedPrice: 5000 },
-      { name: "Tôm", amount: "200g", estimatedPrice: 15000 },
-      { name: "Thịt ba chỉ luộc", amount: "100g", estimatedPrice: 10000 },
-      { name: "Bún tươi", amount: "100g", estimatedPrice: 3000 },
-      { name: "Rau sống các loại", amount: "1 bó", estimatedPrice: 5000 },
-      { name: "Tương đậu phộng", amount: "50ml", estimatedPrice: 4000 },
-    ],
-    steps: [
-      "Luộc tôm, thịt ba chỉ, để nguội thái lát",
-      "Chuẩn bị rau sống, bún",
-      "Nhúng bánh tráng nước ấm, trải ra",
-      "Xếp rau, bún, thịt, tôm rồi cuốn chặt",
-      "Chấm tương đậu phộng",
-    ],
-    rating: 4.7,
-    reviews: 91,
-  },
-  {
-    id: "8",
-    name: "Xôi xéo",
-    image: "🫘",
-    calories: 420,
-    cookTime: 40,
-    servings: 2,
-    cost: 18000,
-    category: "an-sang",
-    tags: ["truyền thống", "no lâu"],
-    ingredients: [
-      { name: "Gạo nếp", amount: "300g", estimatedPrice: 8000 },
-      { name: "Đậu xanh", amount: "100g", estimatedPrice: 5000 },
-      { name: "Hành phi", amount: "50g", estimatedPrice: 5000 },
-      { name: "Mỡ hành", amount: "2 muỗng", estimatedPrice: 3000 },
-      { name: "Nghệ", amount: "ít", estimatedPrice: 2000 },
-    ],
-    steps: [
-      "Ngâm nếp 4 tiếng, trộn nghệ, hấp chín",
-      "Nấu nhuyễn đậu xanh, tán mịn",
-      "Phi hành khô giòn vàng",
-      "Xới xôi ra, phủ đậu xanh, rưới mỡ hành",
-      "Rắc hành phi lên trên",
-    ],
-    rating: 4.6,
-    reviews: 67,
-  },
 ];
 
 const DAILY_TARGET = 2000;
@@ -288,22 +44,12 @@ export default function MealPlannerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRecipe, setExpandedRecipe] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    let list = RECIPES;
-    if (activeCategory !== "all") {
-      list = list.filter((r) => r.category === activeCategory);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (r) =>
-          r.name.toLowerCase().includes(q) ||
-          r.tags.some((t) => t.toLowerCase().includes(q)) ||
-          r.ingredients.some((i) => i.name.toLowerCase().includes(q))
-      );
-    }
-    return list;
-  }, [activeCategory, searchQuery]);
+  const { data: response, isLoading, isFetching } = useGetRecipesQuery({
+    category: activeCategory,
+    search: searchQuery,
+  });
+
+  const recipes: RecipeDTO[] = response?.data || [];
 
   return (
     <div className="space-y-6">
@@ -389,17 +135,25 @@ export default function MealPlannerPage() {
 
       {/* ══════ RECIPE GRID ══════ */}
       <section>
-        {filtered.length === 0 ? (
+        {isLoading || isFetching ? (
+          <div className="text-center py-16">
+            <Loader2 className="size-8 mx-auto animate-spin text-[#00615f] mb-3" />
+            <p className="text-sm font-medium text-stone-500">Đang tải công thức món ăn...</p>
+          </div>
+        ) : recipes.length === 0 ? (
           <div className="text-center py-16">
             <ChefHat className="size-12 mx-auto text-stone-300 mb-3" />
             <p className="text-sm text-stone-500">Không tìm thấy món ăn phù hợp</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filtered.map((recipe) => {
+            {recipes.map((recipe) => {
               const isExpanded = expandedRecipe === recipe.id;
-              const totalIngredientCost = recipe.ingredients.reduce(
-                (sum, ing) => sum + ing.estimatedPrice,
+              const ingredientsList = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+              const stepsList = Array.isArray(recipe.steps) ? recipe.steps : [];
+              const tagsList = Array.isArray(recipe.tags) ? recipe.tags : [];
+              const totalIngredientCost = ingredientsList.reduce(
+                (sum, ing) => sum + (Number(ing.estimatedPrice) || 0),
                 0
               );
               return (
@@ -440,9 +194,9 @@ export default function MealPlannerPage() {
 
                     {/* Tags */}
                     <div className="mt-2.5 flex flex-wrap gap-1.5">
-                      {recipe.tags.map((tag) => (
+                      {tagsList.map((tag, idx) => (
                         <span
-                          key={tag}
+                          key={idx}
                           className="px-2 py-0.5 rounded-full bg-[#00615f]/8 text-[#00615f] text-[10px] font-semibold"
                         >
                           {tag}
@@ -456,7 +210,7 @@ export default function MealPlannerPage() {
                     <div>
                       <p className="text-[10px] text-stone-500">Chi phí ước tính / người</p>
                       <p className="text-sm font-black text-[#00615f]">
-                        ~{formatVND(Math.round(totalIngredientCost / recipe.servings))}
+                        ~{formatVND(Math.round(totalIngredientCost / (recipe.servings || 1)))}
                       </p>
                     </div>
                     <button
@@ -475,16 +229,16 @@ export default function MealPlannerPage() {
                       <div>
                         <h4 className="text-xs font-bold text-stone-700 mb-2 flex items-center gap-1.5">
                           <ShoppingCart className="size-3.5 text-[#00615f]" />
-                          Nguyên liệu ({recipe.ingredients.length} món)
+                          Nguyên liệu ({ingredientsList.length} món)
                         </h4>
                         <div className="space-y-1.5">
-                          {recipe.ingredients.map((ing, idx) => (
+                          {ingredientsList.map((ing, idx) => (
                             <div
                               key={idx}
                               className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-stone-50/80"
                             >
                               <span className="text-stone-700">{ing.name} <span className="text-stone-400">({ing.amount})</span></span>
-                              <span className="font-semibold text-[#00615f]">~{formatVND(ing.estimatedPrice)}</span>
+                              <span className="font-semibold text-[#00615f]">~{formatVND(Number(ing.estimatedPrice) || 0)}</span>
                             </div>
                           ))}
                           <div className="flex items-center justify-between text-xs py-2 px-2.5 rounded-lg bg-[#00615f]/5 font-bold">
@@ -498,7 +252,7 @@ export default function MealPlannerPage() {
                       <div>
                         <h4 className="text-xs font-bold text-stone-700 mb-2">Cách làm</h4>
                         <ol className="space-y-2">
-                          {recipe.steps.map((step, idx) => (
+                          {stepsList.map((step, idx) => (
                             <li key={idx} className="flex gap-2.5 text-xs text-stone-600">
                               <span className="shrink-0 size-5 rounded-full bg-[#00615f] text-white text-[10px] font-bold flex items-center justify-center">
                                 {idx + 1}

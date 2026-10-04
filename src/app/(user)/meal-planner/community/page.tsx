@@ -13,22 +13,17 @@ import {
   ShoppingCart,
   Leaf,
   Eye,
+  Loader2,
+  X,
+  Plus,
 } from "lucide-react";
-
-/* ─── types ─── */
-interface CommunityPost {
-  id: string;
-  author: { name: string; avatar: string; badge?: string; role?: string };
-  title: string;
-  content: string;
-  category: string;
-  likes: number;
-  comments: number;
-  views: number;
-  timeAgo: string;
-  tags: string[];
-  mealPlan?: { days: number; avgCost: number };
-}
+import {
+  useGetCommunityPostsQuery,
+  useCreateCommunityPostMutation,
+  useToggleLikePostMutation,
+  CommunityPostDTO,
+} from "@/redux/api/mealPlannerApi";
+import { toast } from "sonner";
 
 const CATEGORIES_FILTER = [
   { key: "all", label: "Tất cả", icon: TrendingUp },
@@ -36,83 +31,6 @@ const CATEGORIES_FILTER = [
   { key: "tips", label: "Mẹo đi chợ", icon: ShoppingCart },
   { key: "seasonal", label: "Trái cây theo mùa", icon: Leaf },
   { key: "budget", label: "Tiết kiệm", icon: Award },
-];
-
-const POSTS: CommunityPost[] = [
-  {
-    id: "1",
-    author: { name: "Minh Tuấn", avatar: "👨‍🍳", badge: "Top Contributor", role: "Đam mê nấu ăn · 4 năm tự nấu" },
-    title: "Kế hoạch ăn 1 tuần chỉ 350K đủ chất cho 1 người",
-    content: "Mình chia sẻ thực đơn 7 ngày đầy đủ dinh dưỡng, chi phí bình quân 50K/ngày. Bí quyết là mua nguyên liệu theo mùa, chia nhỏ khẩu phần và nấu trước cho 2-3 ngày...",
-    category: "meal-plan",
-    likes: 234,
-    comments: 45,
-    views: 1289,
-    timeAgo: "2 giờ trước",
-    tags: ["50K/ngày", "meal-prep", "tiết kiệm"],
-    mealPlan: { days: 7, avgCost: 50000 },
-  },
-  {
-    id: "2",
-    author: { name: "Cô Thanh Mai", avatar: "👵", badge: "Nội Trợ Thông Thái", role: "20 năm kinh nghiệm nội trợ" },
-    title: "5 loại trái cây mùa thu vừa ngon vừa rẻ ở chợ",
-    content: "Vào mùa thu, bưởi da xanh, cam sành, hồng giòn và ổi đang rộ với giá cực kỳ tốt. Mẹo của cô là đi chợ vào tầm 6h - 7h sáng, vừa tươi ngon mà giá mềm hơn siêu thị đáng kể...",
-    category: "seasonal",
-    likes: 167,
-    comments: 28,
-    views: 876,
-    timeAgo: "5 giờ trước",
-    tags: ["trái cây", "theo mùa", "mẹo nội trợ"],
-  },
-  {
-    id: "3",
-    author: { name: "Anh Đức Anh", avatar: "👨‍💻", badge: "Dân Văn Phòng", role: "Nhân viên IT · Meal-prep cuối tuần" },
-    title: "Cách chọn thịt, cá tươi ngon khi đi siêu thị & chợ truyền thống",
-    content: "Nhiều người bận rộn ít đi chợ thường lúng túng khi chọn thực phẩm. Chia sẻ vài mẹo đơn giản: thịt heo tươi có màu hồng nhạt, thớ thịt săn chắc, ấn tay đàn hồi ngay, bề mặt khô ráo không nhờn rít...",
-    category: "tips",
-    likes: 198,
-    comments: 32,
-    views: 1034,
-    timeAgo: "1 ngày trước",
-    tags: ["chọn thực phẩm", "đi chợ", "kinh nghiệm"],
-  },
-  {
-    id: "4",
-    author: { name: "Thu Hương", avatar: "👩‍🍳", badge: "Eat-clean Master", role: "HLV Dinh dưỡng cá nhân" },
-    title: "Thực đơn eat-clean 30 ngày lành mạnh, dưới 60K/người/ngày",
-    content: "Ăn healthy không hề đắt đỏ nếu biết phối hợp nguyên liệu địa phương. Mình tận dụng ức gà, trứng, đậu hũ và rau củ theo mùa. Vừa giữ dáng, tốt cho sức khỏe mà không lo 'viêm màng túi'...",
-    category: "meal-plan",
-    likes: 312,
-    comments: 67,
-    views: 2341,
-    timeAgo: "2 ngày trước",
-    tags: ["eat-clean", "healthy", "dinh dưỡng"],
-    mealPlan: { days: 30, avgCost: 55000 },
-  },
-  {
-    id: "5",
-    author: { name: "Bác Quốc Bảo", avatar: "👨‍🌾", role: "Tiểu thương chợ đầu mối" },
-    title: "Những điều cần biết khi đi chợ đầu mối mua đồ ăn cho cả tuần",
-    content: "Đi chợ đầu mối hoặc gom mua theo nhóm gia đình, bạn bè giúp tiết kiệm 30-40%. Nên chuẩn bị hộp bảo quản sạch, phân chia thịt cá cấp đông theo từng bữa để không bị mất chất...",
-    category: "tips",
-    likes: 145,
-    comments: 52,
-    views: 789,
-    timeAgo: "3 ngày trước",
-    tags: ["chợ đầu mối", "bảo quản", "tiết kiệm"],
-  },
-  {
-    id: "6",
-    author: { name: "Chị Lan Phương", avatar: "👩‍👧‍👦", badge: "Mẹ Thông Thái", role: "Mẹ bỉm 2 con · Quản lý chi tiêu gia đình" },
-    title: "Bảng mùa vụ nông sản 2026 – Mua rau củ quả tháng nào rẻ và an toàn nhất",
-    content: "Rau củ đúng mùa vụ thường ít tồn dư thuốc bảo vệ thực vật và giá mềm nhất. Từ tháng 10 trở đi là mùa bắp cải, su hào, súp lơ giá chỉ bằng 1/2 so với trái vụ...",
-    category: "seasonal",
-    likes: 267,
-    comments: 41,
-    views: 1567,
-    timeAgo: "4 ngày trước",
-    tags: ["nông sản", "mùa vụ", "gia đình"],
-  },
 ];
 
 const TIPS = [
@@ -123,15 +41,83 @@ const TIPS = [
 ];
 
 function formatVND(n: number) {
-  return n.toLocaleString("vi-VN") + "đ";
+  return (n || 0).toLocaleString("vi-VN") + "đ";
+}
+
+function timeAgo(dateStr: string) {
+  try {
+    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (diff < 60) return "vừa xong";
+    if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
+    return `${Math.floor(diff / 86400)} ngày trước`;
+  } catch {
+    return "gần đây";
+  }
 }
 
 export default function CommunityPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"hot" | "new">("hot");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const filtered = activeFilter === "all" ? POSTS : POSTS.filter((p) => p.category === activeFilter);
-  const sorted = [...filtered].sort((a, b) => (sortBy === "hot" ? b.likes - a.likes : 0));
+  // Form states
+  const [newTitle, setNewTitle] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [newCategory, setNewCategory] = useState("tips");
+  const [newTags, setNewTags] = useState("");
+  const [newAuthorName, setNewAuthorName] = useState("");
+
+  // API Hooks
+  const { data: postsRes, isLoading, isFetching } = useGetCommunityPostsQuery({
+    category: activeFilter,
+    sortBy,
+  });
+  const [createPost, { isLoading: isCreating }] = useCreateCommunityPostMutation();
+  const [toggleLike] = useToggleLikePostMutation();
+
+  const posts: CommunityPostDTO[] = postsRes?.data || [];
+
+  const handleLike = async (postId: string) => {
+    try {
+      const res = await toggleLike(postId).unwrap();
+      toast.success(res.data.liked ? "Đã thích bài viết!" : "Đã bỏ thích");
+    } catch {
+      toast.error("Không thể thao tác. Vui lòng thử lại");
+    }
+  };
+
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newContent.trim()) {
+      toast.error("Vui lòng nhập tiêu đề và nội dung bài viết");
+      return;
+    }
+
+    try {
+      const tagsArray = newTags
+        .split(",")
+        .map((t) => t.trim().replace(/^#/, ""))
+        .filter(Boolean);
+
+      await createPost({
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        category: newCategory,
+        authorName: newAuthorName.trim() || undefined,
+        tags: tagsArray,
+      }).unwrap();
+
+      toast.success("Chia sẻ bài viết thành công!");
+      setIsCreateModalOpen(false);
+      setNewTitle("");
+      setNewContent("");
+      setNewTags("");
+      setNewAuthorName("");
+    } catch {
+      toast.error("Không thể đăng bài viết");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -145,7 +131,10 @@ export default function CommunityPage() {
             Không gian kết nối kinh nghiệm nấu ăn, mẹo đi chợ và bí quyết chi tiêu từ mọi người
           </p>
         </div>
-        <button className="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-md">
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-md"
+        >
           <Lightbulb className="size-3.5" /> Chia sẻ kinh nghiệm
         </button>
       </div>
@@ -176,13 +165,17 @@ export default function CommunityPage() {
             <div className="flex gap-1 bg-white/80 border border-stone-200 rounded-full p-0.5">
               <button
                 onClick={() => setSortBy("hot")}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${sortBy === "hot" ? "bg-[#00615f] text-white" : "text-stone-500"}`}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${
+                  sortBy === "hot" ? "bg-[#00615f] text-white shadow-sm" : "text-stone-500"
+                }`}
               >
                 🔥 Nổi bật
               </button>
               <button
                 onClick={() => setSortBy("new")}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${sortBy === "new" ? "bg-[#00615f] text-white" : "text-stone-500"}`}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${
+                  sortBy === "new" ? "bg-[#00615f] text-white shadow-sm" : "text-stone-500"
+                }`}
               >
                 🕐 Mới nhất
               </button>
@@ -190,72 +183,103 @@ export default function CommunityPage() {
           </div>
 
           {/* Posts */}
-          {sorted.map((post) => (
-            <article key={post.id} className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden">
-              <div className="p-5">
-                {/* Author */}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="text-2xl">{post.author.avatar}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-stone-800">{post.author.name}</span>
-                      {post.author.badge && (
-                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[9px] font-bold">
-                          ⭐ {post.author.badge}
-                        </span>
-                      )}
+          {isLoading || isFetching ? (
+            <div className="rounded-2xl bg-white/80 border border-stone-200 p-12 text-center">
+              <Loader2 className="size-8 mx-auto animate-spin text-[#00615f] mb-3" />
+              <p className="text-xs text-stone-500">Đang tải bài viết cộng đồng...</p>
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="rounded-2xl bg-white/80 border border-stone-200 p-12 text-center space-y-2">
+              <p className="text-sm font-semibold text-stone-700">Chưa có bài viết nào trong chủ đề này</p>
+              <p className="text-xs text-stone-400">Hãy là người đầu tiên chia sẻ bí quyết của bạn!</p>
+            </div>
+          ) : (
+            posts.map((post) => {
+              const tagsList = Array.isArray(post.tags) ? post.tags : [];
+              return (
+                <article
+                  key={post.id}
+                  className="rounded-2xl bg-white/80 backdrop-blur border border-stone-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden"
+                >
+                  <div className="p-5">
+                    {/* Author */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="text-2xl">{post.authorAvatar || "👤"}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-stone-800">{post.authorName}</span>
+                          {post.authorBadge && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[9px] font-bold">
+                              ⭐ {post.authorBadge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-stone-400">{post.authorRole || "Thành viên"} · {timeAgo(post.createdAt)}</p>
+                      </div>
+                      <button className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-[#00615f] transition">
+                        <Bookmark className="size-4" />
+                      </button>
                     </div>
-                    <p className="text-[10px] text-stone-400">{post.author.role} · {post.timeAgo}</p>
+
+                    {/* Content */}
+                    <h3 className="text-sm font-bold text-stone-900 leading-snug mb-1.5">{post.title}</h3>
+                    <p className="text-xs text-stone-600 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+
+                    {/* Meal plan badge */}
+                    {post.mealPlan && (
+                      <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50/80 border border-emerald-200/50">
+                        <Apple className="size-4 text-[#00615f]" />
+                        <div>
+                          <p className="text-[10px] font-bold text-[#00615f]">Kế hoạch {post.mealPlan.days} ngày</p>
+                          <p className="text-[10px] text-stone-500">~{formatVND(post.mealPlan.avgCost)}/ngày</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tags */}
+                    {tagsList.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {tagsList.map((tag, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 text-[10px] font-semibold">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <button className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-[#00615f] transition">
-                    <Bookmark className="size-4" />
-                  </button>
-                </div>
 
-                {/* Content */}
-                <h3 className="text-sm font-bold text-stone-900 leading-snug mb-1.5">{post.title}</h3>
-                <p className="text-xs text-stone-600 leading-relaxed line-clamp-2">{post.content}</p>
-
-                {/* Meal plan badge */}
-                {post.mealPlan && (
-                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50/80 border border-emerald-200/50">
-                    <Apple className="size-4 text-[#00615f]" />
-                    <div>
-                      <p className="text-[10px] font-bold text-[#00615f]">Kế hoạch {post.mealPlan.days} ngày</p>
-                      <p className="text-[10px] text-stone-500">~{formatVND(post.mealPlan.avgCost)}/ngày</p>
+                  {/* Actions */}
+                  <div className="px-5 py-3 border-t border-stone-100 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handleLike(post.id)}
+                        className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-rose-500 transition group"
+                      >
+                        <Heart className="size-3.5 group-hover:scale-110 transition-transform text-rose-500 fill-rose-50" />
+                        <span className="font-semibold text-stone-700">{post.likes}</span>
+                      </button>
+                      <button className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-sky-500 transition">
+                        <MessageCircle className="size-3.5" />
+                        <span className="font-semibold text-stone-700">{post.comments}</span>
+                      </button>
+                      <span className="inline-flex items-center gap-1 text-[10px] text-stone-400">
+                        <Eye className="size-3" /> {post.views}
+                      </span>
                     </div>
+                    <button
+                      onClick={() => {
+                        toast.success("Đã sao chép liên kết bài viết!");
+                        navigator.clipboard.writeText(window.location.href);
+                      }}
+                      className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#00615f] transition"
+                    >
+                      <Share2 className="size-3.5" /> Chia sẻ
+                    </button>
                   </div>
-                )}
-
-                {/* Tags */}
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {post.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 text-[10px] font-semibold">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="px-5 py-3 border-t border-stone-100 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-rose-500 transition">
-                    <Heart className="size-3.5" /> {post.likes}
-                  </button>
-                  <button className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-sky-500 transition">
-                    <MessageCircle className="size-3.5" /> {post.comments}
-                  </button>
-                  <span className="inline-flex items-center gap-1 text-[10px] text-stone-400">
-                    <Eye className="size-3" /> {post.views}
-                  </span>
-                </div>
-                <button className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#00615f] transition">
-                  <Share2 className="size-3.5" /> Chia sẻ
-                </button>
-              </div>
-            </article>
-          ))}
+                </article>
+              );
+            })
+          )}
         </div>
 
         {/* ═══ SIDEBAR ═══ */}
@@ -318,6 +342,106 @@ export default function CommunityPage() {
           </div>
         </aside>
       </div>
+
+      {/* ═══ CREATE POST MODAL ═══ */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-stone-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="size-5 text-[#00615f]" />
+                <h3 className="font-bold text-base text-stone-900">Chia sẻ kinh nghiệm với cộng đồng</h3>
+              </div>
+              <button
+                onClick={() => setIsCreateModalOpen(false)}
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-600 transition"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePost} className="space-y-3.5">
+              <div>
+                <label className="text-xs font-bold text-stone-600">Họ tên / Biệt danh của bạn</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Anh Quân, Mẹ Bắp..."
+                  value={newAuthorName}
+                  onChange={(e) => setNewAuthorName(e.target.value)}
+                  className="w-full mt-1 px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-stone-600">Chủ đề bài viết</label>
+                <select
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full mt-1 px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f]"
+                >
+                  <option value="tips">Mẹo đi chợ & nấu nướng</option>
+                  <option value="meal-plan">Kế hoạch ăn uống & Thực đơn</option>
+                  <option value="seasonal">Trái cây & Nông sản theo mùa</option>
+                  <option value="budget">Tiết kiệm ngân sách</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-stone-600">Tiêu đề bài viết</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Kinh nghiệm đi chợ đầu mối gom mua cho cả tuần..."
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="w-full mt-1 px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-stone-600">Nội dung chia sẻ</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Chia sẻ chi tiết các bước, mẹo vặt hoặc kinh nghiệm thực tế của bạn..."
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  className="w-full mt-1 px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f] resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-stone-600">Tags (cách nhau dấu phẩy)</label>
+                <input
+                  type="text"
+                  placeholder="di-cho, tiet-kiem, gia-dinh..."
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  className="w-full mt-1 px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#00615f]/20 focus:border-[#00615f]"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="px-5 py-2 rounded-xl bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-md flex items-center gap-1.5"
+                >
+                  {isCreating && <Loader2 className="size-3.5 animate-spin" />}
+                  Đăng bài viết
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
