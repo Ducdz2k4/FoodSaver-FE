@@ -12,6 +12,8 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   ShoppingCart,
   ArrowLeft,
   LocateFixed,
@@ -120,6 +122,8 @@ export default function FoodMapPage() {
   const [radiusKm, setRadiusKm] = useState<number>(3);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 6;
 
   // Shortest route directions state
   const [activeRoute, setActiveRoute] = useState<RouteDirectionsResult | null>(null);
@@ -267,6 +271,18 @@ export default function FoodMapPage() {
       return true;
     });
   }, [allListings, categoryFilter, radiusKm, urgentOnly]);
+
+  // Reset pagination to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [radiusKm, categoryFilter, urgentOnly]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredListings.length / ITEMS_PER_PAGE));
+
+  const paginatedListings = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredListings.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredListings, currentPage]);
 
   // Find listing that needs rescuing most urgently in current radar scope (earliest expiryAt)
   const mostUrgentListing = useMemo(() => {
@@ -797,226 +813,409 @@ export default function FoodMapPage() {
           </div>
         )}
 
-        {/* Map Grid Canvas + Sidebar */}
+        {/* Map Grid Canvas + Sticky Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Main Mapbox Container (8 cols) */}
-          <div className="lg:col-span-8 bg-white rounded-3xl border border-stone-200/90 shadow-md overflow-hidden relative">
-            {/* Top Toolbar overlay */}
-            <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-200/80 shadow-md flex items-center gap-3 text-xs font-bold text-stone-700">
-              <span className="flex items-center gap-1">
-                <MapPin className="size-3.5 text-[#00615f]" />
-                <span>Bán kính tìm:</span>
-              </span>
-              <div className="flex items-center gap-1">
-                {[1, 3, 5, 10, 20].map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRadiusKm(r)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition ${
-                      radiusKm === r
-                        ? "bg-[#00615f] text-white shadow-sm"
-                        : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                    }`}
-                  >
-                    {r}km
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Mapbox Map Render Element */}
-            <div
-              ref={mapContainerRef}
-              className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px]"
-            />
-
-            {/* Floating Route HUD on Map Canvas */}
-            {activeRoute && selectedListing && (
-              <div className="absolute top-16 left-4 z-20 bg-white/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl border border-emerald-200/90 shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                <div className="size-8 rounded-xl bg-emerald-100 flex items-center justify-center text-[#00615f] shrink-0">
-                  <Navigation className="size-4 fill-current" />
+          {/* Main Left Column: Mapbox Container + All Spots Under Map (8 cols) */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Mapbox Container */}
+            <div className="bg-white rounded-3xl border border-stone-200/90 shadow-md overflow-hidden relative">
+              {/* Top Toolbar overlay */}
+              <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-200/80 shadow-md flex items-center gap-3 text-xs font-bold text-stone-700">
+                <span className="flex items-center gap-1">
+                  <MapPin className="size-3.5 text-[#00615f]" />
+                  <span>Bán kính tìm:</span>
+                </span>
+                <div className="flex items-center gap-1">
+                  {[1, 3, 5, 10, 20].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRadiusKm(r)}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition ${
+                        radiusKm === r
+                          ? "bg-[#00615f] text-white shadow-sm"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                      }`}
+                    >
+                      {r}km
+                    </button>
+                  ))}
                 </div>
-                <div className="text-left leading-tight pr-1">
-                  <div className="text-[11px] font-bold text-stone-500 truncate max-w-[180px]">
-                    Đường ngắn nhất tới {selectedListing.partnerName}
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-sm font-black text-stone-900">
-                      {(activeRoute.distanceMeters / 1000).toFixed(1)} km
-                    </span>
-                    <span className="text-xs font-bold text-[#00615f] bg-emerald-50 px-1.5 py-0.5 rounded-md">
-                      ~{Math.max(1, Math.round(activeRoute.durationSeconds / 60))} phút
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleClearRoute}
-                  title="Xóa đường đi"
-                  className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
-                >
-                  <X className="size-4" />
-                </button>
               </div>
-            )}
 
-            {/* Nút quay về vị trí của mình (Recenter to My Location) */}
-            <button
-              type="button"
-              onClick={handleFlyToMyLocation}
-              title="Quay về vị trí của bạn"
-              aria-label="Quay về vị trí của tôi"
-              className="absolute bottom-4 right-4 z-10 bg-white/95 hover:bg-white text-stone-700 hover:text-[#00615f] px-3.5 py-2.5 rounded-2xl shadow-xl border border-stone-200/90 transition-all duration-200 flex items-center gap-2 group backdrop-blur-md active:scale-95 cursor-pointer ring-1 ring-black/5"
-            >
-              <div className="relative flex items-center justify-center">
-                <LocateFixed className="size-4 sm:size-4.5 text-[#00615f] group-hover:scale-110 transition-transform duration-200" />
-              </div>
-              <span className="text-xs font-bold hidden sm:inline-block">
-                Về vị trí của tôi
-              </span>
-            </button>
+              {/* Mapbox Map Render Element */}
+              <div
+                ref={mapContainerRef}
+                className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px]"
+              />
 
-            {/* Floating Shopping Radar Checklist Drawer */}
-            {groceryCart && (
-              <>
-                {!isGroceryRadarOpen ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsGroceryRadarOpen(true)}
-                    className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-200/90 shadow-xl flex items-center gap-2 text-xs font-bold text-[#00615f] hover:bg-stone-50 transition cursor-pointer"
-                  >
-                    <ShoppingCart className="size-4" />
-                    <span>Radar Đi Chợ: {groceryCart.neededItems.filter((i) => i.checked).length}/{groceryCart.neededItems.length} món</span>
-                    <ChevronUp className="size-3.5 text-stone-400" />
-                  </button>
-                ) : (
-                  <div className="absolute bottom-4 left-4 z-20 max-w-sm w-[calc(100%-2rem)] sm:w-84 bg-white/95 backdrop-blur-md rounded-2xl border border-stone-200/90 shadow-2xl p-3.5 space-y-3 animate-in fade-in">
-                    <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-                      <div className="flex items-center gap-2">
-                        <ShoppingCart className="size-4 text-[#00615f]" />
-                        <div>
-                          <h4 className="text-xs font-bold text-stone-900">
-                            Checklist Đi Chợ ({groceryCart.neededItems.filter((i) => i.checked).length}/{groceryCart.neededItems.length})
-                          </h4>
-                          <p className="text-[10px] text-stone-500">
-                            {groceryCart.daysCount} ngày · {groceryCart.nearestStore?.name || "GreenMart (0.6 km)"}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsGroceryRadarOpen(false)}
-                        className="p-1 rounded-lg text-stone-400 hover:text-stone-700 transition"
-                      >
-                        <ChevronDown className="size-4" />
-                      </button>
+              {/* Floating Route HUD on Map Canvas */}
+              {activeRoute && selectedListing && (
+                <div className="absolute top-16 left-4 z-20 bg-white/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl border border-emerald-200/90 shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="size-8 rounded-xl bg-emerald-100 flex items-center justify-center text-[#00615f] shrink-0">
+                    <Navigation className="size-4 fill-current" />
+                  </div>
+                  <div className="text-left leading-tight pr-1">
+                    <div className="text-[11px] font-bold text-stone-500 truncate max-w-[180px]">
+                      Đường ngắn nhất tới {selectedListing.partnerName}
                     </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-black text-stone-900">
+                        {(activeRoute.distanceMeters / 1000).toFixed(1)} km
+                      </span>
+                      <span className="text-xs font-bold text-[#00615f] bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                        ~{Math.max(1, Math.round(activeRoute.durationSeconds / 60))} phút
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleClearRoute}
+                    title="Xóa đường đi"
+                    className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              )}
 
-                    {/* Progress Bar */}
-                    <div className="space-y-1">
-                      <div className="w-full h-1.5 rounded-full bg-stone-100 overflow-hidden">
-                        <div
-                          className="h-full bg-[#00615f] transition-all duration-300"
-                          style={{
-                            width: `${Math.round(
+              {/* Nút quay về vị trí của mình (Recenter to My Location) */}
+              <button
+                type="button"
+                onClick={handleFlyToMyLocation}
+                title="Quay về vị trí của bạn"
+                aria-label="Quay về vị trí của tôi"
+                className="absolute bottom-4 right-4 z-10 bg-white/95 hover:bg-white text-stone-700 hover:text-[#00615f] px-3.5 py-2.5 rounded-2xl shadow-xl border border-stone-200/90 transition-all duration-200 flex items-center gap-2 group backdrop-blur-md active:scale-95 cursor-pointer ring-1 ring-black/5"
+              >
+                <div className="relative flex items-center justify-center">
+                  <LocateFixed className="size-4 sm:size-4.5 text-[#00615f] group-hover:scale-110 transition-transform duration-200" />
+                </div>
+                <span className="text-xs font-bold hidden sm:inline-block">
+                  Về vị trí của tôi
+                </span>
+              </button>
+
+              {/* Floating Shopping Radar Checklist Drawer */}
+              {groceryCart && (
+                <>
+                  {!isGroceryRadarOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsGroceryRadarOpen(true)}
+                      className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-stone-200/90 shadow-xl flex items-center gap-2 text-xs font-bold text-[#00615f] hover:bg-stone-50 transition cursor-pointer"
+                    >
+                      <ShoppingCart className="size-4" />
+                      <span>Radar Đi Chợ: {groceryCart.neededItems.filter((i) => i.checked).length}/{groceryCart.neededItems.length} món</span>
+                      <ChevronUp className="size-3.5 text-stone-400" />
+                    </button>
+                  ) : (
+                    <div className="absolute bottom-4 left-4 z-20 max-w-sm w-[calc(100%-2rem)] sm:w-84 bg-white/95 backdrop-blur-md rounded-2xl border border-stone-200/90 shadow-2xl p-3.5 space-y-3 animate-in fade-in">
+                      <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="size-4 text-[#00615f]" />
+                          <div>
+                            <h4 className="text-xs font-bold text-stone-900">
+                              Checklist Đi Chợ ({groceryCart.neededItems.filter((i) => i.checked).length}/{groceryCart.neededItems.length})
+                            </h4>
+                            <p className="text-[10px] text-stone-500">
+                              {groceryCart.daysCount} ngày · {groceryCart.nearestStore?.name || "GreenMart (0.6 km)"}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsGroceryRadarOpen(false)}
+                          className="p-1 rounded-lg text-stone-400 hover:text-stone-700 transition"
+                        >
+                          <ChevronDown className="size-4" />
+                        </button>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="space-y-1">
+                        <div className="w-full h-1.5 rounded-full bg-stone-100 overflow-hidden">
+                          <div
+                            className="h-full bg-[#00615f] transition-all duration-300"
+                            style={{
+                              width: `${Math.round(
+                                (groceryCart.neededItems.filter((i) => i.checked).length /
+                                  Math.max(1, groceryCart.neededItems.length)) *
+                                  100
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-stone-500">
+                          <span>Tiến độ mua sắm</span>
+                          <span className="font-bold text-[#00615f]">
+                            {Math.round(
                               (groceryCart.neededItems.filter((i) => i.checked).length /
                                 Math.max(1, groceryCart.neededItems.length)) *
                                 100
-                            )}%`,
-                          }}
-                        />
+                            )}%
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-stone-500">
-                        <span>Tiến độ mua sắm</span>
-                        <span className="font-bold text-[#00615f]">
-                          {Math.round(
-                            (groceryCart.neededItems.filter((i) => i.checked).length /
-                              Math.max(1, groceryCart.neededItems.length)) *
-                              100
-                          )}%
-                        </span>
+
+                      {/* Checklist items */}
+                      <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                        {groceryCart.neededItems.map((item, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => handleToggleGroceryItem(idx)}
+                            className={`p-2 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between gap-2 ${
+                              item.checked
+                                ? "bg-stone-50 border-stone-200 text-stone-400"
+                                : "bg-white border-stone-200 text-stone-800 hover:border-[#00615f]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div
+                                className={`size-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                                  item.checked
+                                    ? "bg-emerald-600 border-emerald-600 text-white"
+                                    : "border-stone-300 bg-white"
+                                }`}
+                              >
+                                {item.checked && <Check className="size-3 stroke-[3]" />}
+                              </div>
+                              <span
+                                className={`truncate text-xs font-medium ${
+                                  item.checked ? "line-through text-stone-400" : "text-stone-900"
+                                }`}
+                              >
+                                {item.name}
+                              </span>
+                            </div>
+                            {item.estimatedPrice && (
+                              <span
+                                className={`text-[10px] shrink-0 font-medium ${
+                                  item.checked ? "line-through text-stone-400" : "text-stone-500"
+                                }`}
+                              >
+                                ~{item.estimatedPrice.toLocaleString("vi-VN")}đ
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Completed All celebration */}
+                      {groceryCart.neededItems.length > 0 &&
+                        groceryCart.neededItems.every((i) => i.checked) && (
+                          <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold text-center">
+                            🎉 Tuyệt vời! Bạn đã mua đủ nguyên liệu cho {groceryCart.daysCount} ngày!
+                          </div>
+                        )}
+
+                      {/* Drawer Action buttons */}
+                      <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={handleFlyToNearestStore}
+                          className="py-1.5 px-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-[11px] font-semibold transition flex items-center gap-1"
+                        >
+                          <MapPin className="size-3 text-[#00615f]" />
+                          <span>Ghim điểm mua</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleClearGroceryCart}
+                          className="text-[11px] text-stone-400 hover:text-rose-600 transition"
+                        >
+                          Xong chuyến đi
+                        </button>
                       </div>
                     </div>
+                  )}
+                </>
+              )}
+            </div>
 
-                    {/* Checklist items */}
-                    <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                      {groceryCart.neededItems.map((item, idx) => (
+            {/* Tất cả điểm cứu trợ gần bạn (Phần hiển thị dưới bản đồ có phân trang) */}
+            <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-stone-900 flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Tất cả điểm cứu trợ gần bạn ({filteredListings.length})</span>
+                  </h3>
+                  <p className="text-xs text-stone-500 font-medium mt-0.5">
+                    Trong bán kính {radiusKm}km từ {deliveryLoc.isSavedHome ? "địa chỉ nhà" : "vị trí của bạn"} • Nhấp để xem vị trí trên bản đồ
+                  </p>
+                </div>
+                {filteredListings.length > 0 && (
+                  <span className="text-xs font-bold text-stone-600 bg-stone-100 px-3 py-1 rounded-xl self-start sm:self-auto">
+                    Trang {currentPage} / {totalPages}
+                  </span>
+                )}
+              </div>
+
+              {filteredListings.length === 0 ? (
+                <div className="p-8 text-center space-y-3">
+                  <div className="size-12 rounded-2xl bg-stone-100 text-stone-400 flex items-center justify-center mx-auto">
+                    <MapPin className="size-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-stone-800">Không tìm thấy điểm cứu trợ nào</h4>
+                    <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+                      Hiện chưa có món ăn cận date nào trong bán kính {radiusKm}km. Bạn hãy thử mở rộng bán kính lên 10km hoặc 20km.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setRadiusKm(10)}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#00615f] text-white text-xs font-bold hover:bg-[#089184] transition cursor-pointer"
+                    >
+                      Bán kính 10km
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRadiusKm(20)}
+                      className="px-3.5 py-1.5 rounded-xl bg-stone-100 text-stone-700 text-xs font-bold hover:bg-stone-200 transition cursor-pointer"
+                    >
+                      Bán kính 20km
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {paginatedListings.map((item) => {
+                      const isSelected = selectedListing?.id === item.id;
+                      const discountPercent =
+                        item.originalPrice > 0
+                          ? Math.round((1 - item.discountPrice / item.originalPrice) * 100)
+                          : 0;
+                      const thumb = getOptimizedThumbnail(item.imageUrls?.[0]);
+
+                      return (
                         <div
-                          key={idx}
-                          onClick={() => handleToggleGroceryItem(idx)}
-                          className={`p-2 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between gap-2 ${
-                            item.checked
-                              ? "bg-stone-50 border-stone-200 text-stone-400"
-                              : "bg-white border-stone-200 text-stone-800 hover:border-[#00615f]"
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedListing(item);
+                            mapRef.current?.flyTo({
+                              center: [item.lng, item.lat],
+                              zoom: 15.5,
+                              speed: 1.2,
+                            });
+                          }}
+                          className={`p-3 rounded-2xl cursor-pointer transition-all duration-200 flex items-start gap-3 border text-left group ${
+                            isSelected
+                              ? "bg-emerald-50/90 border-[#00615f] ring-2 ring-[#00615f]/25 shadow-sm"
+                              : "bg-white hover:bg-stone-50/80 border-stone-200/90 hover:border-stone-300"
                           }`}
                         >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div
-                              className={`size-4 rounded-md border flex items-center justify-center shrink-0 transition ${
-                                item.checked
-                                  ? "bg-emerald-600 border-emerald-600 text-white"
-                                  : "border-stone-300 bg-white"
-                              }`}
-                            >
-                              {item.checked && <Check className="size-3 stroke-[3]" />}
-                            </div>
-                            <span
-                              className={`truncate text-xs font-medium ${
-                                item.checked ? "line-through text-stone-400" : "text-stone-900"
-                              }`}
-                            >
-                              {item.name}
-                            </span>
+                          {/* Food Image Thumbnail */}
+                          <div className="relative size-20 rounded-2xl overflow-hidden shrink-0 bg-stone-100 border border-stone-100 shadow-xs">
+                            <img
+                              src={thumb}
+                              alt={item.title}
+                              loading="lazy"
+                              width={80}
+                              height={80}
+                              className="size-full object-cover transition-transform duration-200 group-hover:scale-105"
+                            />
+                            {discountPercent > 0 && (
+                              <span className="absolute top-0 right-0 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-bl-lg leading-tight shadow-xs">
+                                -{discountPercent}%
+                              </span>
+                            )}
                           </div>
-                          {item.estimatedPrice && (
-                            <span
-                              className={`text-[10px] shrink-0 font-medium ${
-                                item.checked ? "line-through text-stone-400" : "text-stone-500"
+
+                          {/* Food & Store Info */}
+                          <div className="min-w-0 flex-1 flex flex-col justify-between self-stretch">
+                            <div>
+                              <div className="flex items-center justify-between text-[11px] text-stone-500 mb-0.5">
+                                <span className="font-bold text-[#00615f] truncate max-w-[130px]">
+                                  {item.partnerName}
+                                </span>
+                                <span className="shrink-0 font-medium">
+                                  {item.distanceKm != null ? `${item.distanceKm} km` : ""}
+                                </span>
+                              </div>
+                              <h4 className="text-xs sm:text-sm font-bold text-stone-900 line-clamp-2 leading-snug group-hover:text-[#00615f] transition-colors">
+                                {item.title}
+                              </h4>
+                            </div>
+
+                            <div className="flex items-baseline justify-between pt-2 border-t border-stone-100/80 mt-1">
+                              <div>
+                                <span className="text-xs sm:text-sm font-black text-[#00615f]">
+                                  {item.discountPrice.toLocaleString("vi-VN")}đ
+                                </span>
+                                {item.originalPrice > item.discountPrice && (
+                                  <span className="text-[10px] text-stone-400 line-through ml-1">
+                                    {item.originalPrice.toLocaleString("vi-VN")}đ
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-stone-500 font-medium">
+                                Còn {item.quantity} {item.unit}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="pt-3 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                      <p className="text-xs text-stone-500">
+                        Hiển thị <span className="font-bold text-stone-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>–<span className="font-bold text-stone-800">{Math.min(currentPage * ITEMS_PER_PAGE, filteredListings.length)}</span> trong số <span className="font-bold text-stone-800">{filteredListings.length}</span> điểm cứu trợ
+                      </p>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-2.5 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-600 hover:bg-stone-100 transition disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 cursor-pointer"
+                        >
+                          <ChevronLeft className="size-3.5" />
+                          <span>Trước</span>
+                        </button>
+
+                        <div className="flex items-center gap-1 px-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setCurrentPage(pageNum)}
+                              className={`size-8 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer ${
+                                currentPage === pageNum
+                                  ? "bg-[#00615f] text-white shadow-xs"
+                                  : "text-stone-700 hover:bg-stone-100"
                               }`}
                             >
-                              ~{item.estimatedPrice.toLocaleString("vi-VN")}đ
-                            </span>
-                          )}
+                              {pageNum}
+                            </button>
+                          ))}
                         </div>
-                      ))}
+
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-2.5 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-600 hover:bg-stone-100 transition disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Sau</span>
+                          <ChevronRight className="size-3.5" />
+                        </button>
+                      </div>
                     </div>
-
-                    {/* Completed All celebration */}
-                    {groceryCart.neededItems.length > 0 &&
-                      groceryCart.neededItems.every((i) => i.checked) && (
-                        <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold text-center">
-                          🎉 Tuyệt vời! Bạn đã mua đủ nguyên liệu cho {groceryCart.daysCount} ngày!
-                        </div>
-                      )}
-
-                    {/* Drawer Action buttons */}
-                    <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={handleFlyToNearestStore}
-                        className="py-1.5 px-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-[11px] font-semibold transition flex items-center gap-1"
-                      >
-                        <MapPin className="size-3 text-[#00615f]" />
-                        <span>Ghim điểm mua</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleClearGroceryCart}
-                        className="text-[11px] text-stone-400 hover:text-rose-600 transition"
-                      >
-                        Xong chuyến đi
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          {/* Right Sidebar: Selected Food Popup & Quick Action (4 cols) */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* Right Column (4 cols): Sticky Selected Food Detail Card */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4 max-h-[calc(100vh-7rem)] overflow-y-auto pr-0.5 scrollbar-thin">
             <span className="text-xs font-bold text-stone-400 uppercase tracking-wider block">
               Địa điểm đã chọn
             </span>
@@ -1153,86 +1352,6 @@ export default function FoodMapPage() {
                 Nhấp vào một điểm ghim trên bản đồ để xem chi tiết món ăn giải cứu.
               </div>
             )}
-
-            {/* List of other spots */}
-            <div className="bg-white rounded-3xl p-4 border border-stone-200/80 shadow-sm space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-stone-700 block">
-                  Tất cả điểm cứu trợ gần bạn ({filteredListings.length}):
-                </span>
-                <span className="text-[10px] text-stone-400">
-                  Nhấp để xem trên bản đồ
-                </span>
-              </div>
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {filteredListings.map((item) => {
-                  const isSelected = selectedListing?.id === item.id;
-                  const discountPercent =
-                    item.originalPrice > 0
-                      ? Math.round((1 - item.discountPrice / item.originalPrice) * 100)
-                      : 0;
-                  const thumb = getOptimizedThumbnail(item.imageUrls?.[0]);
-
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => {
-                        setSelectedListing(item);
-                        mapRef.current?.flyTo({
-                          center: [item.lng, item.lat],
-                          zoom: 15,
-                          speed: 1.2,
-                        });
-                      }}
-                      className={`p-2 rounded-2xl cursor-pointer transition-all duration-200 flex items-center gap-3 border ${
-                        isSelected
-                          ? "bg-emerald-50/90 border-[#00615f] ring-2 ring-[#00615f]/20 shadow-sm"
-                          : "bg-white hover:bg-stone-50 border-stone-100 hover:border-stone-200"
-                      }`}
-                    >
-                      {/* Food Image Thumbnail */}
-                      <div className="relative size-12 rounded-xl overflow-hidden shrink-0 bg-stone-100 border border-stone-100 shadow-inner">
-                        <img
-                          src={thumb}
-                          alt={item.title}
-                          loading="lazy"
-                          width={48}
-                          height={48}
-                          className="size-full object-cover transition-transform duration-200 group-hover:scale-105"
-                        />
-                        {discountPercent > 0 && (
-                          <span className="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1 rounded-bl-md leading-tight">
-                            -{discountPercent}%
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Food & Store Info */}
-                      <div className="min-w-0 flex-1 text-left">
-                        <strong className="text-xs font-bold text-stone-900 block truncate leading-tight">
-                          {item.title}
-                        </strong>
-                        <p className="text-[11px] text-stone-500 truncate mt-0.5">
-                          {item.partnerName} {item.distanceKm != null ? `• ${item.distanceKm} km` : ""}
-                        </p>
-                      </div>
-
-                      {/* Price Section */}
-                      <div className="text-right shrink-0">
-                        <span className="text-xs font-black text-[#00615f] block">
-                          {item.discountPrice.toLocaleString("vi-VN")}đ
-                        </span>
-                        {item.originalPrice > item.discountPrice && (
-                          <span className="text-[10px] text-stone-400 line-through block">
-                            {item.originalPrice.toLocaleString("vi-VN")}đ
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
       </div>
