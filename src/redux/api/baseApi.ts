@@ -44,6 +44,7 @@ export const baseApi = createApi({
     "Recipe",
     "MealPlan",
     "CommunityPost",
+    "CommunityComment",
     "ChatSession",
   ],
   endpoints: () => ({}),

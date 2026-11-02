@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck, User, LogOut, Compass, ChefHat } from "lucide-react";
+import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck, User, LogOut, Compass, ChefHat, Users } from "lucide-react";
 import { UserMenuDropdown } from "@/components/common/UserMenuDropdown";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -42,6 +42,7 @@ export function TgtgHeader() {
 
   const isSearchActive = pathname === "/search" || pathname.startsWith("/search/") || pathname.startsWith("/listings/");
   const isMapActive = pathname === "/map" || pathname.startsWith("/map/");
+  const isCommunityActive = pathname === "/community" || pathname.startsWith("/community/");
   const isOrdersActive = pathname === "/orders" || pathname.startsWith("/orders/");
   const isMealPlannerActive = pathname === "/meal-planner" || pathname.startsWith("/meal-planner/");
   const isLoginActive = pathname === "/login";
@@ -61,6 +62,12 @@ export function TgtgHeader() {
       href: "/map",
       label: "Bản đồ",
       isActive: isMapActive,
+    },
+    {
+      href: "/community",
+      label: "Cộng đồng",
+      icon: Users,
+      isActive: isCommunityActive,
     },
     {
       href: "/orders",
@@ -313,6 +320,23 @@ export function TgtgHeader() {
             >
               <span>Bản đồ</span>
               {isMapActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
+            </Link>
+
+            <Link
+              href="/community"
+              onClick={() => setMobileOpen(false)}
+              aria-current={isCommunityActive ? "page" : undefined}
+              className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
+                isCommunityActive
+                  ? "bg-[#00615f] text-white font-black shadow-sm"
+                  : "hover:bg-emerald-50 text-[#00615f]"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Users className={`size-4 ${isCommunityActive ? "text-[#79e4a7]" : "text-[#00615f]"}`} />
+                <span>Cộng đồng chia sẻ</span>
+              </div>
+              {isCommunityActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
             </Link>
 
             <Link
