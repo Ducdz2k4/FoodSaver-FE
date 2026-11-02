@@ -286,7 +286,7 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(234 176 120 / 55%) transparent;
+  scrollbar-color: rgb(0 97 95 / 35%) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -304,12 +304,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(234 176 120 / 55%);
+  background: rgb(0 97 95 / 35%);
   border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(221 149 80 / 80%);
+  background: rgb(0 97 95 / 60%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: rgb(0 97 95 / 80%);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 
@@ -542,20 +552,40 @@ a[class~="bg-teal-600"] svg,
   position: fixed !important;
   inset: 0 !important;
   z-index: 9999 !important;
-  background-color: #ffffff !important;
-  padding: 1.5rem !important;
+  background-color: rgba(28, 25, 23, 0.28) !important;
+  backdrop-filter: blur(6px) !important;
+  padding: 1rem !important;
   display: flex !important;
-  flex-direction: column !important;
-  overflow: auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
 }
 
 [data-streamdown="table-fullscreen"] [data-streamdown="table-wrapper"] {
-  height: 100% !important;
+  background-color: #ffffff !important;
+  width: min(100%, 960px) !important;
+  height: auto !important;
+  max-height: min(80vh, 760px) !important;
+  max-height: min(80dvh, 760px) !important;
   margin: 0 !important;
   border: 1px solid #e7e5e4 !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 1rem !important;
+  overflow: hidden !important;
+  box-shadow: 0 24px 64px rgba(28, 25, 23, 0.25) !important;
 }
 
+[data-streamdown="table-fullscreen"] [data-streamdown="table-wrapper"] > div:last-child {
+  min-height: 0;
+  overflow: auto !important;
+}
+
+[data-streamdown="table-fullscreen"] table {
+  display: table !important;
+  width: 100% !important;
+  min-width: max-content;
+  margin: 0 !important;
+  overflow: visible !important;
+}
 /* 5. Link Safety Dialog */
 [data-streamdown="link-safety-modal"] {
   position: fixed !important;
