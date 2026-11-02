@@ -258,18 +258,21 @@ export default function FoodMapPage() {
     radiusKm,
     category: categoryFilter !== "ALL" ? categoryFilter : undefined,
     urgentOnly,
+    limit: 100,
   });
 
   const allListings = useMemo(() => realListings || [], [realListings]);
 
   const filteredListings = useMemo(() => {
-    return allListings.filter((item) => {
-      if (typeof item.lat !== "number" || typeof item.lng !== "number") return false;
-      if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
-      if (item.distanceKm && item.distanceKm > radiusKm) return false;
-      if (urgentOnly && item.status !== "EXPIRING_SOON") return false;
-      return true;
-    });
+    return allListings
+      .filter((item) => {
+        if (typeof item.lat !== "number" || typeof item.lng !== "number") return false;
+        if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
+        if (item.distanceKm && item.distanceKm > radiusKm) return false;
+        if (urgentOnly && item.status !== "EXPIRING_SOON") return false;
+        return true;
+      })
+      .sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
   }, [allListings, categoryFilter, radiusKm, urgentOnly]);
 
   // Reset pagination to page 1 whenever filters change
