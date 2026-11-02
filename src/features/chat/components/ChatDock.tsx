@@ -109,7 +109,7 @@ export function ChatDock() {
           </span>
           <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-full">
             <Sparkles className="size-2.5" />
-            JEV
+            AI
           </span>
         </button>
       </div>
@@ -131,7 +131,7 @@ export function ChatDock() {
                 Trợ lý FoodSaver
               </h3>
               <span className="px-1.5 py-0.2 rounded text-[8px] font-bold bg-emerald-100 text-[#00615f]">
-                JEV
+                AI
               </span>
             </div>
             <p className="text-[10px] text-stone-500 truncate flex items-center gap-1">

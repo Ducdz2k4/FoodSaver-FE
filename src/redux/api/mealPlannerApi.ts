@@ -186,7 +186,7 @@ export const mealPlannerApi = baseApi.injectEndpoints({
       invalidatesTags: ["CommunityPost"],
     }),
 
-    // 4. AI Chatbot Agent + JEV
+    // 4. AI Chatbot Agent
     sendChatMessage: builder.mutation<
       {
         success: boolean;

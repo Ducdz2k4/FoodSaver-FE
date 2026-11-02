@@ -165,7 +165,7 @@ export function ChatConversation({ compact = false }: ChatConversationProps) {
             </div>
             <div className="rounded-2xl bg-stone-50 border border-stone-200/80 px-3.5 py-2.5 flex items-center gap-2 text-xs text-stone-500">
               <Loader2 className="size-3.5 animate-spin text-[#00615f]" />
-              <span>JEV Guard đang phân tích tính khả thi và tính toán chi phí...</span>
+              <span>Trợ lý AI đang phân tích thực đơn và tính toán chi phí...</span>
             </div>
           </div>
         )}

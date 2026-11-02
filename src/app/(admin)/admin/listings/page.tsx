@@ -75,7 +75,7 @@ export default function AdminListingsPage() {
                   <TableHead className="w-[280px]">Món ăn</TableHead>
                   <TableHead className="w-[180px]">Đối tác cung cấp</TableHead>
                   <TableHead className="w-[150px]">Giá gốc / Cứu trợ</TableHead>
-                  <TableHead className="w-[120px]">Chỉ số Jev</TableHead>
+                  <TableHead className="w-[120px]">Chỉ số AI</TableHead>
                   <TableHead className="w-[120px]">Trạng thái</TableHead>
                   <TableHead className="w-[130px] text-right">Thao tác</TableHead>
                 </TableRow>

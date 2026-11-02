@@ -269,7 +269,7 @@ export function ChatWorkspace() {
             </div>
 
             <p className="text-[11px] text-stone-500 leading-relaxed">
-              Trợ lý JEV tự động ghi nhớ sở thích, xưng hô và ngân sách của bạn để tư vấn phù hợp hơn mà không làm lộ dữ liệu.
+              Trợ lý AI tự động ghi nhớ sở thích, xưng hô và ngân sách của bạn để tư vấn phù hợp hơn mà không làm lộ dữ liệu.
             </p>
 
             <button
@@ -297,7 +297,7 @@ export function ChatWorkspace() {
                     Trợ lý Tài chính &amp; Dinh dưỡng FoodSaver
                   </h2>
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-[#00615f]">
-                    JEV Engine
+                    Trợ lý AI
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">

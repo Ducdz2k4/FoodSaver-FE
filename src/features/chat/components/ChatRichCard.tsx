@@ -283,7 +283,7 @@ export function ChatRichCard({ card, compact = false, onSendPrompt }: ChatRichCa
             <span>ĐỀ XUẤT ĐIỀU CHỈNH KHẢ THI</span>
           </span>
           <span className="text-[10px] font-bold text-amber-900">
-            Điểm JEV: {card.data.score}/1.0
+            Điểm khả thi: {card.data.score}/1.0
           </span>
         </div>
 

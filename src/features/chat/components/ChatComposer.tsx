@@ -132,7 +132,7 @@ export function ChatComposer({ compact = false }: ChatComposerProps) {
 
       {!compact && (
         <p className="text-center text-[10px] text-stone-400 mt-2">
-          Vận hành bởi FoodSaver Agent JEV System One · Không hard-code · Chấm điểm khả thi thực tế.
+          Vận hành bởi FoodSaver AI Assistant · Tối ưu thực đơn · Đề xuất món ăn thông minh.
         </p>
       )}
     </div>

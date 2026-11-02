@@ -109,7 +109,7 @@ export const listingApi = baseApi.injectEndpoints({
       providesTags: ["PartnerListing"],
     }),
 
-    // 4. Đối tác: Đăng món mới (Tích hợp Jev AI chấm điểm ngầm)
+    // 4. Đối tác: Đăng món mới (Tích hợp AI chấm điểm ngầm)
     createListing: builder.mutation<ListingDTO, CreateListingPayload>({
       query: (body) => ({
         url: "/api/v1/partner/listings",

@@ -50,7 +50,7 @@ export default function NewListingPage() {
         safetyNotes,
       }).unwrap();
 
-      toast.success("Đăng món giải cứu thành công! AI Jev đã tự động phân loại rủi ro.");
+      toast.success("Đăng món giải cứu thành công! Hệ thống AI đã tự động phân loại rủi ro.");
       router.push("/partner/listings");
     } catch (err: any) {
       toast.error(err?.data?.message || "Đăng món thất bại. Vui lòng kiểm tra lại quyền đối tác.");
@@ -222,7 +222,7 @@ export default function NewListingPage() {
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" />
-                <span>Đang phân tích AI Jev & Lưu món...</span>
+                <span>Đang phân tích AI & Lưu món...</span>
               </span>
             ) : (
               <>

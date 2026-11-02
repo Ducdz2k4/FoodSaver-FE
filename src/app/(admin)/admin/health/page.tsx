@@ -76,10 +76,10 @@ export default function AdminSystemHealthPage() {
         />
 
         <AdminStatCard
-          title="TypeSafe Jev AI Engine"
+          title="AI Decision Engine"
           value="Connected"
           icon={<Activity className="size-5" />}
-          description="System One: jev-1.13.0"
+          description="System One Decision Engine"
         />
 
         <AdminStatCard
@@ -121,7 +121,7 @@ export default function AdminSystemHealthPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Cấu hình Tầng Quyết định &quot;Jev AI&quot;</CardTitle>
+            <CardTitle className="text-base">Cấu hình Tầng Quyết định AI (System One)</CardTitle>
             <CardDescription className="text-xs">
               Mô hình System One của TypeSafe AI chấm điểm cấp bách và rủi ro lãng phí.
             </CardDescription>
@@ -133,7 +133,7 @@ export default function AdminSystemHealthPage() {
             </div>
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">Phiên bản mô hình:</span>
-              <span className="font-mono text-foreground font-semibold">jev-1.13.0 (jev-latest)</span>
+              <span className="font-mono text-foreground font-semibold">system-one (latest)</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b">
               <span className="text-muted-foreground">Primitives câu hỏi:</span>
