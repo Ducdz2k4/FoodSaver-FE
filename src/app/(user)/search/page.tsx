@@ -18,6 +18,8 @@ import {
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
 import { FoodCategory, ListingDTO } from "@/types/contract";
+import { DeliveryHeaderPill } from "@/components/location/DeliveryHeaderPill";
+import { useDeliveryLocation } from "@/context/DeliveryLocationContext";
 import { IMAGES } from "@/constants/images";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
 import { useGetMyFavoritesQuery, useAddFavoriteMutation, useRemoveFavoriteMutation } from "@/redux/api/favoriteApi";
@@ -102,10 +104,25 @@ const PROMO_BANNERS = [
 // 2. BeFood Quick Filter Tab Options (Image #1)
 type QuickTab = "NEARBY" | "BEST_SELLER" | "URGENT" | "FAST_DELIVERY";
 
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
 function DiscoverContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const { user } = useAuth();
+  const { location: deliveryLoc } = useDeliveryLocation();
 
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | "ALL">("ALL");
@@ -115,7 +132,6 @@ function DiscoverContent() {
   const [addFavorite] = useAddFavoriteMutation();
   const [removeFavorite] = useRemoveFavoriteMutation();
   const favoriteSet = useMemo(() => new Set(myFavoriteIds), [myFavoriteIds]);
-  const [userAddress, setUserAddress] = useState(user?.address || "");
 
   useEffect(() => {
     if (initialQuery) {
@@ -129,9 +145,6 @@ function DiscoverContent() {
     }
   }, [initialQuery]);
 
-  useEffect(() => {
-    if (user?.address) setUserAddress(user.address);
-  }, [user?.address]);
 
   // Query Backend with RTK Query
   const { data: realListings, isLoading, isFetching } = useGetListingsQuery({
@@ -152,7 +165,15 @@ function DiscoverContent() {
 
   // Client-side filtering & sorting for interactive tab feel
   const processedListings = useMemo(() => {
-    let result = [...baseListings];
+    let result = baseListings.map((item) => {
+      const dist =
+        item.distanceKm !== undefined
+          ? item.distanceKm
+          : item.lat && item.lng
+          ? calculateDistanceKm(deliveryLoc.lat, deliveryLoc.lng, item.lat, item.lng)
+          : 1.0;
+      return { ...item, distanceKm: dist };
+    });
 
     // Filter by text search
     if (searchTerm.trim()) {
@@ -187,7 +208,7 @@ function DiscoverContent() {
     }
 
     return result;
-  }, [baseListings, searchTerm, selectedCategory, radiusKm, activeTab]);
+  }, [baseListings, searchTerm, selectedCategory, radiusKm, activeTab, deliveryLoc.lat, deliveryLoc.lng]);
 
   const toggleFavorite = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -210,18 +231,6 @@ function DiscoverContent() {
     }
   };
 
-  const handleDetectGPS = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserAddress(`Tọa độ: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
-          toast.success("Đã định vị vị trí hiện tại thành công!");
-        },
-        () => toast.error("Không thể lấy GPS. Vui lòng cấp quyền định vị hoặc nhập địa chỉ trong hồ sơ.")
-      );
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-28 px-4 sm:px-6 lg:px-8">
       {/* Standardized 7xl Container */}
@@ -231,22 +240,8 @@ function DiscoverContent() {
         ========================================================= */}
         <div className="bg-white p-4 sm:p-5 rounded-3xl border border-stone-200/90 shadow-sm space-y-3.5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            {/* Address Pill (Image #2) */}
-            <div className="flex items-center gap-2 text-xs font-bold text-stone-800 bg-[#f9f3f0] px-3.5 py-2 rounded-2xl border border-stone-200/80 min-w-0">
-              <span className="uppercase tracking-wider text-[10px] text-stone-500 font-black shrink-0">
-                GIAO TỚI:
-              </span>
-              <MapPin className="size-3.5 text-[#00615f] shrink-0" />
-              <span className="truncate text-stone-900 font-semibold">{userAddress}</span>
-              <button
-                type="button"
-                onClick={handleDetectGPS}
-                className="text-[11px] text-[#00615f] hover:underline font-bold shrink-0 ml-1 cursor-pointer"
-                title="Định vị vị trí GPS"
-              >
-                [Định vị]
-              </button>
-            </div>
+            {/* Interactive Address Delivery Header Pill */}
+            <DeliveryHeaderPill />
 
             {/* Search Input Box (Image #2) */}
             <div className="relative flex-1 max-w-xl">
