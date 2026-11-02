@@ -17,6 +17,7 @@ import {
   selectCurrentToken,
   selectIsAuthenticated,
   setUser,
+  setCredentials,
   logOut,
 } from "@/redux/slices/authSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
@@ -99,8 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const profile = await triggerGetMe().unwrap();
       dispatch(setUser(profile));
       return profile;
-    } catch {
-      dispatch(logOut());
+    } catch (err: any) {
+      if (err?.status === 401 || err?.originalStatus === 401) {
+        dispatch(logOut());
+      }
       return null;
     } finally {
       setInitialLoading(false);
@@ -129,17 +132,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (payload: LoginIn): Promise<TokenOut> => {
     const response = await loginMutation(payload).unwrap();
-    return toTokenOut(response);
+    const tokenOut = toTokenOut(response);
+    const tokenVal = tokenOut.accessToken || tokenOut.access_token;
+    if (tokenVal) {
+      dispatch(setCredentials({ token: tokenVal, user: tokenOut.user || null }));
+    }
+    return tokenOut;
   };
 
   const googleLogin = async (idToken: string): Promise<TokenOut> => {
     const response = await googleLoginMutation({ idToken }).unwrap();
-    return toTokenOut(response);
+    const tokenOut = toTokenOut(response);
+    const tokenVal = tokenOut.accessToken || tokenOut.access_token;
+    if (tokenVal) {
+      dispatch(setCredentials({ token: tokenVal, user: tokenOut.user || null }));
+    }
+    return tokenOut;
   };
 
   const register = async (payload: RegisterIn): Promise<TokenOut> => {
     const response = await registerMutation(payload).unwrap();
-    return toTokenOut(response);
+    const tokenOut = toTokenOut(response);
+    const tokenVal = tokenOut.accessToken || tokenOut.access_token;
+    if (tokenVal) {
+      dispatch(setCredentials({ token: tokenVal, user: tokenOut.user || null }));
+    }
+    return tokenOut;
   };
 
   const verifyOtp = async (code: string): Promise<UserOut | null> => {

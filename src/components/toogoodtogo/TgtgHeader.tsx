@@ -14,9 +14,9 @@ export function TgtgHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const { user: authUser, logout } = useAuth();
   const rawUser = useAppSelector((state) => state.auth.user);
-  const currentUser = mounted ? rawUser : null;
-  const { logout } = useAuth();
+  const currentUser = mounted ? (authUser || rawUser) : null;
   const router = useRouter();
 
   const handleHeaderSearch = (e: React.FormEvent) => {
@@ -29,6 +29,7 @@ export function TgtgHeader() {
   };
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };

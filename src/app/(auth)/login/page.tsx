@@ -66,8 +66,14 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect");
 
-  const goAfterLogin = async () => {
-    const currentUser = await refreshUser();
+  const goAfterLogin = async (fallbackUser?: any) => {
+    let currentUser = fallbackUser;
+    try {
+      const refreshed = await refreshUser();
+      if (refreshed) currentUser = refreshed;
+    } catch {
+      // Proceed with fallbackUser if refreshUser fails
+    }
     const isAdmin = currentUser?.role?.toUpperCase() === "ADMIN" || currentUser?.role?.toUpperCase() === "SYS_ADMIN";
     const isPartner = currentUser?.partnerCapability === "VERIFIED";
     router.push(redirectUrl || (isAdmin ? "/admin" : isPartner ? "/partner/dashboard" : "/"));
@@ -90,7 +96,7 @@ function LoginForm() {
         return;
       }
       toast.success("Đăng nhập thành công!");
-      await goAfterLogin();
+      await goAfterLogin(result.user);
     } catch (error: any) {
       toast.error(error?.data?.message || error?.message || "Email hoặc mật khẩu không chính xác");
     } finally {
@@ -108,7 +114,7 @@ function LoginForm() {
         return;
       }
       toast.success("Đăng nhập Google thành công!");
-      await goAfterLogin();
+      await goAfterLogin(result.user);
     } catch (error: any) {
       toast.error(error?.data?.message || error?.message || "Đăng nhập Google thất bại");
     } finally {
@@ -125,9 +131,9 @@ function LoginForm() {
 
     try {
       setLoading(true);
-      await verifyOtp(otp);
+      const user = await verifyOtp(otp);
       toast.success("Xác thực email thành công!");
-      await goAfterLogin();
+      await goAfterLogin(user);
     } catch (error: any) {
       toast.error(error?.data?.message || error?.message || "Mã OTP không hợp lệ");
     } finally {
