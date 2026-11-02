@@ -226,47 +226,143 @@ export default function FoodMapPage() {
     }
   }, [deliveryLoc.lat, deliveryLoc.lng, mapLoaded]);
 
-  // Draw and sync the soft translucent green radar circle ("phạm vi rada xanh màu nhẹ nhàng mờ mờ")
+  // Draw radar perimeter (green border only, no permanent fill) + 2s expanding sweep wave on load / radius change
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
-    const circleData = createGeoJSONCircle([deliveryLoc.lng, deliveryLoc.lat], radiusKm);
+    const center: [number, number] = [deliveryLoc.lng, deliveryLoc.lat];
+    const perimeterData = createGeoJSONCircle(center, radiusKm);
+
+    let animFrameId: number;
 
     try {
-      const source = map.getSource("radar-radius-source") as mapboxgl.GeoJSONSource | undefined;
-      if (source) {
-        source.setData(circleData as any);
+      // 0. Remove any legacy permanent fill layer if present
+      if (map.getLayer("radar-radius-fill")) {
+        map.removeLayer("radar-radius-fill");
+      }
+
+      // 1. Setup / Update permanent perimeter line (border only, no permanent fill)
+      const perimeterSource = map.getSource("radar-radius-source") as mapboxgl.GeoJSONSource | undefined;
+      if (perimeterSource) {
+        perimeterSource.setData(perimeterData as any);
       } else {
         map.addSource("radar-radius-source", {
           type: "geojson",
-          data: circleData as any,
+          data: perimeterData as any,
         });
 
-        // 1. Soft Translucent Radar Fill ("xanh màu nhẹ nhàng mờ mờ")
+        // Soft outer glow line for perimeter
         map.addLayer({
-          id: "radar-radius-fill",
-          type: "fill",
+          id: "radar-radius-glow",
+          type: "line",
           source: "radar-radius-source",
           paint: {
-            "fill-color": "#10b981",
-            "fill-opacity": 0.08,
+            "line-color": "#10b981",
+            "line-width": 4,
+            "line-opacity": 0.2,
           },
         });
 
-        // 2. Delicate dashed perimeter border
+        // Crisp green perimeter border ("rada chỉ xanh ở viền")
         map.addLayer({
           id: "radar-radius-line",
           type: "line",
           source: "radar-radius-source",
           paint: {
             "line-color": "#059669",
-            "line-width": 1.5,
-            "line-opacity": 0.4,
+            "line-width": 2,
+            "line-opacity": 0.85,
             "line-dasharray": [4, 3],
           },
         });
       }
+
+      // 2. Setup / Update animated radar sweep wave source & layers
+      let sweepSource = map.getSource("radar-sweep-source") as mapboxgl.GeoJSONSource | undefined;
+      if (!sweepSource) {
+        map.addSource("radar-sweep-source", {
+          type: "geojson",
+          data: createGeoJSONCircle(center, 0.001) as any,
+        });
+
+        // Sweep fill (only active during ~2s pulse, then fades to 0)
+        map.addLayer(
+          {
+            id: "radar-sweep-fill",
+            type: "fill",
+            source: "radar-sweep-source",
+            paint: {
+              "fill-color": "#10b981",
+              "fill-opacity": 0,
+            },
+          },
+          "radar-radius-glow"
+        );
+
+        // Sweep wavefront line
+        map.addLayer(
+          {
+            id: "radar-sweep-line",
+            type: "line",
+            source: "radar-sweep-source",
+            paint: {
+              "line-color": "#10b981",
+              "line-width": 2.5,
+              "line-opacity": 0,
+            },
+          },
+          "radar-radius-glow"
+        );
+      }
+
+      // 3. Kick off ~2s outward expanding sonar sweep ("hiệu ứng tỏa ra và quét tầm 2s")
+      const startTime = performance.now();
+      const DURATION_MS = 2000; // ~2 seconds
+
+      const animateSweep = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(1, elapsed / DURATION_MS);
+
+        // Cubic ease-out: expands quickly from center then settles at outer perimeter
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const currentRadius = Math.max(0.01, radiusKm * ease);
+
+        // Soft green fill fades out to 0 as it sweeps to edge
+        const fillOpacity = 0.22 * Math.pow(1 - progress, 1.2);
+        const waveLineOpacity = 0.75 * (1 - progress);
+
+        try {
+          const currentSweepSource = map.getSource("radar-sweep-source") as mapboxgl.GeoJSONSource | undefined;
+          if (currentSweepSource && map.getLayer("radar-sweep-fill")) {
+            currentSweepSource.setData(createGeoJSONCircle(center, currentRadius, 48) as any);
+            map.setPaintProperty("radar-sweep-fill", "fill-opacity", fillOpacity);
+            map.setPaintProperty("radar-sweep-line", "line-opacity", waveLineOpacity);
+          }
+        } catch {
+          // ignore transient animation frame errors during unmount/style switch
+        }
+
+        if (progress < 1) {
+          animFrameId = requestAnimationFrame(animateSweep);
+        } else {
+          // Animation finished at ~2s: strictly NO background inside ("bên trong ko có nền")
+          try {
+            if (map.getLayer("radar-sweep-fill")) {
+              map.setPaintProperty("radar-sweep-fill", "fill-opacity", 0);
+            }
+            if (map.getLayer("radar-sweep-line")) {
+              map.setPaintProperty("radar-sweep-line", "line-opacity", 0);
+            }
+          } catch {}
+        }
+      };
+
+      animFrameId = requestAnimationFrame(animateSweep);
+
+      return () => {
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+      };
     } catch (e) {
       console.error("[Map] Failed to update radar circle:", e);
     }
