@@ -37,7 +37,12 @@ import {
   useGetChatMemoryQuery,
   useClearChatSessionMutation,
   useGetMonthMealPlansQuery,
+  useGetChatSessionsQuery,
+  useLazyGetChatSessionByIdQuery,
+  useCreateChatSessionMutation,
+  useDeleteChatSessionMutation,
 } from "@/redux/api/mealPlannerApi";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 
@@ -50,23 +55,13 @@ interface Message {
   quickSuggestions?: string[];
 }
 
-interface ChatSession {
+interface ChatSessionItem {
   id: string;
   title: string;
   createdAt: number;
   updatedAt: number;
-  messages: Array<{
-    id: string;
-    role: "user" | "assistant";
-    content: string;
-    timestamp: string | Date;
-    richCards?: any;
-    quickSuggestions?: string[];
-  }>;
+  messageCount?: number;
 }
-
-const SESSIONS_STORAGE_KEY = "foodsaver_chat_sessions_v3";
-const ACTIVE_SESSION_KEY = "foodsaver_active_session_id_v3";
 
 const DEFAULT_WELCOME_MSG: Message = {
   id: "welcome-1",
@@ -124,9 +119,9 @@ function formatSessionTime(timestamp: number | string | Date): string {
 
 export default function MealPlannerChatPage() {
   const router = useRouter();
+  const { user, token, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   // Sessions and persistence state
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [sessionId, setSessionId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([DEFAULT_WELCOME_MSG]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -141,106 +136,108 @@ export default function MealPlannerChatPage() {
   const isUserScrolledUpRef = useRef(false);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
 
-  // Initialize and load chat sessions from localStorage
+  // RTK Query hooks for persistent server-backed chat sessions
+  const {
+    data: sessionsRes,
+    isLoading: isSessionsLoading,
+    refetch: refetchSessions,
+  } = useGetChatSessionsQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+
+  const [fetchSessionDetail] = useLazyGetChatSessionByIdQuery();
+  const [createChatSession] = useCreateChatSessionMutation();
+  const [deleteChatSession] = useDeleteChatSessionMutation();
+
+  const sessionsList = useMemo(() => sessionsRes?.data || [], [sessionsRes?.data]);
+
+  // Purge legacy browser-wide localStorage keys on mount to prevent cross-account leaks
   useEffect(() => {
     try {
-      const rawSessions = localStorage.getItem(SESSIONS_STORAGE_KEY);
-      const savedActiveId = localStorage.getItem(ACTIVE_SESSION_KEY);
-      let parsedSessions: ChatSession[] = [];
-      if (rawSessions) {
-        parsedSessions = JSON.parse(rawSessions);
-      }
-
-      if (Array.isArray(parsedSessions) && parsedSessions.length > 0) {
-        let active = parsedSessions.find((s) => s.id === savedActiveId);
-        if (!active) {
-          active = parsedSessions[0];
-        }
-        setSessions(parsedSessions);
-        setSessionId(active.id);
-        setMessages(
-          active.messages.map((m) => ({
-            ...m,
-            timestamp: new Date(m.timestamp),
-          }))
-        );
-        localStorage.setItem(ACTIVE_SESSION_KEY, active.id);
-      } else {
-        const newId = "session_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
-        const initialSession: ChatSession = {
-          id: newId,
-          title: "Cuộc trò chuyện mới",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          messages: [DEFAULT_WELCOME_MSG],
-        };
-        setSessions([initialSession]);
-        setSessionId(newId);
-        setMessages([DEFAULT_WELCOME_MSG]);
-        localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([initialSession]));
-        localStorage.setItem(ACTIVE_SESSION_KEY, newId);
-      }
-    } catch (err) {
-      console.error("Failed to load chat history:", err);
-      const fallbackId = "session_" + Date.now();
-      setSessionId(fallbackId);
-      setMessages([DEFAULT_WELCOME_MSG]);
-    } finally {
-      setIsInitialized(true);
+      localStorage.removeItem("foodsaver_chat_sessions_v3");
+      localStorage.removeItem("foodsaver_active_session_id_v3");
+      localStorage.removeItem("foodsaver_chat_sessions_v2");
+      localStorage.removeItem("foodsaver_chat_sessions");
+    } catch {
+      // Ignore
     }
   }, []);
 
-  // Sync messages into active session and localStorage whenever messages update
+  // Account switch isolation: immediately flush messages when auth identity changes
+  const prevUserIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!isInitialized || !sessionId) return;
+    const currentUserId = user?.id || null;
+    if (prevUserIdRef.current !== null && prevUserIdRef.current !== currentUserId) {
+      setSessionId("");
+      setMessages([DEFAULT_WELCOME_MSG]);
+    }
+    prevUserIdRef.current = currentUserId;
+  }, [user?.id]);
 
-    setSessions((prevSessions) => {
-      let found = false;
-      const updated = prevSessions.map((s) => {
-        if (s.id !== sessionId) return s;
-        found = true;
+  // Initialize session according to auth status
+  useEffect(() => {
+    if (isAuthLoading) return;
 
-        let title = s.title;
-        if (!title || title === "Cuộc trò chuyện mới") {
-          const firstUser = messages.find((m) => m.role === "user");
-          if (firstUser) {
-            const clean = firstUser.content.replace(/\n/g, " ").trim();
-            title = clean.slice(0, 32).trim() + (clean.length > 32 ? "..." : "");
-          }
-        }
-
-        return {
-          ...s,
-          title,
-          updatedAt: Date.now(),
-          messages,
-        };
-      });
-
-      if (!found) {
-        const firstUser = messages.find((m) => m.role === "user");
-        let title = "Cuộc trò chuyện mới";
-        if (firstUser) {
-          const clean = firstUser.content.replace(/\n/g, " ").trim();
-          title = clean.slice(0, 32).trim() + (clean.length > 32 ? "..." : "");
-        }
-        updated.unshift({
-          id: sessionId,
-          title,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          messages,
-        });
+    if (!isAuthenticated) {
+      // Guest mode: ephemeral session in React state
+      if (!sessionId || !sessionId.startsWith("guest_")) {
+        const guestId = "guest_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+        setSessionId(guestId);
+        setMessages([DEFAULT_WELCOME_MSG]);
       }
+      setIsInitialized(true);
+      return;
+    }
 
-      try {
-        localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updated));
-      } catch (err) {
-        console.warn("localStorage quota exceeded:", err);
+    // Authenticated mode: wait for server sessions
+    if (!isSessionsLoading) {
+      if (sessionsList.length > 0) {
+        const currentExists = sessionsList.some((s) => s.id === sessionId);
+        if (!currentExists) {
+          const firstSession = sessionsList[0];
+          setSessionId(firstSession.id);
+          fetchSessionDetail(firstSession.id)
+            .unwrap()
+            .then((res) => {
+              if (res.data?.messages && res.data.messages.length > 0) {
+                setMessages(
+                  res.data.messages.map((m: any) => ({
+                    id: m.id,
+                    role: m.role as "user" | "assistant",
+                    content: m.content,
+                    timestamp: new Date(m.timestamp),
+                    richCards: m.richCards,
+                    quickSuggestions: m.quickSuggestions,
+                  }))
+                );
+              } else {
+                setMessages([DEFAULT_WELCOME_MSG]);
+              }
+            })
+            .catch(() => {
+              setMessages([DEFAULT_WELCOME_MSG]);
+            });
+        }
+      } else {
+        // No server sessions exist -> create initial persistent session
+        createChatSession({ title: "Cuộc trò chuyện mới" })
+          .unwrap()
+          .then((res) => {
+            if (res.data?.id) {
+              setSessionId(res.data.id);
+              setMessages([DEFAULT_WELCOME_MSG]);
+            }
+          })
+          .catch((err) => {
+            console.error("Auto-create initial session error:", err);
+            const fallbackId = "session_" + Date.now();
+            setSessionId(fallbackId);
+            setMessages([DEFAULT_WELCOME_MSG]);
+          });
       }
-      return updated;
-    });
-  }, [messages, sessionId, isInitialized]);
+      setIsInitialized(true);
+    }
+  }, [isAuthenticated, isAuthLoading, isSessionsLoading, sessionsList, sessionId, fetchSessionDetail, createChatSession]);
 
   // API Hooks
   const [sendMessageMutation] = useSendChatMessageMutation();
@@ -353,82 +350,82 @@ export default function MealPlannerChatPage() {
     return featuredSlots.reduce((sum, item) => sum + (item.data?.calories || 0), 0);
   }, [featuredSlots]);
 
-  const handleNewChat = () => {
-    const newId = "session_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
-    const freshMsg: Message = {
-      ...DEFAULT_WELCOME_MSG,
-      id: "welcome_" + Date.now(),
-      timestamp: new Date(),
-    };
-    const newSession: ChatSession = {
-      id: newId,
-      title: "Cuộc trò chuyện mới",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      messages: [freshMsg],
-    };
+  const handleNewChat = async () => {
+    if (isTyping) return;
 
-    const nextSessions = [newSession, ...sessions.filter((s) => s.id !== newId)];
-    setSessions(nextSessions);
-    setSessionId(newId);
-    setMessages([freshMsg]);
-    localStorage.setItem(ACTIVE_SESSION_KEY, newId);
-    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(nextSessions));
-    toast.success("Đã mở cuộc trò chuyện mới");
+    if (isAuthenticated) {
+      try {
+        const res = await createChatSession({ title: "Cuộc trò chuyện mới" }).unwrap();
+        if (res.data?.id) {
+          setSessionId(res.data.id);
+          setMessages([DEFAULT_WELCOME_MSG]);
+          toast.success("Đã mở cuộc trò chuyện mới");
+        }
+      } catch (err) {
+        console.error("Create chat session error:", err);
+        toast.error("Không thể tạo cuộc trò chuyện mới");
+      }
+    } else {
+      const newGuestId = "guest_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+      setSessionId(newGuestId);
+      setMessages([DEFAULT_WELCOME_MSG]);
+      toast.success("Đã mở phiên trò chuyện mới");
+    }
 
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
   };
 
-  const handleSelectSession = (s: ChatSession) => {
-    if (s.id === sessionId) return;
-    setSessionId(s.id);
-    setMessages(
-      s.messages.map((m) => ({
-        ...m,
-        timestamp: new Date(m.timestamp),
-      }))
-    );
-    localStorage.setItem(ACTIVE_SESSION_KEY, s.id);
+  const handleSelectSession = async (targetSessionId: string) => {
+    if (targetSessionId === sessionId || isTyping) return;
+    setSessionId(targetSessionId);
+
+    try {
+      const res = await fetchSessionDetail(targetSessionId).unwrap();
+      if (res.data?.messages && res.data.messages.length > 0) {
+        setMessages(
+          res.data.messages.map((m: any) => ({
+            id: m.id,
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            timestamp: new Date(m.timestamp),
+            richCards: m.richCards,
+            quickSuggestions: m.quickSuggestions,
+          }))
+        );
+      } else {
+        setMessages([DEFAULT_WELCOME_MSG]);
+      }
+    } catch (err) {
+      console.error("Failed to load session details:", err);
+      toast.error("Không thể tải tin nhắn của cuộc trò chuyện");
+    }
   };
 
-  const handleDeleteSession = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleDeleteSession = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     const idToDelete = e.currentTarget.dataset.sessionId;
     if (!idToDelete) return;
-    const filtered = sessions.filter((s) => s.id !== idToDelete);
 
-    if (filtered.length === 0) {
-      const newId = "session_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
-      const freshSession: ChatSession = {
-        id: newId,
-        title: "Cuộc trò chuyện mới",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        messages: [DEFAULT_WELCOME_MSG],
-      };
-      setSessions([freshSession]);
-      setSessionId(newId);
-      setMessages([DEFAULT_WELCOME_MSG]);
-      localStorage.setItem(ACTIVE_SESSION_KEY, newId);
-      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([freshSession]));
-    } else {
-      setSessions(filtered);
-      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(filtered));
-      if (idToDelete === sessionId) {
-        const next = filtered[0];
-        setSessionId(next.id);
-        setMessages(
-          next.messages.map((m) => ({
-            ...m,
-            timestamp: new Date(m.timestamp),
-          }))
-        );
-        localStorage.setItem(ACTIVE_SESSION_KEY, next.id);
+    if (isAuthenticated) {
+      try {
+        await deleteChatSession(idToDelete).unwrap();
+        toast.success("Đã xóa cuộc trò chuyện");
+
+        if (idToDelete === sessionId) {
+          const remaining = sessionsList.filter((s) => s.id !== idToDelete);
+          if (remaining.length > 0) {
+            handleSelectSession(remaining[0].id);
+          } else {
+            handleNewChat();
+          }
+        }
+      } catch (err) {
+        console.error("Delete session error:", err);
+        toast.error("Không thể xóa cuộc trò chuyện");
       }
     }
-    toast.success("Đã xóa đoạn trò chuyện");
   };
 
   const adjustTextareaHeight = () => {
@@ -514,9 +511,15 @@ export default function MealPlannerChatPage() {
 
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const authToken = token || (typeof window !== "undefined" ? localStorage.getItem("token") : null);
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`;
+      }
+
       const response = await fetch(`${apiBase}/api/v1/chat/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ message: trimmed, sessionId }),
       });
 
@@ -592,6 +595,9 @@ export default function MealPlannerChatPage() {
                   if (richCards?.type === "calendar_applied") {
                     refetchMealPlans();
                   }
+                  if (isAuthenticated) {
+                    refetchSessions();
+                  }
                 }
               } catch {
                 // Ignore partial JSON
@@ -614,6 +620,9 @@ export default function MealPlannerChatPage() {
 
       setIsTyping(false);
       refetchMemory();
+      if (isAuthenticated) {
+        refetchSessions();
+      }
     } catch {
       try {
         const res = await sendMessageMutation({
@@ -632,6 +641,9 @@ export default function MealPlannerChatPage() {
         setMessages((prev) => [...prev, botReply]);
         if (res.data.richCards?.type === "calendar_applied") {
           refetchMealPlans();
+        }
+        if (isAuthenticated) {
+          refetchSessions();
         }
         refetchMemory();
       } catch (err: any) {
@@ -684,71 +696,105 @@ export default function MealPlannerChatPage() {
                 <Clock className="size-3.5 text-[#00615f]" />
                 <span>Lịch sử trò chuyện</span>
               </div>
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={handleNewChat}
-                disabled={isTyping}
-                className="h-7 px-2.5 rounded-lg text-xs font-bold gap-1 border-[#00615f]/30 text-[#00615f] hover:bg-emerald-50 cursor-pointer"
-              >
-                <Plus className="size-3.5" />
-                <span>+ Chat mới</span>
-              </Button>
-            </div>
-
-            <div className="space-y-1.5 max-h-[175px] overflow-y-auto pr-1">
-              {sessions.length === 0 ? (
-                <div className="text-center py-4 text-xs text-stone-400">
-                  Chưa có cuộc trò chuyện nào
-                </div>
+              {isAuthenticated ? (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={handleNewChat}
+                  disabled={isTyping}
+                  className="h-7 px-2.5 rounded-lg text-xs font-bold gap-1 border-[#00615f]/30 text-[#00615f] hover:bg-emerald-50 cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>+ Chat mới</span>
+                </Button>
               ) : (
-                sessions.map((sess) => {
-                  const isActive = sess.id === sessionId;
-                  return (
-                    <div
-                      key={sess.id}
-                      onClick={() => handleSelectSession(sess)}
-                      className={`group flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all cursor-pointer border ${
-                        isActive
-                          ? "bg-emerald-50/80 border-[#00615f]/40 text-[#00615f] shadow-2xs font-semibold"
-                          : "bg-stone-50 hover:bg-stone-100/80 border-stone-200/60 text-stone-700"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <MessageSquare
-                          className={`size-3.5 shrink-0 ${
-                            isActive ? "text-[#00615f]" : "text-stone-400 group-hover:text-stone-600"
-                          }`}
-                        />
-                        <div className="min-w-0">
-                          <p className="text-xs truncate leading-snug">
-                            {sess.title || "Cuộc trò chuyện mới"}
-                          </p>
-                          <p className="text-[10px] text-stone-400 font-normal">
-                            {formatSessionTime(sess.updatedAt || sess.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        {isActive && (
-                          <span className="size-1.5 rounded-full bg-[#00615f]" />
-                        )}
-                        <button
-                          type="button"
-                          data-session-id={sess.id}
-                          onClick={handleDeleteSession}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-rose-50 hover:text-rose-600 text-stone-400 transition cursor-pointer"
-                          title="Xóa cuộc trò chuyện"
-                        >
-                          <Trash2 className="size-3" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-stone-100 text-stone-600 border border-stone-200">
+                  Khách
+                </span>
               )}
             </div>
+
+            {!isAuthenticated ? (
+              <div className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/50 to-stone-50 border border-emerald-100/80 text-center space-y-2.5">
+                <div className="size-8 rounded-full bg-emerald-100/70 text-[#00615f] flex items-center justify-center mx-auto">
+                  <User className="size-4" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-stone-800">Chế độ Khách (Ẩn danh)</p>
+                  <p className="text-[11px] text-stone-600 leading-relaxed">
+                    Đăng nhập để lưu lịch sử cuộc trò chuyện và tự động đồng bộ thực đơn vào Lịch ăn cá nhân của bạn.
+                  </p>
+                </div>
+                <Button
+                  asChild
+                  size="xs"
+                  className="w-full bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-bold rounded-lg h-7 shadow-xs cursor-pointer"
+                >
+                  <Link href="/login?redirect=/meal-planner/chat">
+                    Đăng nhập tài khoản
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-1.5 max-h-[175px] overflow-y-auto pr-1">
+                {isSessionsLoading ? (
+                  <div className="flex items-center justify-center py-6 text-xs text-stone-400 gap-2">
+                    <Loader2 className="size-3.5 animate-spin text-[#00615f]" />
+                    <span>Đang tải lịch sử...</span>
+                  </div>
+                ) : sessionsList.length === 0 ? (
+                  <div className="text-center py-4 text-xs text-stone-400">
+                    Chưa có cuộc trò chuyện nào
+                  </div>
+                ) : (
+                  sessionsList.map((sess) => {
+                    const isActive = sess.id === sessionId;
+                    return (
+                      <div
+                        key={sess.id}
+                        onClick={() => handleSelectSession(sess.id)}
+                        className={`group flex items-center justify-between gap-2 p-2 rounded-xl text-left transition-all cursor-pointer border ${
+                          isActive
+                            ? "bg-emerald-50/80 border-[#00615f]/40 text-[#00615f] shadow-2xs font-semibold"
+                            : "bg-stone-50 hover:bg-stone-100/80 border-stone-200/60 text-stone-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MessageSquare
+                            className={`size-3.5 shrink-0 ${
+                              isActive ? "text-[#00615f]" : "text-stone-400 group-hover:text-stone-600"
+                            }`}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs truncate leading-snug">
+                              {sess.title || "Cuộc trò chuyện mới"}
+                            </p>
+                            <p className="text-[10px] text-stone-400 font-normal">
+                              {formatSessionTime(sess.updatedAt || sess.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          {isActive && (
+                            <span className="size-1.5 rounded-full bg-[#00615f]" />
+                          )}
+                          <button
+                            type="button"
+                            data-session-id={sess.id}
+                            onClick={handleDeleteSession}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-rose-50 hover:text-rose-600 text-stone-400 transition cursor-pointer"
+                            title="Xóa cuộc trò chuyện"
+                          >
+                            <Trash2 className="size-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
 
           {/* SECTION 2: WIDGET KẾ HOẠCH ĂN UỐNG AI GẦN NHẤT (INTERACTIVE MEAL WIDGET) */}
@@ -986,6 +1032,53 @@ export default function MealPlannerChatPage() {
                   {/* ══════ RICH CARDS EMBEDDED IN CHAT ══════ */}
                   {msg.richCards && (
                     <div className="space-y-2.5 animate-in fade-in zoom-in-95">
+                      {/* Rich Card: Auth Required (Guest attempted action) */}
+                      {msg.richCards.type === "auth_required" && (
+                        <div className="rounded-2xl border border-amber-300 bg-amber-50/80 p-4 sm:p-5 space-y-3 shadow-2xs">
+                          <div className="flex items-center gap-2 pb-2 border-b border-amber-200/80">
+                            <div className="size-7 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800">
+                              <AlertTriangle className="size-4" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                                Cần đăng nhập tài khoản
+                              </h4>
+                              <p className="text-[10px] text-amber-700">
+                                Chức năng lưu và đồng bộ lịch ăn chỉ áp dụng cho thành viên
+                              </p>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-stone-700 leading-relaxed">
+                            {msg.richCards.data?.message ||
+                              "Vui lòng đăng nhập tài khoản FoodSaver để lưu thực đơn vào Lịch ăn cá nhân của bạn và theo dõi dinh dưỡng hàng tháng."}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <Button
+                              asChild
+                              size="sm"
+                              className="bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer gap-1.5"
+                            >
+                              <Link href={`/login?redirect=${encodeURIComponent(msg.richCards.data?.returnUrl || "/meal-planner/chat")}`}>
+                                <span>Đăng nhập ngay</span>
+                                <ArrowRight className="size-3.5" />
+                              </Link>
+                            </Button>
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="text-xs font-semibold text-stone-700 hover:text-stone-900 rounded-xl border-amber-300/80 bg-white hover:bg-amber-100/50 cursor-pointer"
+                            >
+                              <Link href="/register">
+                                Tạo tài khoản mới
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Rich Card: Calendar Conflict Detected */}
                       {msg.richCards.type === "calendar_conflict" && msg.richCards.data && (
                         <div className="rounded-2xl border border-amber-300 bg-amber-50/70 p-4 space-y-3 shadow-2xs">
@@ -1346,7 +1439,13 @@ export default function MealPlannerChatPage() {
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => handleSend(sug)}
+                          onClick={() => {
+                            if (sug === "Đăng nhập ngay") {
+                              router.push("/login?redirect=/meal-planner/chat");
+                            } else {
+                              handleSend(sug);
+                            }
+                          }}
                           className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-[#00615f] hover:text-white text-stone-700 text-[11px] font-medium transition cursor-pointer"
                         >
                           {sug}

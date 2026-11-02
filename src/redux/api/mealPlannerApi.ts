@@ -71,6 +71,31 @@ export interface CommunityPostDTO {
   createdAt: string;
 }
 
+export interface ServerChatSessionSummary {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+}
+
+export interface ServerChatMessageDTO {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  richCards?: any;
+  quickSuggestions?: string[];
+}
+
+export interface ServerChatSessionDetail {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: ServerChatMessageDTO[];
+}
+
 export const mealPlannerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // 1. Recipes
@@ -180,6 +205,7 @@ export const mealPlannerApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
+      invalidatesTags: ["ChatSession"],
     }),
 
     getChatMemory: builder.query<{ success: boolean; data: any[] }, { sessionId?: string }>({
@@ -196,6 +222,47 @@ export const mealPlannerApi = baseApi.injectEndpoints({
         method: "DELETE",
         body,
       }),
+      invalidatesTags: ["ChatSession"],
+    }),
+
+    // 5. Persistent Chat Sessions Management
+    getChatSessions: builder.query<{ success: boolean; data: ServerChatSessionSummary[] }, void>({
+      query: () => "/api/v1/chat/sessions",
+      providesTags: ["ChatSession"],
+    }),
+
+    getChatSessionById: builder.query<{ success: boolean; data: ServerChatSessionDetail }, string>({
+      query: (id) => `/api/v1/chat/sessions/${id}`,
+      providesTags: (_res, _err, id) => [{ type: "ChatSession", id }],
+    }),
+
+    createChatSession: builder.mutation<{ success: boolean; data: ServerChatSessionDetail }, { title?: string } | void>({
+      query: (body) => ({
+        url: "/api/v1/chat/sessions",
+        method: "POST",
+        body: body || {},
+      }),
+      invalidatesTags: ["ChatSession"],
+    }),
+
+    updateChatSessionTitle: builder.mutation<
+      { success: boolean; data: { id: string; title: string; updatedAt: number } },
+      { id: string; title: string }
+    >({
+      query: ({ id, title }) => ({
+        url: `/api/v1/chat/sessions/${id}`,
+        method: "PATCH",
+        body: { title },
+      }),
+      invalidatesTags: ["ChatSession"],
+    }),
+
+    deleteChatSession: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (id) => ({
+        url: `/api/v1/chat/sessions/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["ChatSession"],
     }),
   }),
 });
@@ -213,4 +280,10 @@ export const {
   useSendChatMessageMutation,
   useGetChatMemoryQuery,
   useClearChatSessionMutation,
+  useGetChatSessionsQuery,
+  useGetChatSessionByIdQuery,
+  useLazyGetChatSessionByIdQuery,
+  useCreateChatSessionMutation,
+  useUpdateChatSessionTitleMutation,
+  useDeleteChatSessionMutation,
 } = mealPlannerApi;
