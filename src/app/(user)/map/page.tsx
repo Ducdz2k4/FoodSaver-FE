@@ -52,6 +52,30 @@ interface GroceryCartData {
   createdAt?: number;
 }
 
+// Helper to generate a 64-point circle Polygon GeoJSON for Mapbox radar coverage
+function createGeoJSONCircle(center: [number, number], radiusInKm: number, points: number = 64) {
+  const coords: [number, number][] = [];
+  const distanceX = radiusInKm / (111.32 * Math.cos((center[1] * Math.PI) / 180));
+  const distanceY = radiusInKm / 110.574;
+
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    coords.push([center[0] + x, center[1] + y]);
+  }
+  coords.push(coords[0]); // close polygon loop
+
+  return {
+    type: "Feature" as const,
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [coords],
+    },
+    properties: {},
+  };
+}
+
 export default function FoodMapPage() {
   const { location: deliveryLoc } = useDeliveryLocation();
   const [selectedListing, setSelectedListing] = useState<ListingDTO | null>(null);
@@ -174,6 +198,52 @@ export default function FoodMapPage() {
     }
   }, [deliveryLoc.lat, deliveryLoc.lng, mapLoaded]);
 
+  // Draw and sync the soft translucent green radar circle ("phạm vi rada xanh màu nhẹ nhàng mờ mờ")
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const circleData = createGeoJSONCircle([deliveryLoc.lng, deliveryLoc.lat], radiusKm);
+
+    try {
+      const source = map.getSource("radar-radius-source") as mapboxgl.GeoJSONSource | undefined;
+      if (source) {
+        source.setData(circleData as any);
+      } else {
+        map.addSource("radar-radius-source", {
+          type: "geojson",
+          data: circleData as any,
+        });
+
+        // 1. Soft Translucent Radar Fill ("xanh màu nhẹ nhàng mờ mờ")
+        map.addLayer({
+          id: "radar-radius-fill",
+          type: "fill",
+          source: "radar-radius-source",
+          paint: {
+            "fill-color": "#00615f",
+            "fill-opacity": 0.08,
+          },
+        });
+
+        // 2. Delicate dashed perimeter border
+        map.addLayer({
+          id: "radar-radius-line",
+          type: "line",
+          source: "radar-radius-source",
+          paint: {
+            "line-color": "#00615f",
+            "line-width": 1.5,
+            "line-opacity": 0.35,
+            "line-dasharray": [4, 3],
+          },
+        });
+      }
+    } catch (e) {
+      console.error("[Map] Failed to update radar circle:", e);
+    }
+  }, [mapLoaded, deliveryLoc.lat, deliveryLoc.lng, radiusKm]);
+
   // Update Markers when filtered listings change
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
@@ -182,38 +252,106 @@ export default function FoodMapPage() {
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // Add user position marker
+    // Add user position marker with active radar beacon
     const userEl = document.createElement("div");
-    userEl.className = "flex flex-col items-center cursor-pointer";
+    userEl.className = "flex flex-col items-center cursor-pointer select-none z-20";
     userEl.innerHTML = `
-      <div class="size-5 rounded-full bg-[#00615f] border-2 border-white shadow-xl flex items-center justify-center">
-        <div class="size-2 rounded-full bg-[#79e4a7] animate-ping"></div>
+      <div class="relative flex items-center justify-center">
+        <div class="size-6 rounded-full bg-[#00615f] border-2 border-white shadow-xl flex items-center justify-center text-white">
+          <div class="size-2 rounded-full bg-[#79e4a7] animate-pulse"></div>
+        </div>
+        <div class="absolute -inset-1.5 rounded-full border border-emerald-400/50 animate-ping pointer-events-none"></div>
       </div>
-      <span class="text-[9px] font-black text-[#00615f] bg-white/95 px-1.5 py-0.5 rounded shadow mt-1 whitespace-nowrap max-w-[140px] truncate" title="${deliveryLoc.address}">${deliveryLoc.isSavedHome ? "Nhà của bạn" : "Bạn đang ở đây"}</span>
+      <span class="text-[9px] font-black text-[#00615f] bg-white/95 px-2 py-0.5 rounded-full shadow-md mt-1 whitespace-nowrap max-w-[160px] truncate border border-emerald-100" title="${deliveryLoc.address}">
+        📍 ${deliveryLoc.isSavedHome ? "Nhà của bạn" : "Vị trí của bạn"} (${radiusKm}km radar)
+      </span>
     `;
 
-    const userMarker = new mapboxgl.Marker(userEl)
+    const userMarker = new mapboxgl.Marker({ element: userEl, anchor: "bottom" })
       .setLngLat([deliveryLoc.lng, deliveryLoc.lat])
       .addTo(mapRef.current);
     markersRef.current.push(userMarker);
 
-    // Add listing markers
+    // Add listing markers as Rich Store Tickets ("tiket cửa hàng ở gần trên bản đồ")
     filteredListings.forEach((item) => {
       const isSelected = selectedListing?.id === item.id;
       const isUrgent = item.status === "EXPIRING_SOON";
+      const discountPercent =
+        item.originalPrice > 0
+          ? Math.round((1 - item.discountPrice / item.originalPrice) * 100)
+          : 0;
+      const thumb =
+        item.imageUrls?.[0] ||
+        "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200";
 
       const el = document.createElement("div");
-      el.className = "cursor-pointer transition-transform duration-200 hover:scale-110";
+      el.className = `group relative cursor-pointer select-none transition-all duration-200 transform hover:scale-105 hover:z-30 ${
+        isSelected ? "scale-105 z-30" : "z-10"
+      }`;
+
       el.innerHTML = `
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-2xl border text-xs font-black transition-all ${
+        <!-- Store Ticket Card -->
+        <div class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl border transition-all duration-200 ${
           isSelected
-            ? "bg-[#00615f] text-white border-white ring-4 ring-[#00615f]/30 scale-105"
+            ? "bg-white border-[#00615f] ring-3 ring-[#00615f]/25 shadow-2xl scale-102"
             : isUrgent
-            ? "bg-rose-500 text-white border-rose-200 animate-pulse"
-            : "bg-white text-stone-900 border-stone-200"
+            ? "bg-white border-rose-300 ring-2 ring-rose-400/20 shadow-lg"
+            : "bg-white/95 hover:bg-white border-stone-200/90 shadow-md"
         }">
-          <span class="size-2 rounded-full ${isSelected || isUrgent ? "bg-white" : "bg-[#00615f]"}"></span>
-          <span>${item.discountPrice.toLocaleString("vi-VN")}đ</span>
+          <!-- Store Food Thumbnail with Discount Badge -->
+          <div class="relative size-10 rounded-xl overflow-hidden shrink-0 bg-stone-100 border border-stone-100">
+            <img src="${thumb}" alt="${item.title}" class="w-full h-full object-cover" />
+            ${
+              discountPercent > 0
+                ? `<span class="absolute bottom-0 inset-x-0 bg-rose-600/90 text-white text-[8px] font-black text-center py-0.2 tracking-tighter">-${discountPercent}%</span>`
+                : ""
+            }
+          </div>
+
+          <!-- Store & Deal Info -->
+          <div class="flex flex-col min-w-0 pr-0.5 text-left">
+            <div class="flex items-center gap-1">
+              <span class="text-[11px] font-black text-stone-900 truncate max-w-[110px] sm:max-w-[140px] leading-tight">
+                ${item.partnerName}
+              </span>
+              ${
+                isUrgent
+                  ? `<span class="size-1.5 rounded-full bg-rose-500 animate-ping shrink-0" title="Cần giải cứu gấp"></span>`
+                  : ""
+              }
+            </div>
+
+            <p class="text-[10px] text-stone-500 truncate max-w-[110px] sm:max-w-[140px] leading-tight mt-0.5">
+              ${item.title}
+            </p>
+
+            <div class="flex items-center gap-1.5 mt-1">
+              <span class="text-[11px] font-black text-[#00615f] bg-emerald-50 px-1.5 py-0.2 rounded-md">
+                ${item.discountPrice.toLocaleString("vi-VN")}đ
+              </span>
+              ${
+                item.distanceKm != null
+                  ? `<span class="text-[9px] font-bold text-stone-500">• ${item.distanceKm} km</span>`
+                  : ""
+              }
+            </div>
+          </div>
+
+          <!-- Ticket Perforation Notch Line -->
+          <div class="flex flex-col justify-between self-stretch border-l border-dashed border-stone-200 pl-1.5 py-0.5 text-[#00615f]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+              <path d="M3 6h18"></path>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Bottom Pin Pointer (Triangle) -->
+        <div class="flex justify-center -mt-[1px]">
+          <div class="w-2.5 h-2 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent ${
+            isSelected ? "border-t-[8px] border-t-[#00615f]" : "border-t-[8px] border-t-stone-300"
+          }"></div>
         </div>
       `;
 
@@ -227,7 +365,7 @@ export default function FoodMapPage() {
         });
       });
 
-      const marker = new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
         .setLngLat([item.lng, item.lat])
         .addTo(mapRef.current!);
 
