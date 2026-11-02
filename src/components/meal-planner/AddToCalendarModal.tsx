@@ -18,6 +18,7 @@ import {
   RecipeDTO,
   MealPlanSlotDTO,
 } from "@/redux/api/mealPlannerApi";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export interface AddToCalendarModalProps {
@@ -54,6 +55,7 @@ export function AddToCalendarModal({
   onSuccess,
 }: AddToCalendarModalProps) {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const today = new Date();
   const [year] = useState(today.getFullYear());
   const [month] = useState(today.getMonth());
@@ -83,6 +85,13 @@ export function AddToCalendarModal({
   const isReplacing = Boolean(existingSlot && existingSlot.meal);
 
   const handleConfirmAdd = async () => {
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để lưu món vào lịch ăn!");
+      const returnUrl = encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/meal-planner");
+      router.push(`/login?redirect=${returnUrl}`);
+      return;
+    }
+
     try {
       const imageUrl = recipe.partnerImage || recipe.image;
       const ingNames = Array.isArray(recipe.ingredients)

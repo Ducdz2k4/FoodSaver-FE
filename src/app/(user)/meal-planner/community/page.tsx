@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Heart,
   MessageCircle,
@@ -23,6 +24,7 @@ import {
   useToggleLikePostMutation,
   CommunityPostDTO,
 } from "@/redux/api/mealPlannerApi";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const CATEGORIES_FILTER = [
@@ -57,6 +59,8 @@ function timeAgo(dateStr: string) {
 }
 
 export default function CommunityPage() {
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"hot" | "new">("hot");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -79,6 +83,12 @@ export default function CommunityPage() {
   const posts: CommunityPostDTO[] = postsRes?.data || [];
 
   const handleLike = async (postId: string) => {
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để thích bài viết!");
+      router.push(`/login?redirect=${encodeURIComponent("/meal-planner/community")}`);
+      return;
+    }
+
     try {
       const res = await toggleLike(postId).unwrap();
       toast.success(res.data.liked ? "Đã thích bài viết!" : "Đã bỏ thích");
@@ -89,6 +99,12 @@ export default function CommunityPage() {
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để đăng bài viết!");
+      router.push(`/login?redirect=${encodeURIComponent("/meal-planner/community")}`);
+      return;
+    }
+
     if (!newTitle.trim() || !newContent.trim()) {
       toast.error("Vui lòng nhập tiêu đề và nội dung bài viết");
       return;
@@ -132,8 +148,15 @@ export default function CommunityPage() {
           </p>
         </div>
         <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-md"
+          onClick={() => {
+            if (!isAuthenticated) {
+              toast.error("Vui lòng đăng nhập để chia sẻ kinh nghiệm!");
+              router.push(`/login?redirect=${encodeURIComponent("/meal-planner/community")}`);
+              return;
+            }
+            setIsCreateModalOpen(true);
+          }}
+          className="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-md cursor-pointer"
         >
           <Lightbulb className="size-3.5" /> Chia sẻ kinh nghiệm
         </button>
@@ -151,7 +174,7 @@ export default function CommunityPage() {
                   <button
                     key={cat.key}
                     onClick={() => setActiveFilter(cat.key)}
-                    className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-bold transition-all ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
                       activeFilter === cat.key
                         ? "bg-[#00615f] text-white shadow"
                         : "bg-white/80 text-stone-600 border border-stone-200 hover:border-[#00615f]/30"
@@ -165,7 +188,7 @@ export default function CommunityPage() {
             <div className="flex gap-1 bg-white/80 border border-stone-200 rounded-full p-0.5">
               <button
                 onClick={() => setSortBy("hot")}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition cursor-pointer ${
                   sortBy === "hot" ? "bg-[#00615f] text-white shadow-sm" : "text-stone-500"
                 }`}
               >
@@ -173,7 +196,7 @@ export default function CommunityPage() {
               </button>
               <button
                 onClick={() => setSortBy("new")}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition ${
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition cursor-pointer ${
                   sortBy === "new" ? "bg-[#00615f] text-white shadow-sm" : "text-stone-500"
                 }`}
               >
@@ -216,7 +239,7 @@ export default function CommunityPage() {
                         </div>
                         <p className="text-[10px] text-stone-400">{post.authorRole || "Thành viên"} · {timeAgo(post.createdAt)}</p>
                       </div>
-                      <button className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-[#00615f] transition">
+                      <button className="p-1.5 rounded-full hover:bg-stone-100 text-stone-400 hover:text-[#00615f] transition cursor-pointer">
                         <Bookmark className="size-4" />
                       </button>
                     </div>
@@ -253,12 +276,12 @@ export default function CommunityPage() {
                     <div className="flex items-center gap-4">
                       <button
                         onClick={() => handleLike(post.id)}
-                        className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-rose-500 transition group"
+                        className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-rose-500 transition group cursor-pointer"
                       >
                         <Heart className="size-3.5 group-hover:scale-110 transition-transform text-rose-500 fill-rose-50" />
                         <span className="font-semibold text-stone-700">{post.likes}</span>
                       </button>
-                      <button className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-sky-500 transition">
+                      <button className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-sky-500 transition cursor-pointer">
                         <MessageCircle className="size-3.5" />
                         <span className="font-semibold text-stone-700">{post.comments}</span>
                       </button>
@@ -271,7 +294,7 @@ export default function CommunityPage() {
                         toast.success("Đã sao chép liên kết bài viết!");
                         navigator.clipboard.writeText(window.location.href);
                       }}
-                      className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#00615f] transition"
+                      className="inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#00615f] transition cursor-pointer"
                     >
                       <Share2 className="size-3.5" /> Chia sẻ
                     </button>
@@ -354,7 +377,7 @@ export default function CommunityPage() {
               </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-1 rounded-lg text-stone-400 hover:text-stone-600 transition"
+                className="p-1 rounded-lg text-stone-400 hover:text-stone-600 transition cursor-pointer"
               >
                 <X className="size-4" />
               </button>
@@ -425,14 +448,14 @@ export default function CommunityPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 transition"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 hover:bg-stone-100 transition cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating}
-                  className="px-5 py-2 rounded-xl bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-md flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-xl bg-[#00615f] text-white text-xs font-bold hover:bg-[#004d4b] transition shadow-md flex items-center gap-1.5 cursor-pointer"
                 >
                   {isCreating && <Loader2 className="size-3.5 animate-spin" />}
                   Đăng bài viết
