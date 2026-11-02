@@ -3,6 +3,7 @@ import Header from "@/components/user-component/layout/Header";
 import Footer from "@/components/user-component/layout/Footer";
 import { UserToaster } from "@/components/user-component/toast";
 import { UserRouteGuard } from "@/components/auth/UserRouteGuard";
+import { ChatProvider, ChatDock } from "@/features/chat";
 
 export default function UserLayout({
   children,
@@ -14,7 +15,10 @@ export default function UserLayout({
       <UserToaster />
       <Header />
       <main className="flex-1">
-        <UserRouteGuard>{children}</UserRouteGuard>
+        <ChatProvider>
+          <UserRouteGuard>{children}</UserRouteGuard>
+          <ChatDock />
+        </ChatProvider>
       </main>
       <Footer />
     </div>
