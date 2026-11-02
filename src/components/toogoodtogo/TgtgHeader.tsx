@@ -14,7 +14,6 @@ export function TgtgHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
-  const [currentHash, setCurrentHash] = useState("");
   const { user: authUser, logout } = useAuth();
   const rawUser = useAppSelector((state) => state.auth.user);
   const currentUser = mounted ? (authUser || rawUser) : null;
@@ -32,24 +31,17 @@ export function TgtgHeader() {
 
   useEffect(() => {
     setMounted(true);
-    setCurrentHash(window.location.hash);
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    const handleHashChange = () => {
-      setCurrentHash(window.location.hash);
-    };
     window.addEventListener("scroll", handleScroll);
-    window.addEventListener("hashchange", handleHashChange);
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("hashchange", handleHashChange);
     };
   }, []);
 
   const isSearchActive = pathname === "/search" || pathname.startsWith("/search/") || pathname.startsWith("/listings/");
   const isMapActive = pathname === "/map" || pathname.startsWith("/map/");
-  const isHowItWorksActive = pathname === "/" && currentHash === "#how-it-works";
   const isOrdersActive = pathname === "/orders" || pathname.startsWith("/orders/");
   const isMealPlannerActive = pathname === "/meal-planner" || pathname.startsWith("/meal-planner/");
   const isLoginActive = pathname === "/login";
@@ -69,11 +61,6 @@ export function TgtgHeader() {
       href: "/map",
       label: "Bản đồ",
       isActive: isMapActive,
-    },
-    {
-      href: "/#how-it-works",
-      label: "Cách hoạt động",
-      isActive: isHowItWorksActive,
     },
     {
       href: "/orders",
@@ -357,20 +344,6 @@ export function TgtgHeader() {
                 <span>Ăn gì? (Gợi ý & Trợ lý AI)</span>
               </div>
               {isMealPlannerActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
-            </Link>
-
-            <Link
-              href="/#how-it-works"
-              onClick={() => setMobileOpen(false)}
-              aria-current={isHowItWorksActive ? "page" : undefined}
-              className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
-                isHowItWorksActive
-                  ? "bg-[#00615f] text-white font-black shadow-sm"
-                  : "hover:bg-emerald-50 text-[#00615f]"
-              }`}
-            >
-              <span>Cách hoạt động</span>
-              {isHowItWorksActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
             </Link>
 
             {currentUser && currentUser.partnerCapability === "NONE" && currentUser.role !== "ADMIN" && (
