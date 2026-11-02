@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   User,
@@ -34,6 +34,18 @@ export function UserMenuDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isProfileActive = pathname === "/profile" || pathname.startsWith("/profile/");
+  const isOrdersActive = pathname === "/orders" || pathname.startsWith("/orders/");
+  const isMapActive = pathname === "/map" || pathname.startsWith("/map/");
+  const isNotificationsActive = pathname === "/notifications" || pathname.startsWith("/notifications/");
+  const isAdminActive = pathname.startsWith("/admin");
+  const isPartnerCenterActive = pathname === "/partner/dashboard";
+  const isPartnerListingsActive = pathname.startsWith("/partner/listings");
+  const isPartnerOrdersActive = pathname.startsWith("/partner/orders");
+  const isPartnerPendingActive = pathname.startsWith("/partner/apply/pending");
+  const isPartnerApplyActive = pathname.startsWith("/partner/apply") && !pathname.startsWith("/partner/apply/pending");
 
   // Close dropdown on click outside or escape key
   useEffect(() => {
@@ -149,37 +161,69 @@ export function UserMenuDropdown() {
             <Link
               href="/profile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl hover:bg-stone-100 hover:text-stone-900 transition"
+              aria-current={isProfileActive ? "page" : undefined}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                isProfileActive
+                  ? "bg-emerald-50 text-[#00615f] font-black"
+                  : "hover:bg-stone-100 hover:text-stone-900 text-stone-700"
+              }`}
             >
-              <User className="size-4 text-[#00615f] shrink-0" />
-              <span>Hồ sơ cá nhân</span>
+              <div className="flex items-center gap-2.5">
+                <User className="size-4 text-[#00615f] shrink-0" />
+                <span>Hồ sơ cá nhân</span>
+              </div>
+              {isProfileActive && <span className="size-1.5 rounded-full bg-[#00615f]" />}
             </Link>
 
             <Link
               href="/orders"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl hover:bg-stone-100 hover:text-stone-900 transition"
+              aria-current={isOrdersActive ? "page" : undefined}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                isOrdersActive
+                  ? "bg-emerald-50 text-[#00615f] font-black"
+                  : "hover:bg-stone-100 hover:text-stone-900 text-stone-700"
+              }`}
             >
-              <ShoppingBag className="size-4 text-[#00615f] shrink-0" />
-              <span>Đơn hàng của tôi</span>
+              <div className="flex items-center gap-2.5">
+                <ShoppingBag className="size-4 text-[#00615f] shrink-0" />
+                <span>Đơn hàng của tôi</span>
+              </div>
+              {isOrdersActive && <span className="size-1.5 rounded-full bg-[#00615f]" />}
             </Link>
 
             <Link
               href="/map"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl hover:bg-stone-100 hover:text-stone-900 transition"
+              aria-current={isMapActive ? "page" : undefined}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                isMapActive
+                  ? "bg-emerald-50 text-[#00615f] font-black"
+                  : "hover:bg-stone-100 hover:text-stone-900 text-stone-700"
+              }`}
             >
-              <Compass className="size-4 text-[#00615f] shrink-0" />
-              <span>Bản đồ radar cứu trợ</span>
+              <div className="flex items-center gap-2.5">
+                <Compass className="size-4 text-[#00615f] shrink-0" />
+                <span>Bản đồ radar cứu trợ</span>
+              </div>
+              {isMapActive && <span className="size-1.5 rounded-full bg-[#00615f]" />}
             </Link>
 
             <Link
               href="/notifications"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl hover:bg-stone-100 hover:text-stone-900 transition"
+              aria-current={isNotificationsActive ? "page" : undefined}
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                isNotificationsActive
+                  ? "bg-emerald-50 text-[#00615f] font-black"
+                  : "hover:bg-stone-100 hover:text-stone-900 text-stone-700"
+              }`}
             >
-              <Bell className="size-4 text-[#00615f] shrink-0" />
-              <span>Trung tâm thông báo</span>
+              <div className="flex items-center gap-2.5">
+                <Bell className="size-4 text-[#00615f] shrink-0" />
+                <span>Trung tâm thông báo</span>
+              </div>
+              {isNotificationsActive && <span className="size-1.5 rounded-full bg-[#00615f]" />}
             </Link>
           </div>
 
@@ -191,7 +235,12 @@ export function UserMenuDropdown() {
               <Link
                 href="/admin"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-900 transition"
+                aria-current={isAdminActive ? "page" : undefined}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                  isAdminActive
+                    ? "bg-purple-100 text-purple-900 ring-1 ring-purple-300 font-black"
+                    : "bg-purple-50 hover:bg-purple-100 text-purple-900"
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <ShieldAlert className="size-4 text-purple-700 shrink-0" />
@@ -206,7 +255,12 @@ export function UserMenuDropdown() {
                 <Link
                   href="/partner/dashboard"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 transition"
+                  aria-current={isPartnerCenterActive ? "page" : undefined}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                    isPartnerCenterActive
+                      ? "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-300 font-black"
+                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-900"
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <Store className="size-4 text-emerald-700 shrink-0" />
@@ -218,7 +272,12 @@ export function UserMenuDropdown() {
                 <Link
                   href="/partner/listings"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl hover:bg-stone-100 text-stone-700 transition text-[11px]"
+                  aria-current={isPartnerListingsActive ? "page" : undefined}
+                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-2xl transition text-[11px] ${
+                    isPartnerListingsActive
+                      ? "bg-emerald-50 text-emerald-900 font-black"
+                      : "hover:bg-stone-100 text-stone-700"
+                  }`}
                 >
                   <span className="size-1.5 rounded-full bg-emerald-600 ml-1 mr-0.5" />
                   <span>Quản lý món ăn của quán</span>
@@ -227,7 +286,12 @@ export function UserMenuDropdown() {
                 <Link
                   href="/partner/orders"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl hover:bg-stone-100 text-stone-700 transition text-[11px]"
+                  aria-current={isPartnerOrdersActive ? "page" : undefined}
+                  className={`flex items-center gap-2.5 px-3.5 py-2 rounded-2xl transition text-[11px] ${
+                    isPartnerOrdersActive
+                      ? "bg-emerald-50 text-emerald-900 font-black"
+                      : "hover:bg-stone-100 text-stone-700"
+                  }`}
                 >
                   <span className="size-1.5 rounded-full bg-emerald-600 ml-1 mr-0.5" />
                   <span>Đơn hàng đến của quán</span>
@@ -239,7 +303,12 @@ export function UserMenuDropdown() {
               <Link
                 href="/partner/apply/pending"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 transition"
+                aria-current={isPartnerPendingActive ? "page" : undefined}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                  isPartnerPendingActive
+                    ? "bg-amber-100 text-amber-900 ring-1 ring-amber-300 font-black"
+                    : "bg-amber-50 hover:bg-amber-100 text-amber-900"
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <Clock className="size-4 text-amber-700 shrink-0" />
@@ -253,7 +322,12 @@ export function UserMenuDropdown() {
               <Link
                 href="/partner/apply"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-900 transition"
+                aria-current={isPartnerApplyActive ? "page" : undefined}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                  isPartnerApplyActive
+                    ? "bg-rose-100 text-rose-900 ring-1 ring-rose-300 font-black"
+                    : "bg-rose-50 hover:bg-rose-100 text-rose-900"
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <AlertCircle className="size-4 text-rose-700 shrink-0" />
@@ -267,7 +341,12 @@ export function UserMenuDropdown() {
               <Link
                 href="/partner/apply"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-[#00615f]/5 hover:bg-[#00615f]/10 text-[#00615f] transition"
+                aria-current={isPartnerApplyActive ? "page" : undefined}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition ${
+                  isPartnerApplyActive
+                    ? "bg-[#00615f]/15 text-[#00615f] ring-1 ring-[#00615f]/30 font-black"
+                    : "bg-[#00615f]/5 hover:bg-[#00615f]/10 text-[#00615f]"
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <Store className="size-4 text-[#00615f] shrink-0" />

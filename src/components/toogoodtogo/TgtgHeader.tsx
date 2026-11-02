@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck, User, LogOut, Compass, ChefHat } from "lucide-react";
 import { UserMenuDropdown } from "@/components/common/UserMenuDropdown";
 import { useAuth } from "@/context/AuthContext";
@@ -14,10 +14,12 @@ export function TgtgHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [currentHash, setCurrentHash] = useState("");
   const { user: authUser, logout } = useAuth();
   const rawUser = useAppSelector((state) => state.auth.user);
   const currentUser = mounted ? (authUser || rawUser) : null;
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleHeaderSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,12 +32,61 @@ export function TgtgHeader() {
 
   useEffect(() => {
     setMounted(true);
+    setCurrentHash(window.location.hash);
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash);
+    };
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("hashchange", handleHashChange);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("hashchange", handleHashChange);
+    };
   }, []);
+
+  const isSearchActive = pathname === "/search" || pathname.startsWith("/search/") || pathname.startsWith("/listings/");
+  const isMapActive = pathname === "/map" || pathname.startsWith("/map/");
+  const isHowItWorksActive = pathname === "/" && currentHash === "#how-it-works";
+  const isOrdersActive = pathname === "/orders" || pathname.startsWith("/orders/");
+  const isMealPlannerActive = pathname === "/meal-planner" || pathname.startsWith("/meal-planner/");
+  const isLoginActive = pathname === "/login";
+  const isRegisterActive = pathname === "/register";
+  const isAdminActive = pathname.startsWith("/admin");
+  const isPartnerActive = pathname.startsWith("/partner/dashboard");
+  const isPartnerApplyActive = pathname.startsWith("/partner/apply");
+  const isProfileActive = pathname === "/profile" || pathname.startsWith("/profile/");
+
+  const navItems = [
+    {
+      href: "/search",
+      label: "Khám phá",
+      isActive: isSearchActive,
+    },
+    {
+      href: "/map",
+      label: "Bản đồ",
+      isActive: isMapActive,
+    },
+    {
+      href: "/#how-it-works",
+      label: "Cách hoạt động",
+      isActive: isHowItWorksActive,
+    },
+    {
+      href: "/orders",
+      label: "Đơn của tôi",
+      isActive: isOrdersActive,
+    },
+    {
+      href: "/meal-planner",
+      label: "Ăn gì?",
+      icon: ChefHat,
+      isActive: isMealPlannerActive,
+    },
+  ];
 
   return (
     <header
@@ -91,37 +142,30 @@ export function TgtgHeader() {
 
             {/* Nav Links */}
             <div className="flex items-center gap-1">
-              <Link
-                href="/search"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
-              >
-                Khám phá
-              </Link>
-              <Link
-                href="/map"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
-              >
-                Bản đồ
-              </Link>
-              <Link
-                href="/#how-it-works"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
-              >
-                Cách hoạt động
-              </Link>
-              <Link
-                href="/orders"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition"
-              >
-                Đơn của tôi
-              </Link>
-              <Link
-                href="/meal-planner"
-                className="liquid-glass-item px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold text-[#00615f] hover:text-[#089184] hover:bg-emerald-50 transition inline-flex items-center gap-1"
-              >
-                <ChefHat className="size-3.5" />
-                Ăn gì?
-              </Link>
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={item.isActive ? "page" : undefined}
+                    className={`px-3.5 py-1.5 rounded-full text-xs xl:text-[13px] font-bold transition-all duration-200 inline-flex items-center gap-1.5 select-none ${
+                      item.isActive
+                        ? "bg-[#00615f] text-white shadow-[0_2px_8px_rgba(0,97,95,0.25)] font-black"
+                        : "text-[#00615f] hover:text-[#089184] hover:bg-emerald-50/80"
+                    }`}
+                  >
+                    {Icon && (
+                      <Icon
+                        className={`size-3.5 shrink-0 transition-colors ${
+                          item.isActive ? "text-[#79e4a7]" : "text-[#00615f]"
+                        }`}
+                      />
+                    )}
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
             </div>
           </nav>
         </div>
@@ -134,7 +178,12 @@ export function TgtgHeader() {
               {currentUser.role === "ADMIN" && (
                 <Link
                   href="/admin"
-                  className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-md transition"
+                  aria-current={isAdminActive ? "page" : undefined}
+                  className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-bold text-xs shadow-md transition ${
+                    isAdminActive
+                      ? "bg-purple-900 text-white ring-2 ring-purple-400 ring-offset-1 font-black shadow-purple-900/30"
+                      : "bg-purple-700 hover:bg-purple-800 text-white"
+                  }`}
                 >
                   <ShieldAlert className="size-3.5" />
                   <span>Admin Portal</span>
@@ -145,7 +194,12 @@ export function TgtgHeader() {
               {currentUser.partnerCapability === "VERIFIED" && (
                 <Link
                   href="/partner/dashboard"
-                  className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition"
+                  aria-current={isPartnerActive ? "page" : undefined}
+                  className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full font-bold text-xs shadow-md transition ${
+                    isPartnerActive
+                      ? "bg-emerald-800 text-white ring-2 ring-emerald-300 ring-offset-1 font-black shadow-emerald-900/30"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  }`}
                 >
                   <Store className="size-3.5" />
                   <span>Partner Center</span>
@@ -156,7 +210,12 @@ export function TgtgHeader() {
               {currentUser.partnerCapability === "PENDING" && (
                 <Link
                   href="/partner/apply/pending"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-300 font-bold text-xs shadow-sm hover:bg-amber-100 transition"
+                  aria-current={isPartnerApplyActive ? "page" : undefined}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs shadow-sm transition ${
+                    isPartnerApplyActive
+                      ? "bg-amber-100 text-amber-900 border-2 border-amber-400 font-black"
+                      : "bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100"
+                  }`}
                 >
                   <Clock className="size-3.5" />
                   <span>Hồ sơ đang duyệt</span>
@@ -167,7 +226,12 @@ export function TgtgHeader() {
               {currentUser.partnerCapability === "REJECTED" && (
                 <Link
                   href="/partner/apply"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-300 font-bold text-xs shadow-sm hover:bg-rose-100 transition"
+                  aria-current={isPartnerApplyActive ? "page" : undefined}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs shadow-sm transition ${
+                    isPartnerApplyActive
+                      ? "bg-rose-100 text-rose-900 border-2 border-rose-400 font-black"
+                      : "bg-rose-50 text-rose-700 border border-rose-300 hover:bg-rose-100"
+                  }`}
                 >
                   <span>✕ Hồ sơ từ chối (Nộp lại)</span>
                 </Link>
@@ -177,7 +241,12 @@ export function TgtgHeader() {
               {currentUser.partnerCapability === "NONE" && currentUser.role !== "ADMIN" && (
                 <Link
                   href="/partner/apply"
-                  className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-emerald-50 text-[#00615f] border border-[#00615f]/40 font-bold text-xs shadow-sm transition"
+                  aria-current={isPartnerApplyActive ? "page" : undefined}
+                  className={`hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full font-bold text-xs shadow-sm transition ${
+                    isPartnerApplyActive
+                      ? "bg-[#00615f] text-white font-black shadow-md"
+                      : "bg-white hover:bg-emerald-50 text-[#00615f] border border-[#00615f]/40"
+                  }`}
                 >
                   <Store className="size-3.5" />
                   <span>Trở thành Đối tác</span>
@@ -191,14 +260,24 @@ export function TgtgHeader() {
             <>
               <Link
                 href="/login"
-                className="text-xs sm:text-[13px] font-bold text-[#00615f] hover:text-[#089184] px-3.5 py-1.5 rounded-full hover:bg-white/60 transition"
+                aria-current={isLoginActive ? "page" : undefined}
+                className={`text-xs sm:text-[13px] font-bold px-3.5 py-1.5 rounded-full transition-all duration-200 ${
+                  isLoginActive
+                    ? "bg-[#00615f] text-white shadow-[0_2px_8px_rgba(0,97,95,0.25)] font-black"
+                    : "text-[#00615f] hover:text-[#089184] hover:bg-white/60"
+                }`}
               >
                 Đăng nhập
               </Link>
 
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center px-4 sm:px-5 py-2 rounded-full bg-[#00615f] hover:bg-[#089184] text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+                aria-current={isRegisterActive ? "page" : undefined}
+                className={`inline-flex items-center justify-center px-4 sm:px-5 py-2 rounded-full font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 ${
+                  isRegisterActive
+                    ? "bg-[#089184] text-white ring-2 ring-[#00615f] ring-offset-2 font-black shadow-lg"
+                    : "bg-[#00615f] hover:bg-[#089184] text-white"
+                }`}
               >
                 Đăng ký
               </Link>
@@ -220,37 +299,96 @@ export function TgtgHeader() {
       {/* Mobile Drawer */}
       {mobileOpen && (
         <div className="lg:hidden liquid-glass mx-4 mt-2 px-6 py-6 space-y-4 rounded-3xl shadow-xl border border-stone-200 bg-white/95 backdrop-blur-md animate-in slide-in-from-top duration-200">
-          <nav className="flex flex-col space-y-2 text-sm font-bold text-[#00615f] pt-1">
+          <nav className="flex flex-col space-y-1.5 text-sm font-bold text-[#00615f] pt-1">
             <Link
               href="/search"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
+              aria-current={isSearchActive ? "page" : undefined}
+              className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
+                isSearchActive
+                  ? "bg-[#00615f] text-white font-black shadow-sm"
+                  : "hover:bg-emerald-50 text-[#00615f]"
+              }`}
             >
-              Khám phá
+              <span>Khám phá</span>
+              {isSearchActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
             </Link>
+
             <Link
               href="/map"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
+              aria-current={isMapActive ? "page" : undefined}
+              className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
+                isMapActive
+                  ? "bg-[#00615f] text-white font-black shadow-sm"
+                  : "hover:bg-emerald-50 text-[#00615f]"
+              }`}
             >
-              Bản đồ
+              <span>Bản đồ</span>
+              {isMapActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
             </Link>
+
             <Link
               href="/orders"
               onClick={() => setMobileOpen(false)}
-              className="px-3 py-2 rounded-xl hover:bg-emerald-50 transition"
+              aria-current={isOrdersActive ? "page" : undefined}
+              className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
+                isOrdersActive
+                  ? "bg-[#00615f] text-white font-black shadow-sm"
+                  : "hover:bg-emerald-50 text-[#00615f]"
+              }`}
             >
-              Đơn hàng của tôi
+              <span>Đơn hàng của tôi</span>
+              {isOrdersActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
             </Link>
 
-            {currentUser && currentUser.partnerCapability === "NONE" && (
+            <Link
+              href="/meal-planner"
+              onClick={() => setMobileOpen(false)}
+              aria-current={isMealPlannerActive ? "page" : undefined}
+              className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
+                isMealPlannerActive
+                  ? "bg-[#00615f] text-white font-black shadow-sm"
+                  : "hover:bg-emerald-50 text-[#00615f]"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <ChefHat className={`size-4 ${isMealPlannerActive ? "text-[#79e4a7]" : "text-[#00615f]"}`} />
+                <span>Ăn gì? (Gợi ý & Trợ lý AI)</span>
+              </div>
+              {isMealPlannerActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
+            </Link>
+
+            <Link
+              href="/#how-it-works"
+              onClick={() => setMobileOpen(false)}
+              aria-current={isHowItWorksActive ? "page" : undefined}
+              className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
+                isHowItWorksActive
+                  ? "bg-[#00615f] text-white font-black shadow-sm"
+                  : "hover:bg-emerald-50 text-[#00615f]"
+              }`}
+            >
+              <span>Cách hoạt động</span>
+              {isHowItWorksActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
+            </Link>
+
+            {currentUser && currentUser.partnerCapability === "NONE" && currentUser.role !== "ADMIN" && (
               <Link
                 href="/partner/apply"
                 onClick={() => setMobileOpen(false)}
-                className="px-3 py-2 rounded-xl hover:bg-emerald-50 text-emerald-700 font-bold transition flex items-center gap-2"
+                aria-current={isPartnerApplyActive ? "page" : undefined}
+                className={`px-3.5 py-2.5 rounded-xl transition flex items-center justify-between ${
+                  isPartnerApplyActive
+                    ? "bg-[#00615f] text-white font-black shadow-sm"
+                    : "hover:bg-emerald-50 text-emerald-700"
+                }`}
               >
-                <Store className="size-4" />
-                <span>Đăng ký làm Đối tác F&B</span>
+                <div className="flex items-center gap-2">
+                  <Store className="size-4" />
+                  <span>Đăng ký làm Đối tác F&B</span>
+                </div>
+                {isPartnerApplyActive && <span className="size-2 rounded-full bg-[#79e4a7] shadow-xs" />}
               </Link>
             )}
 
@@ -258,10 +396,18 @@ export function TgtgHeader() {
               <Link
                 href="/partner/dashboard"
                 onClick={() => setMobileOpen(false)}
-                className="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold transition flex items-center gap-2"
+                aria-current={isPartnerActive ? "page" : undefined}
+                className={`px-3.5 py-2.5 rounded-xl text-white font-bold transition flex items-center justify-between ${
+                  isPartnerActive
+                    ? "bg-emerald-800 ring-2 ring-emerald-300 font-black shadow-sm"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
               >
-                <Store className="size-4" />
-                <span>Partner Center</span>
+                <div className="flex items-center gap-2">
+                  <Store className="size-4" />
+                  <span>Partner Center</span>
+                </div>
+                {isPartnerActive && <span className="size-2 rounded-full bg-white shadow-xs" />}
               </Link>
             )}
 
@@ -269,10 +415,18 @@ export function TgtgHeader() {
               <Link
                 href="/admin"
                 onClick={() => setMobileOpen(false)}
-                className="px-3 py-2 rounded-xl bg-purple-700 text-white font-bold transition flex items-center gap-2"
+                aria-current={isAdminActive ? "page" : undefined}
+                className={`px-3.5 py-2.5 rounded-xl text-white font-bold transition flex items-center justify-between ${
+                  isAdminActive
+                    ? "bg-purple-900 ring-2 ring-purple-400 font-black shadow-sm"
+                    : "bg-purple-700 hover:bg-purple-800"
+                }`}
               >
-                <ShieldAlert className="size-4" />
-                <span>Admin Portal</span>
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="size-4" />
+                  <span>Admin Portal</span>
+                </div>
+                {isAdminActive && <span className="size-2 rounded-full bg-white shadow-xs" />}
               </Link>
             )}
 
@@ -281,10 +435,18 @@ export function TgtgHeader() {
                 <Link
                   href="/profile"
                   onClick={() => setMobileOpen(false)}
-                  className="px-3 py-2 rounded-xl hover:bg-stone-100 text-stone-700 font-bold transition flex items-center gap-2"
+                  aria-current={isProfileActive ? "page" : undefined}
+                  className={`px-3.5 py-2.5 rounded-xl font-bold transition flex items-center justify-between ${
+                    isProfileActive
+                      ? "bg-stone-200/90 text-stone-900 font-black"
+                      : "hover:bg-stone-100 text-stone-700"
+                  }`}
                 >
-                  <User className="size-4 text-[#00615f]" />
-                  <span>Hồ sơ cá nhân ({currentUser.fullName || currentUser.email})</span>
+                  <div className="flex items-center gap-2">
+                    <User className="size-4 text-[#00615f]" />
+                    <span>Hồ sơ cá nhân ({currentUser.fullName || currentUser.email})</span>
+                  </div>
+                  {isProfileActive && <span className="size-2 rounded-full bg-[#00615f] shadow-xs" />}
                 </Link>
 
                 <button
@@ -295,7 +457,7 @@ export function TgtgHeader() {
                     toast.success("Đã đăng xuất tài khoản.");
                     router.push("/login");
                   }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition flex items-center gap-2 cursor-pointer"
+                  className="w-full text-left px-3.5 py-2.5 rounded-xl hover:bg-rose-50 text-rose-600 font-bold transition flex items-center gap-2 cursor-pointer"
                 >
                   <LogOut className="size-4" />
                   <span>Đăng xuất</span>
@@ -306,14 +468,24 @@ export function TgtgHeader() {
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="w-full text-center py-2.5 rounded-full border border-[#00615f] text-[#00615f] font-bold text-xs"
+                  aria-current={isLoginActive ? "page" : undefined}
+                  className={`w-full text-center py-2.5 rounded-full font-bold text-xs transition ${
+                    isLoginActive
+                      ? "bg-[#00615f] text-white font-black shadow-sm"
+                      : "border border-[#00615f] text-[#00615f] hover:bg-[#00615f]/10"
+                  }`}
                 >
                   Đăng nhập
                 </Link>
                 <Link
                   href="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="w-full text-center py-2.5 rounded-full bg-[#00615f] text-white font-bold text-xs"
+                  aria-current={isRegisterActive ? "page" : undefined}
+                  className={`w-full text-center py-2.5 rounded-full font-bold text-xs transition ${
+                    isRegisterActive
+                      ? "bg-[#089184] ring-2 ring-[#00615f] text-white font-black shadow-md"
+                      : "bg-[#00615f] hover:bg-[#089184] text-white"
+                  }`}
                 >
                   Đăng ký
                 </Link>
