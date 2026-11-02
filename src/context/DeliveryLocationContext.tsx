@@ -34,11 +34,11 @@ export interface DeliveryLocationContextType {
   resetToHomeLocation: () => void;
 }
 
-// Fallback Default: Center of Ho Chi Minh City
+// Default Location: 12 Đường Bình Hòa 10, Khuê Trung, Cẩm Lệ, Đà Nẵng
 const DEFAULT_LOCATION: DeliveryLocation = {
-  address: "Quận 1, TP. Hồ Chí Minh",
-  lat: 10.7769,
-  lng: 106.695,
+  address: "12 Đường Bình Hòa 10, Khuê Trung, Cẩm Lệ, Đà Nẵng",
+  lat: 16.022091,
+  lng: 108.214485,
   source: "default",
   isConfirmed: false,
   isSavedHome: false,
