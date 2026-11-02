@@ -7,6 +7,9 @@ const BACKEND_URL =
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  experimental: {
+    agentUpgrade: "security",
+  } as any,
   async rewrites() {
     return [
       {

@@ -170,7 +170,6 @@ function DishThumbnail({ src, alt, size = "md" }: { src?: string | null; alt: st
 
   return (
     <div className={`${sizeClasses} overflow-hidden shrink-0 border border-stone-200/80 relative bg-stone-100`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}
@@ -454,7 +453,6 @@ function DayRescueDealsRadar({
                   <div className="flex items-start gap-2.5">
                     <div className="relative size-16 rounded-lg overflow-hidden shrink-0 bg-stone-100 border border-stone-200/80">
                       {imageSrc ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={imageSrc}
                           alt={listing.title}

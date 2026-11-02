@@ -54,10 +54,10 @@ export function TgtgHero() {
         <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
           <Link
             href="/search"
-            className="w-full sm:w-auto inline-flex items-center justify-center px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-white hover:bg-stone-100 text-[#00615f] font-black text-sm sm:text-base shadow-xl hover:scale-102 active:scale-98 transition-all duration-200"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-white hover:bg-stone-100 !text-[#00615f] font-black text-sm sm:text-base shadow-xl hover:scale-102 active:scale-98 transition-all duration-200 group"
           >
-            <span>Khám phá món gần bạn</span>
-            <ArrowRight className="size-4 ml-2" />
+            <span className="!text-[#00615f] font-black">Khám phá món gần bạn</span>
+            <ArrowRight className="size-4 ml-2 !text-[#00615f] group-hover:translate-x-0.5 transition-transform" />
           </Link>
 
           <Link

@@ -207,7 +207,6 @@ export default function RecipeDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
           {/* Hero Image */}
           <div className="lg:col-span-5 relative h-72 sm:h-96 lg:h-auto min-h-[300px] bg-stone-100 overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imageUrl}
               alt={recipe.name}
@@ -599,7 +598,6 @@ export default function RecipeDetailPage() {
                     className="flex items-center gap-3 p-2 rounded-xl hover:bg-stone-50 transition border border-transparent hover:border-stone-200/80 group"
                   >
                     <div className="size-12 rounded-lg overflow-hidden shrink-0 bg-stone-100 border border-stone-200">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={rel.partnerImage || rel.image}
                         alt={rel.name}

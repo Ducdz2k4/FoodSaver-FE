@@ -148,7 +148,7 @@ function DiscoverContent() {
         : "EXPIRY",
   });
 
-  const baseListings = realListings || [];
+  const baseListings = useMemo(() => realListings || [], [realListings]);
 
   // Client-side filtering & sorting for interactive tab feel
   const processedListings = useMemo(() => {
@@ -577,7 +577,7 @@ function DiscoverContent() {
                 Không tìm thấy món ăn nào quanh đây
               </h3>
               <p className="text-xs text-stone-500">
-                Hãy thử mở rộng bán kính lên 10km - 20km hoặc chọn mục "Tất cả món" nhé!
+                Hãy thử mở rộng bán kính lên 10km - 20km hoặc chọn mục &quot;Tất cả món&quot; nhé!
               </p>
               <button
                 type="button"

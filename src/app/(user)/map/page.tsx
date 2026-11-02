@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   MapPin,
@@ -120,7 +120,7 @@ export default function FoodMapPage() {
     urgentOnly,
   });
 
-  const allListings = realListings || [];
+  const allListings = useMemo(() => realListings || [], [realListings]);
 
   const filteredListings = allListings.filter((item) => {
     if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;

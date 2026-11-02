@@ -162,7 +162,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     logoutMutation().catch(() => {});
-    dispatch(logOut());
   };
 
   return (

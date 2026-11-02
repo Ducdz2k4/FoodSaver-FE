@@ -60,7 +60,6 @@ function RecipeImage({ recipe }: { recipe: RecipeDTO }) {
 
   return (
     <div className="w-full h-44 overflow-hidden relative bg-stone-100 border-b border-stone-200/60">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageUrl}
         alt={recipe.name}

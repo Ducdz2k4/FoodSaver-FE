@@ -8,11 +8,18 @@ import { useGetListingsQuery } from "@/redux/api/listingApi";
 
 export function FlashSaleModal() {
   const [isOpen, setIsOpen] = useState(false);
+  const [now, setNow] = useState(0);
   const router = useRouter();
 
   // Query real listings from backend API
   const { data: realListings } = useGetListingsQuery();
-  const allListings = realListings || [];
+  const allListings = useMemo(() => realListings || [], [realListings]);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 1. Calculate dynamic highest discount percentage among all active listings
   const dynamicDiscount = useMemo(() => {
@@ -29,8 +36,7 @@ export function FlashSaleModal() {
 
   // 2. Find the most urgent listing (earliest expiryAt) to drive real-time dynamic countdown
   const urgentListing = useMemo(() => {
-    if (allListings.length === 0) return null;
-    const now = Date.now();
+    if (allListings.length === 0 || now === 0) return null;
     const active = [...allListings].filter(
       (item) => new Date(item.expiryAt).getTime() > now
     );
@@ -38,7 +44,7 @@ export function FlashSaleModal() {
     return active.sort(
       (a, b) => new Date(a.expiryAt).getTime() - new Date(b.expiryAt).getTime()
     )[0];
-  }, [allListings]);
+  }, [allListings, now]);
 
   // 3. Dynamic countdown timer driven by real expiry timestamp
   const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number }>({

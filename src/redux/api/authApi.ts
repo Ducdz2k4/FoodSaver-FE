@@ -164,8 +164,14 @@ export const authApiSlice = baseApi.injectEndpoints({
         method: "POST",
       }),
       invalidatesTags: ["User", "UserProfile", "AdminUsers"],
-      async onQueryStarted(_arg, { dispatch }) {
-        dispatch(logOut());
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch {
+        } finally {
+          dispatch(logOut());
+          dispatch(baseApi.util.resetApiState());
+        }
       },
     }),
 

@@ -259,7 +259,7 @@ export default function MealPlannerChatPage() {
     month: currentMonth + 1,
   });
 
-  const monthPlans = monthMealPlansRes?.data || {};
+  const monthPlans = useMemo(() => monthMealPlansRes?.data || {}, [monthMealPlansRes?.data]);
   const userFacts = memoryRes?.data || [];
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -271,8 +271,8 @@ export default function MealPlannerChatPage() {
     return d;
   }, []);
 
-  const tomorrowKey = useMemo(() => formatDateKey(tomorrowDate), [tomorrowDate]);
-  const todayKey = useMemo(() => formatDateKey(new Date()), []);
+  const tomorrowKey = formatDateKey(tomorrowDate);
+  const [todayKey] = useState(() => formatDateKey(new Date()));
 
   const featuredDateInfo = useMemo(() => {
     if (monthPlans[tomorrowKey] && Object.keys(monthPlans[tomorrowKey]).length > 0) {
@@ -393,8 +393,10 @@ export default function MealPlannerChatPage() {
     localStorage.setItem(ACTIVE_SESSION_KEY, s.id);
   };
 
-  const handleDeleteSession = (e: React.MouseEvent, idToDelete: string) => {
+  const handleDeleteSession = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    const idToDelete = e.currentTarget.dataset.sessionId;
+    if (!idToDelete) return;
     const filtered = sessions.filter((s) => s.id !== idToDelete);
 
     if (filtered.length === 0) {
@@ -539,6 +541,25 @@ export default function MealPlannerChatPage() {
         },
       ]);
 
+      // Batch streamed tokens into React state at most every ~40ms.
+      // SSE streams can deliver dozens of token events in rapid
+      // succession; calling setMessages per token triggers React's
+      // "Maximum update depth exceeded" warning.
+      let flushTimer: ReturnType<typeof setTimeout> | null = null;
+      const flushStreamedReply = () => {
+        flushTimer = null;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === botMsgId ? { ...m, content: streamedReply } : m
+          )
+        );
+      };
+      const scheduleStreamFlush = () => {
+        if (flushTimer === null) {
+          flushTimer = setTimeout(flushStreamedReply, 40);
+        }
+      };
+
       let doneReading = false;
       while (!doneReading) {
         const { value, done } = await reader.read();
@@ -553,18 +574,18 @@ export default function MealPlannerChatPage() {
                 const parsed = JSON.parse(line.replace("data: ", "").trim());
                 if (parsed.type === "token") {
                   streamedReply += parsed.content;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === botMsgId ? { ...m, content: streamedReply } : m
-                    )
-                  );
+                  scheduleStreamFlush();
                 } else if (parsed.type === "done") {
+                  if (flushTimer !== null) {
+                    clearTimeout(flushTimer);
+                    flushTimer = null;
+                  }
                   richCards = parsed.richCards;
                   quickSuggestions = parsed.quickSuggestions || [];
                   setMessages((prev) =>
                     prev.map((m) =>
                       m.id === botMsgId
-                        ? { ...m, richCards, quickSuggestions }
+                        ? { ...m, content: streamedReply, richCards, quickSuggestions }
                         : m
                     )
                   );
@@ -578,6 +599,17 @@ export default function MealPlannerChatPage() {
             }
           }
         }
+      }
+
+      // Flush any remaining buffered tokens before closing the stream
+      if (flushTimer !== null) {
+        clearTimeout(flushTimer);
+        flushTimer = null;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === botMsgId ? { ...m, content: streamedReply } : m
+          )
+        );
       }
 
       setIsTyping(false);
@@ -704,7 +736,8 @@ export default function MealPlannerChatPage() {
                         )}
                         <button
                           type="button"
-                          onClick={(e) => handleDeleteSession(e, sess.id)}
+                          data-session-id={sess.id}
+                          onClick={handleDeleteSession}
                           className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-rose-50 hover:text-rose-600 text-stone-400 transition cursor-pointer"
                           title="Xóa cuộc trò chuyện"
                         >
@@ -1435,7 +1468,7 @@ export default function MealPlannerChatPage() {
                   >
                     <div>
                       <p className="font-bold text-stone-800">{fact.key}</p>
-                      <p className="text-stone-600 mt-0.5">"{fact.value}"</p>
+                      <p className="text-stone-600 mt-0.5">&quot;{fact.value}&quot;</p>
                     </div>
                     <span className="text-[10px] font-semibold text-[#00615f] bg-emerald-50 px-2 py-0.5 rounded">
                       Độ tin cậy: {Math.round(fact.confidence * 100)}%

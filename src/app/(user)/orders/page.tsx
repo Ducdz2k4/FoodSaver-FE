@@ -32,7 +32,7 @@ export default function OrdersPage() {
   const { data: realOrders, isLoading, isFetching } = useGetMyOrdersQuery();
   const [selectedStatus, setSelectedStatus] = useState<OrderFilter>("ALL");
 
-  const orders = realOrders || [];
+  const orders = useMemo(() => realOrders || [], [realOrders]);
   const filteredOrders = useMemo(
     () =>
       selectedStatus === "ALL"

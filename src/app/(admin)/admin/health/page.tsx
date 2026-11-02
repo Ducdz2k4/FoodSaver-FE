@@ -121,7 +121,7 @@ export default function AdminSystemHealthPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Cấu hình Tầng Quyết định "Jev AI"</CardTitle>
+            <CardTitle className="text-base">Cấu hình Tầng Quyết định &quot;Jev AI&quot;</CardTitle>
             <CardDescription className="text-xs">
               Mô hình System One của TypeSafe AI chấm điểm cấp bách và rủi ro lãng phí.
             </CardDescription>

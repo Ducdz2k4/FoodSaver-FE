@@ -54,7 +54,7 @@ export default function AdminUsersPage() {
   const [updateUserRole] = useUpdateUserRoleMutation();
   const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
 
-  const users = usersResponse?.data || [];
+  const users = useMemo(() => usersResponse?.data || [], [usersResponse?.data]);
   const meta = usersResponse?.meta;
 
   // KPI Calculations

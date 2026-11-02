@@ -5,6 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { baseApi } from "@/redux/api/baseApi";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface SocketContextType {
   socket: Socket | null;
@@ -30,6 +31,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const token = useAppSelector((state) => state.auth.token);
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   useEffect(() => {
     // Initialize socket connection
@@ -64,7 +66,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         action: {
           label: "Xem đơn",
           onClick: () => {
-            window.location.href = "/partner/orders";
+            router.push("/partner/orders");
           },
         },
       });
@@ -85,7 +87,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
         action: {
           label: "Chi tiết",
           onClick: () => {
-            window.location.href = `/orders/${data?.orderId || ""}`;
+            router.push(`/orders/${data?.orderId || ""}`);
           },
         },
       });
@@ -102,7 +104,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       socketInstance.disconnect();
     };
-  }, [token, user?.partnerProfileId, dispatch]);
+  }, [token, user?.partnerProfileId, dispatch, router]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

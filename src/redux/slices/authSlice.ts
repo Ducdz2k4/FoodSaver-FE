@@ -44,13 +44,15 @@ export const authSlice = createSlice({
       const { user, token } = action.payload;
       state.token = token;
       state.isAuthenticated = true;
-      if (user) {
+      if (user !== undefined) {
         state.user = user;
       }
       if (typeof window !== "undefined") {
         localStorage.setItem("token", token);
         if (user) {
           localStorage.setItem("user", JSON.stringify(user));
+        } else if (user === null) {
+          localStorage.removeItem("user");
         }
         document.cookie = `token=${encodeURIComponent(
           token
@@ -60,8 +62,12 @@ export const authSlice = createSlice({
     setUser: (state, action: PayloadAction<UserOut | null>) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
-      if (typeof window !== "undefined" && action.payload) {
-        localStorage.setItem("user", JSON.stringify(action.payload));
+      if (typeof window !== "undefined") {
+        if (action.payload) {
+          localStorage.setItem("user", JSON.stringify(action.payload));
+        } else {
+          localStorage.removeItem("user");
+        }
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {

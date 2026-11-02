@@ -67,8 +67,8 @@ export default function PartnerApplyPage() {
         if (partnerProfile.lng) setLng(Number(partnerProfile.lng));
       }
     } else if (user) {
-      if (user.address && !address) setAddress(user.address);
-      if (user.phone && !phone) setPhone(user.phone);
+      if (user.address) setAddress((currentAddress) => currentAddress || user.address || "");
+      if (user.phone) setPhone((currentPhone) => currentPhone || user.phone || "");
     }
   }, [partnerProfile, user, router]);
 
@@ -169,7 +169,7 @@ export default function PartnerApplyPage() {
                 Hồ sơ của bạn bị từ chối xét duyệt trước đó:
               </strong>
               <p className="text-rose-700">
-                Lý do từ Admin: <em>"{partnerProfile?.rejectionReason || "Thiếu hoặc mờ giấy tờ pháp lý"}"</em>. Vui lòng tải lại bản chụp rõ nét hơn.
+                Lý do từ Admin: <em>&quot;{partnerProfile?.rejectionReason || "Thiếu hoặc mờ giấy tờ pháp lý"}&quot;</em>. Vui lòng tải lại bản chụp rõ nét hơn.
               </p>
             </div>
           </div>

@@ -40,7 +40,7 @@ export default function PartnerOrdersPage() {
   const [confirmHandoverMutation, { isLoading: isHandingOver }] = useConfirmHandoverMutation();
   const { socket } = useSocket();
 
-  const orders = realOrders || [];
+  const orders = useMemo(() => realOrders || [], [realOrders]);
 
   // Filter state
   const [fulfillmentFilter, setFulfillmentFilter] = useState<FulfillmentFilter>("ALL");
@@ -90,12 +90,16 @@ export default function PartnerOrdersPage() {
   const handleBargainAction = async (accepted: boolean) => {
     if (!activeBargainOrder) return;
     try {
-      await respondBargainMutation({
-        id: activeBargainOrder.orderId,
-        accepted,
-        finalFee: accepted ? activeBargainOrder.proposedFee : counterFee,
-        message: partnerMessage || (accepted ? "Quán đã đồng ý giá chém của bạn!" : "Quán đưa giá chốt khác"),
-      }).unwrap();
+      if (activeBargainOrder.orderId) {
+        await respondBargainMutation({
+          id: activeBargainOrder.orderId,
+          accepted,
+          finalFee: accepted ? activeBargainOrder.proposedFee : counterFee,
+          message: partnerMessage || (accepted ? "Quán đã đồng ý giá chém của bạn!" : "Quán đưa giá chốt khác"),
+        }).unwrap();
+      } else if (!socket?.connected) {
+        throw new Error("Không thể gửi phản hồi khi mất kết nối");
+      }
 
       // Emit socket response back to user
       if (socket) {
@@ -335,7 +339,7 @@ export default function PartnerOrdersPage() {
 
                     {order.customerNotes && (
                       <p className="text-xs text-amber-700 italic bg-amber-50 p-2 rounded-xl border border-amber-100 mt-1">
-                        Ghi chú: "{order.customerNotes}"
+                        Ghi chú: &quot;{order.customerNotes}&quot;
                       </p>
                     )}
                   </div>

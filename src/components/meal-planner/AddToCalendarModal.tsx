@@ -165,7 +165,6 @@ export function AddToCalendarModal({
         {/* Selected Dish Card Preview */}
         <div className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 border border-stone-200/80">
           <div className="size-14 rounded-lg overflow-hidden shrink-0 bg-stone-200 border border-stone-300/80">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={recipe.partnerImage || recipe.image}
               alt={recipe.name}
@@ -291,10 +290,10 @@ export function AddToCalendarModal({
                 Bữa {SLOTS.find((s) => s.key === selectedSlot)?.label} Ngày {selectedDay} đang có món:
               </p>
               <p className="font-bold mt-0.5 text-stone-900 truncate">
-                "{existingSlot?.meal}"
+                &quot;{existingSlot?.meal}&quot;
               </p>
               <p className="text-[11px] text-amber-800 mt-0.5">
-                Xác nhận sẽ thay thế bằng món "{recipe.name}".
+                Xác nhận sẽ thay thế bằng món &quot;{recipe.name}&quot;.
               </p>
             </div>
           </div>

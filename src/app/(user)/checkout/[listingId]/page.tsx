@@ -107,13 +107,14 @@ export default function CheckoutPage({
     if (!socket) return;
 
     const handleBargainResponse = (data: any) => {
+      if (data?.partnerId !== listing?.partnerId || !Number.isFinite(data?.finalFee) || data.finalFee < 0 || data.finalFee > 60000) return;
       if (data?.accepted) {
         setBargainStatus("ACCEPTED");
         setFinalAgreedFee(data.finalFee);
         toast.success(`🎉 Quán đã chấp nhận giá chém ${data.finalFee.toLocaleString("vi-VN")}đ!`);
       } else {
         setBargainStatus("COUNTER");
-        setFinalAgreedFee(data.finalFee || defaultShippingFee);
+        setFinalAgreedFee(data.finalFee ?? defaultShippingFee);
         setPartnerMessage(data.message || "Quán đưa giá chốt khác");
         toast.info(`🔔 Phản hồi từ quán: ${data.message || "Giá chốt khác: " + data.finalFee.toLocaleString("vi-VN") + "đ"}`);
       }
@@ -124,7 +125,7 @@ export default function CheckoutPage({
     return () => {
       socket.off("RECEIVE_BARGAIN_RESPONSE", handleBargainResponse);
     };
-  }, [socket, defaultShippingFee]);
+  }, [socket, defaultShippingFee, listing?.partnerId]);
 
   if (isListingLoading && !listing) {
     return (
@@ -480,7 +481,7 @@ export default function CheckoutPage({
                         {bargainStatus === "COUNTER" && (
                           <div className="p-2.5 rounded-xl bg-amber-100 text-amber-900 text-xs font-medium space-y-1">
                             <div className="font-bold">Quán đưa ra giá chốt: {finalAgreedFee.toLocaleString("vi-VN")}đ</div>
-                            {partnerMessage && <p className="italic">"{partnerMessage}"</p>}
+                            {partnerMessage && <p className="italic">&quot;{partnerMessage}&quot;</p>}
                           </div>
                         )}
                       </div>
