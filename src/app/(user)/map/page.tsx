@@ -91,6 +91,28 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
+// Downscale and optimize thumbnail resolution for high-performance map markers
+function getOptimizedThumbnail(url?: string): string {
+  if (!url) {
+    return "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=120&q=60&auto=format";
+  }
+  if (url.includes("cloudinary.com") && url.includes("/upload/")) {
+    return url.replace("/upload/", "/upload/w_120,q_60,f_auto/");
+  }
+  if (url.includes("unsplash.com")) {
+    try {
+      const u = new URL(url);
+      u.searchParams.set("w", "120");
+      u.searchParams.set("q", "60");
+      u.searchParams.set("auto", "format");
+      return u.toString();
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
 export default function FoodMapPage() {
   const { location: deliveryLoc } = useDeliveryLocation();
   const [selectedListing, setSelectedListing] = useState<ListingDTO | null>(null);
@@ -543,9 +565,7 @@ export default function FoodMapPage() {
         item.originalPrice > 0
           ? Math.round((1 - item.discountPrice / item.originalPrice) * 100)
           : 0;
-      const thumb =
-        item.imageUrls?.[0] ||
-        "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200";
+      const thumbLowRes = getOptimizedThumbnail(item.imageUrls?.[0]);
 
       const el = document.createElement("div");
       el.className = `group relative cursor-pointer select-none transition-transform duration-200 ${
@@ -553,7 +573,7 @@ export default function FoodMapPage() {
       }`;
 
       el.innerHTML = `
-        <!-- Floating Hover / Selection Card (Tên món và Giá tiền khi hover) -->
+        <!-- Floating Hover / Selection Card (Hiện chi tiết tên món, giá tiền khi hover) -->
         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-60 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-stone-200/90 p-3 transition-all duration-200 pointer-events-none ${
           isSelected
             ? "opacity-100 translate-y-0 pointer-events-auto"
@@ -601,56 +621,50 @@ export default function FoodMapPage() {
 
           <!-- Micro CTA hint -->
           <div class="mt-2 text-[10px] text-center font-bold text-[#00615f] bg-emerald-50/90 py-1 rounded-xl">
-            Nhấp để xem chi tiết & giải cứu →
+            Nhấp để xem chi tiết & tìm đường →
           </div>
         </div>
 
-        <!-- Ticket Cửa Hàng có Hình ảnh món ăn hiển thị -->
-        <div class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl border transition-all duration-200 ${
-          isSelected
-            ? "bg-white border-[#00615f] ring-3 ring-[#00615f]/25 shadow-2xl scale-105"
-            : isUrgent
-            ? "bg-white border-rose-300 ring-2 ring-rose-400/20 shadow-lg group-hover:scale-105 group-hover:shadow-2xl"
-            : "bg-white/95 hover:bg-white border-stone-200/90 shadow-md group-hover:shadow-xl group-hover:scale-105 group-hover:border-[#00615f]"
-        }">
-          <!-- Hình ảnh món ăn hiển thị -->
-          <div class="relative size-11 sm:size-12 rounded-xl overflow-hidden shrink-0 bg-stone-100 border border-stone-100 shadow-inner">
-            <img src="${thumb}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+        <!-- Teardrop Map Pin Marker (Kiểu ghim giọt nước: ảnh tròn món ăn + % giảm giá ở góc nhỏ + đuôi nhọn chỉ xuống) -->
+        <div class="relative flex flex-col items-center transform transition-transform duration-200 group-hover:scale-115">
+          <!-- Circular Food Pin Head with Crisp Border & Shadow -->
+          <div class="relative size-11 sm:size-12 rounded-full bg-white p-0.5 shadow-xl border-2.5 ${
+            isSelected
+              ? "border-[#00615f] ring-4 ring-[#00615f]/30 scale-105"
+              : isUrgent
+              ? "border-rose-500 ring-2 ring-rose-400/30"
+              : "border-emerald-600 group-hover:border-[#00615f]"
+          } flex items-center justify-center shrink-0">
+            <!-- Downscaled Low-Res Thumbnail (Tối ưu hiệu năng tải ảnh nhẹ) -->
+            <img
+              src="${thumbLowRes}"
+              alt="${escapeHtml(item.title)}"
+              loading="lazy"
+              width="44"
+              height="44"
+              class="size-full rounded-full object-cover"
+            />
+
+            <!-- Small Corner % Discount Badge (% giảm giá ở góc nhỏ) -->
             ${
               discountPercent > 0
-                ? `<span class="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1 rounded-bl-md shadow-xs">
+                ? `<span class="absolute -top-1 -right-1 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-md border border-white tracking-tighter leading-tight pointer-events-none">
                     -${discountPercent}%
                   </span>`
                 : ""
             }
           </div>
 
-          <!-- Ticket Stub: Tên cửa hàng & Mã vé -->
-          <div class="flex flex-col pr-1 text-left justify-center min-w-0">
-            <div class="flex items-center gap-1">
-              <span class="text-[9px] font-black text-[#00615f] bg-emerald-50 px-1.5 py-0.2 rounded tracking-wider uppercase flex items-center gap-0.5">
-                <span>🎟️</span> VÉ MÓN
-              </span>
-              ${
-                isUrgent
-                  ? `<span class="size-1.5 rounded-full bg-rose-500 animate-ping shrink-0" title="Cần giải cứu gấp"></span>`
-                  : ""
-              }
-            </div>
-            <span class="text-[11px] font-bold text-stone-900 truncate max-w-[95px] sm:max-w-[120px] mt-0.5 leading-tight">
-              ${escapeHtml(item.partnerName)}
-            </span>
-            <span class="text-[9px] text-stone-400 font-medium">
-              ${item.distanceKm != null ? `${item.distanceKm} km` : "Gần bạn"}
-            </span>
+          <!-- Teardrop Pin Pointer Tail Pointing Down to Exact GPS Point -->
+          <div class="w-3 h-2.5 -mt-0.5 flex justify-center">
+            <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] ${
+              isSelected
+                ? "border-t-[#00615f]"
+                : isUrgent
+                ? "border-t-rose-500"
+                : "border-t-emerald-600 group-hover:border-t-[#00615f]"
+            }"></div>
           </div>
-        </div>
-
-        <!-- Bottom Pin Pointer (Triangle) -->
-        <div class="flex justify-center -mt-[1px]">
-          <div class="w-2.5 h-2 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent ${
-            isSelected ? "border-t-[8px] border-t-[#00615f]" : "border-t-[8px] border-t-white"
-          }"></div>
         </div>
       `;
 
