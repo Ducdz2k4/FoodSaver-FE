@@ -15,12 +15,16 @@ import {
   ShoppingCart,
   ArrowLeft,
   LocateFixed,
+  Navigation,
+  Route,
+  X,
 } from "lucide-react";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingDTO, FoodCategory } from "@/types/contract";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
 import { useDeliveryLocation } from "@/context/DeliveryLocationContext";
 import { DeliveryHeaderPill } from "@/components/location/DeliveryHeaderPill";
+import { getShortestRoute, RouteDirectionsResult } from "@/services/mapboxService";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -95,6 +99,10 @@ export default function FoodMapPage() {
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
 
+  // Shortest route directions state
+  const [activeRoute, setActiveRoute] = useState<RouteDirectionsResult | null>(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+
   // Smart Grocery Radar integration from Meal Planner
   const [groceryCart, setGroceryCart] = useState<GroceryCartData | null>(null);
   const [isGroceryRadarOpen, setIsGroceryRadarOpen] = useState(true);
@@ -160,6 +168,60 @@ export default function FoodMapPage() {
     }
   };
 
+  const handleFindShortestRoute = async (targetListing?: ListingDTO) => {
+    const target = targetListing || selectedListing;
+    if (!target || typeof target.lat !== "number" || typeof target.lng !== "number") return;
+
+    setIsLoadingRoute(true);
+    try {
+      const result = await getShortestRoute(
+        [deliveryLoc.lng, deliveryLoc.lat],
+        [target.lng, target.lat],
+        "driving"
+      );
+
+      if (result) {
+        setActiveRoute(result);
+
+        // Smoothly fit map camera to display the whole route
+        if (mapRef.current && result.geometry.coordinates.length > 0) {
+          const bounds = new mapboxgl.LngLatBounds();
+          bounds.extend([deliveryLoc.lng, deliveryLoc.lat]);
+          bounds.extend([target.lng, target.lat]);
+          result.geometry.coordinates.forEach((coord) => bounds.extend(coord));
+          mapRef.current.fitBounds(bounds, {
+            padding: { top: 90, bottom: 90, left: 60, right: 60 },
+            maxZoom: 16,
+            duration: 1200,
+          });
+        }
+      } else {
+        // Fallback: estimate direct distance if API routing fails
+        const distKm = target.distanceKm || 1;
+        setActiveRoute({
+          distanceMeters: Math.round(distKm * 1000),
+          durationSeconds: Math.round(distKm * 180),
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [deliveryLoc.lng, deliveryLoc.lat],
+              [target.lng, target.lat],
+            ],
+          },
+          summary: "Tuyến đường ước lượng trực tiếp",
+        });
+      }
+    } catch (err) {
+      console.error("[Map] Failed to find shortest route:", err);
+    } finally {
+      setIsLoadingRoute(false);
+    }
+  };
+
+  const handleClearRoute = () => {
+    setActiveRoute(null);
+  };
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -187,6 +249,11 @@ export default function FoodMapPage() {
   useEffect(() => {
     if (!selectedListing && allListings.length > 0) setSelectedListing(allListings[0]);
   }, [allListings, selectedListing]);
+
+  // Reset route when selected listing changes
+  useEffect(() => {
+    setActiveRoute(null);
+  }, [selectedListing?.id]);
 
   // Initialize Mapbox map
   useEffect(() => {
@@ -367,6 +434,77 @@ export default function FoodMapPage() {
       console.error("[Map] Failed to update radar circle:", e);
     }
   }, [mapLoaded, deliveryLoc.lat, deliveryLoc.lng, radiusKm]);
+
+  // Draw and update active shortest route line on map
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    try {
+      const source = map.getSource("route-source") as mapboxgl.GeoJSONSource | undefined;
+      if (activeRoute) {
+        const geojsonData = {
+          type: "Feature" as const,
+          geometry: activeRoute.geometry,
+          properties: {},
+        };
+
+        if (source) {
+          source.setData(geojsonData as any);
+        } else {
+          map.addSource("route-source", {
+            type: "geojson",
+            data: geojsonData as any,
+          });
+
+          // Route outer halo glow
+          map.addLayer(
+            {
+              id: "route-glow-layer",
+              type: "line",
+              source: "route-source",
+              paint: {
+                "line-color": "#10b981",
+                "line-width": 8,
+                "line-opacity": 0.45,
+                "line-blur": 2,
+              },
+            },
+            "radar-radius-glow"
+          );
+
+          // Route main path line
+          map.addLayer(
+            {
+              id: "route-line-layer",
+              type: "line",
+              source: "route-source",
+              paint: {
+                "line-color": "#00615f",
+                "line-width": 4.5,
+                "line-opacity": 0.95,
+              },
+              layout: {
+                "line-cap": "round",
+                "line-join": "round",
+              },
+            },
+            "radar-radius-glow"
+          );
+        }
+      } else {
+        if (source) {
+          source.setData({
+            type: "Feature" as const,
+            geometry: { type: "LineString", coordinates: [] },
+            properties: {},
+          } as any);
+        }
+      }
+    } catch (e) {
+      console.error("[Map] Route layer update error:", e);
+    }
+  }, [activeRoute, mapLoaded]);
 
   // Update Markers when filtered listings change
   useEffect(() => {
@@ -657,6 +795,36 @@ export default function FoodMapPage() {
               className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px]"
             />
 
+            {/* Floating Route HUD on Map Canvas */}
+            {activeRoute && selectedListing && (
+              <div className="absolute top-16 left-4 z-20 bg-white/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl border border-emerald-200/90 shadow-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                <div className="size-8 rounded-xl bg-emerald-100 flex items-center justify-center text-[#00615f] shrink-0">
+                  <Navigation className="size-4 fill-current" />
+                </div>
+                <div className="text-left leading-tight pr-1">
+                  <div className="text-[11px] font-bold text-stone-500 truncate max-w-[180px]">
+                    Đường ngắn nhất tới {selectedListing.partnerName}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-sm font-black text-stone-900">
+                      {(activeRoute.distanceMeters / 1000).toFixed(1)} km
+                    </span>
+                    <span className="text-xs font-bold text-[#00615f] bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                      ~{Math.max(1, Math.round(activeRoute.durationSeconds / 60))} phút
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearRoute}
+                  title="Xóa đường đi"
+                  className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            )}
+
             {/* Nút quay về vị trí của mình (Recenter to My Location) */}
             <button
               type="button"
@@ -861,6 +1029,72 @@ export default function FoodMapPage() {
                     Còn {selectedListing.quantity} {selectedListing.unit}
                   </span>
                 </div>
+
+                {/* Nút Tìm đường đi ngắn nhất */}
+                <button
+                  type="button"
+                  onClick={() => handleFindShortestRoute()}
+                  disabled={isLoadingRoute}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-[#00615f] hover:from-emerald-700 hover:to-[#004e4c] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 active:scale-[0.99]"
+                >
+                  {isLoadingRoute ? (
+                    <>
+                      <div className="size-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Đang tính toán tuyến đường ngắn nhất...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="size-3.5 fill-current" />
+                      <span>Tìm đường đi ngắn nhất</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Kết quả tuyến đường ngắn nhất */}
+                {activeRoute && (
+                  <div className="p-3.5 bg-emerald-50/90 rounded-2xl border border-emerald-200/90 space-y-2.5 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#00615f]">
+                      <span className="flex items-center gap-1.5">
+                        <Route className="size-3.5 text-[#00615f]" />
+                        <span>Tuyến đường ngắn nhất</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleClearRoute}
+                        className="text-[11px] font-bold text-stone-400 hover:text-stone-700 flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <X className="size-3" />
+                        <span>Đóng</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="bg-white p-2 rounded-xl border border-emerald-100 shadow-xs">
+                        <span className="text-stone-400 text-[10px] block">Khoảng cách xe</span>
+                        <span className="font-black text-stone-900 text-sm">
+                          {(activeRoute.distanceMeters / 1000).toFixed(1)} km
+                        </span>
+                      </div>
+                      <div className="bg-white p-2 rounded-xl border border-emerald-100 shadow-xs">
+                        <span className="text-stone-400 text-[10px] block">Thời gian ước tính</span>
+                        <span className="font-black text-[#00615f] text-sm">
+                          ~{Math.max(1, Math.round(activeRoute.durationSeconds / 60))} phút
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Google Maps External Fallback Link */}
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&origin=${deliveryLoc.lat},${deliveryLoc.lng}&destination=${selectedListing.lat},${selectedListing.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#00615f] hover:underline pt-0.5"
+                    >
+                      <Compass className="size-3" />
+                      <span>Mở dẫn đường chi tiết trên Google Maps ↗</span>
+                    </a>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <Link
