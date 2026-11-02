@@ -17,9 +17,22 @@ export interface DeliveryLocation {
   isSavedHome?: boolean;
 }
 
+export interface SavedAddress {
+  id: string;
+  address: string;
+  lat: number;
+  lng: number;
+  source: LocationSource;
+  isSavedHome?: boolean;
+  updatedAt: number;
+}
+
+export const MAX_SAVED_ADDRESSES = 5;
+
 export interface DeliveryLocationContextType {
   location: DeliveryLocation;
   isLoading: boolean;
+  savedAddresses: SavedAddress[];
   setSessionLocation: (loc: {
     address: string;
     lat: number;
@@ -32,6 +45,15 @@ export interface DeliveryLocationContextType {
     lng: number;
   }) => Promise<boolean>;
   resetToHomeLocation: () => void;
+  addSavedAddress: (loc: {
+    address: string;
+    lat: number;
+    lng: number;
+    source: LocationSource;
+    isSavedHome?: boolean;
+  }) => void;
+  removeSavedAddress: (idOrAddress: string) => void;
+  clearSavedAddresses: () => void;
 }
 
 // Default Location: 12 Đường Bình Hòa 10, Khuê Trung, Cẩm Lệ, Đà Nẵng
@@ -46,6 +68,45 @@ const DEFAULT_LOCATION: DeliveryLocation = {
 
 const GUEST_STORAGE_KEY = "foodsaver_guest_delivery_loc";
 const USER_STORAGE_PREFIX = "foodsaver_user_delivery_loc_";
+const USER_SAVED_ADDRESSES_PREFIX = "foodsaver_user_saved_addresses_";
+const GUEST_SAVED_ADDRESSES_KEY = "foodsaver_guest_saved_addresses";
+
+const getSavedAddressesKey = (userId?: string | null) => {
+  return userId ? `${USER_SAVED_ADDRESSES_PREFIX}${userId}` : GUEST_SAVED_ADDRESSES_KEY;
+};
+
+const pushAddressToSaved = (
+  currentList: SavedAddress[],
+  newAddress: {
+    address: string;
+    lat: number;
+    lng: number;
+    source: LocationSource;
+    isSavedHome?: boolean;
+  }
+): SavedAddress[] => {
+  const cleanAddress = newAddress.address.trim();
+  if (!cleanAddress) return currentList;
+
+  // Filter out existing address matching (case-insensitive)
+  const normalizedNew = cleanAddress.toLowerCase();
+  const filtered = currentList.filter(
+    (item) => item.address.trim().toLowerCase() !== normalizedNew
+  );
+
+  const newItem: SavedAddress = {
+    id: `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    address: cleanAddress,
+    lat: newAddress.lat,
+    lng: newAddress.lng,
+    source: newAddress.source,
+    isSavedHome: Boolean(newAddress.isSavedHome),
+    updatedAt: Date.now(),
+  };
+
+  // Prepend and enforce maximum 5 saved addresses
+  return [newItem, ...filtered].slice(0, MAX_SAVED_ADDRESSES);
+};
 
 const DeliveryLocationContext = createContext<DeliveryLocationContextType | undefined>(undefined);
 
@@ -54,6 +115,7 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
   const [updateProfileMutation] = useUpdateProfileMutation();
 
   const [location, setLocation] = useState<DeliveryLocation>(DEFAULT_LOCATION);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Track the previous user ID to detect logins, account switches, or logouts
@@ -62,6 +124,36 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
   const getStorageKey = useCallback((userId?: string | null) => {
     return userId ? `${USER_STORAGE_PREFIX}${userId}` : GUEST_STORAGE_KEY;
   }, []);
+
+  const persistSavedAddresses = useCallback((list: SavedAddress[], userId?: string | null) => {
+    if (typeof window === "undefined") return;
+    try {
+      const key = getSavedAddressesKey(userId);
+      localStorage.setItem(key, JSON.stringify(list));
+    } catch (e) {
+      console.error("[DeliveryLocation] Failed to write saved addresses to localStorage:", e);
+    }
+  }, []);
+
+  // Load saved addresses for current user / guest from localStorage (max 5)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const key = getSavedAddressesKey(user?.id);
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw) as SavedAddress[];
+        if (Array.isArray(parsed)) {
+          setSavedAddresses(parsed.slice(0, MAX_SAVED_ADDRESSES));
+          return;
+        }
+      }
+      setSavedAddresses([]);
+    } catch (e) {
+      console.error("[DeliveryLocation] Failed to load saved addresses:", e);
+      setSavedAddresses([]);
+    }
+  }, [user?.id]);
 
   // Handle User Change & Session Initialization
   useEffect(() => {
@@ -122,6 +214,17 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
               isSavedHome: true,
             };
             setLocation(profileLoc);
+            setSavedAddresses((prev) => {
+              const updated = pushAddressToSaved(prev, {
+                address: homeAddress,
+                lat: first.lat,
+                lng: first.lng,
+                source: "profile",
+                isSavedHome: true,
+              });
+              persistSavedAddresses(updated, user?.id);
+              return updated;
+            });
           } else {
             // Fallback coordinates with user's text address
             setLocation({
@@ -151,7 +254,59 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
       // Guest or user without saved address
       setLocation(DEFAULT_LOCATION);
     }
-  }, [user?.id, user?.address, getStorageKey]);
+  }, [user?.id, user?.address, getStorageKey, persistSavedAddresses]);
+
+  /**
+   * Explicitly add or update an address in the saved list (max 5)
+   */
+  const addSavedAddress = useCallback(
+    (loc: {
+      address: string;
+      lat: number;
+      lng: number;
+      source: LocationSource;
+      isSavedHome?: boolean;
+    }) => {
+      setSavedAddresses((prev) => {
+        const updated = pushAddressToSaved(prev, loc);
+        persistSavedAddresses(updated, user?.id);
+        return updated;
+      });
+    },
+    [user?.id, persistSavedAddresses]
+  );
+
+  /**
+   * Remove a specific address from saved list
+   */
+  const removeSavedAddress = useCallback(
+    (idOrAddress: string) => {
+      setSavedAddresses((prev) => {
+        const updated = prev.filter(
+          (item) =>
+            item.id !== idOrAddress &&
+            item.address.trim().toLowerCase() !== idOrAddress.trim().toLowerCase()
+        );
+        persistSavedAddresses(updated, user?.id);
+        return updated;
+      });
+    },
+    [user?.id, persistSavedAddresses]
+  );
+
+  /**
+   * Clear all saved addresses for current user / guest
+   */
+  const clearSavedAddresses = useCallback(() => {
+    setSavedAddresses([]);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(getSavedAddressesKey(user?.id));
+      } catch (e) {
+        console.error("[DeliveryLocation] Failed to clear saved addresses:", e);
+      }
+    }
+  }, [user?.id]);
 
   /**
    * Set delivery location for current session ("dùng cho lần này")
@@ -176,8 +331,21 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
           console.error("[DeliveryLocation] Failed to write to sessionStorage:", e);
         }
       }
+
+      // Auto-save to recent/saved addresses (max 5)
+      setSavedAddresses((prev) => {
+        const updated = pushAddressToSaved(prev, {
+          address: loc.address,
+          lat: loc.lat,
+          lng: loc.lng,
+          source: loc.source,
+          isSavedHome: false,
+        });
+        persistSavedAddresses(updated, user?.id);
+        return updated;
+      });
     },
-    [user?.id, getStorageKey]
+    [user?.id, getStorageKey, persistSavedAddresses]
   );
 
   /**
@@ -217,6 +385,19 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
           }
         }
 
+        // Auto-save to recent/saved addresses (max 5) as home
+        setSavedAddresses((prev) => {
+          const updated = pushAddressToSaved(prev, {
+            address: loc.address.trim(),
+            lat: loc.lat,
+            lng: loc.lng,
+            source: "profile",
+            isSavedHome: true,
+          });
+          persistSavedAddresses(updated, user.id);
+          return updated;
+        });
+
         toast.success("Đã cập nhật địa chỉ nhà vào hồ sơ thành công!");
         return true;
       } catch (err: any) {
@@ -227,7 +408,7 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
         setIsLoading(false);
       }
     },
-    [isAuthenticated, user, updateProfileMutation, updateUserLocal, getStorageKey]
+    [isAuthenticated, user, updateProfileMutation, updateUserLocal, getStorageKey, persistSavedAddresses]
   );
 
   /**
@@ -261,9 +442,13 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
       value={{
         location,
         isLoading,
+        savedAddresses,
         setSessionLocation,
         saveAsHomeLocation,
         resetToHomeLocation,
+        addSavedAddress,
+        removeSavedAddress,
+        clearSavedAddresses,
       }}
     >
       {children}

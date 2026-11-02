@@ -11,10 +11,12 @@ import {
   Home,
   Loader2,
   AlertCircle,
+  Clock,
+  BookmarkCheck,
 } from "lucide-react";
 import { AddressSearchInput } from "./AddressSearchInput";
 import { MapLocationPicker } from "./MapLocationPicker";
-import { useDeliveryLocation, LocationSource } from "@/context/DeliveryLocationContext";
+import { useDeliveryLocation, LocationSource, SavedAddress } from "@/context/DeliveryLocationContext";
 import { useAuth } from "@/context/AuthContext";
 import { GeocodeSuggestion, reverseGeocode } from "@/services/mapboxService";
 import { toast } from "sonner";
@@ -30,7 +32,14 @@ export function LocationPickerDialog({
   onClose,
   initialMode = "search",
 }: LocationPickerDialogProps) {
-  const { location, setSessionLocation, saveAsHomeLocation } = useDeliveryLocation();
+  const {
+    location,
+    setSessionLocation,
+    saveAsHomeLocation,
+    savedAddresses,
+    removeSavedAddress,
+    clearSavedAddresses,
+  } = useDeliveryLocation();
   const { user, isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"search" | "map">(
@@ -141,6 +150,24 @@ export function LocationPickerDialog({
     setDraftLng(loc.lng);
     setDraftAddress(loc.address);
     setDraftSource("map");
+  };
+
+  const handleSelectSavedAddress = (item: SavedAddress) => {
+    setDraftAddress(item.address);
+    setDraftLat(item.lat);
+    setDraftLng(item.lng);
+    setDraftSource(item.source);
+  };
+
+  const handleApplyImmediately = (item: SavedAddress) => {
+    setSessionLocation({
+      address: item.address,
+      lat: item.lat,
+      lng: item.lng,
+      source: item.source,
+    });
+    toast.success("Đã chọn điểm giao hàng: " + (item.address.length > 30 ? item.address.slice(0, 30) + "..." : item.address));
+    onClose();
   };
 
   const handleConfirm = async () => {
@@ -272,6 +299,118 @@ export function LocationPickerDialog({
               )}
             </button>
           </div>
+
+          {/* Saved Addresses Section (Up to 5) */}
+          {savedAddresses && savedAddresses.length > 0 ? (
+            <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
+                  <Clock className="size-3.5 text-[#00615f]" />
+                  <span>Địa chỉ đã lưu gần đây</span>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.2 rounded-full">
+                    {savedAddresses.length}/5
+                  </span>
+                </div>
+                {savedAddresses.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearSavedAddresses();
+                      toast.info("Đã xóa danh sách địa chỉ đã lưu");
+                    }}
+                    className="text-[10px] font-medium text-stone-400 hover:text-red-500 transition cursor-pointer"
+                  >
+                    Xóa tất cả
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+                {savedAddresses.map((item) => {
+                  const isSelected =
+                    draftAddress.trim().toLowerCase() === item.address.trim().toLowerCase();
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectSavedAddress(item)}
+                      className={`group flex items-center justify-between gap-2.5 p-2 rounded-xl border transition cursor-pointer ${
+                        isSelected
+                          ? "bg-emerald-50/90 border-[#00615f] shadow-xs"
+                          : "bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50/80"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {item.isSavedHome ? (
+                          <div className="size-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                            <Home className="size-3" />
+                          </div>
+                        ) : item.source === "gps" ? (
+                          <div className="size-6 rounded-lg bg-emerald-100 text-[#00615f] flex items-center justify-center shrink-0">
+                            <Locate className="size-3" />
+                          </div>
+                        ) : (
+                          <div className="size-6 rounded-lg bg-stone-100 text-stone-600 flex items-center justify-center shrink-0">
+                            <MapPin className="size-3" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`text-xs truncate ${
+                              isSelected ? "font-bold text-[#00615f]" : "font-medium text-stone-800"
+                            }`}
+                          >
+                            {item.address}
+                          </p>
+                          <div className="flex items-center gap-2 text-[10px] text-stone-400">
+                            <span>
+                              {item.isSavedHome
+                                ? "Địa chỉ nhà"
+                                : item.source === "gps"
+                                ? "Vị trí GPS"
+                                : item.source === "map"
+                                ? "Chọn từ bản đồ"
+                                : "Tìm kiếm"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApplyImmediately(item);
+                          }}
+                          className="px-2 py-1 rounded-lg bg-[#00615f]/10 hover:bg-[#00615f] text-[#00615f] hover:text-white text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                          title="Áp dụng ngay địa chỉ này"
+                        >
+                          <span>Dùng ngay</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSavedAddress(item.id);
+                            toast.success("Đã xóa địa chỉ khỏi danh sách");
+                          }}
+                          className="size-6 rounded-lg text-stone-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition cursor-pointer"
+                          title="Xóa địa chỉ này"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-stone-50 border border-stone-200/60 text-[11px] text-stone-500">
+              <BookmarkCheck className="size-3.5 text-stone-400 shrink-0" />
+              <span>Hệ thống tự động lưu tối đa 5 địa chỉ bạn từng sử dụng để chọn nhanh lần sau.</span>
+            </div>
+          )}
 
           {/* Mode 1: Search Input */}
           {activeTab === "search" && (
