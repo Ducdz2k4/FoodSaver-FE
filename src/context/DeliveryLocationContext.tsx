@@ -56,11 +56,11 @@ export interface DeliveryLocationContextType {
   clearSavedAddresses: () => void;
 }
 
-// Default Location: 12 Đường Bình Hòa 10, Khuê Trung, Cẩm Lệ, Đà Nẵng
+// Default Location: Trường Đại học Duy Tân (Cơ sở Hòa Khánh), 120 Hoàng Minh Thảo, Liên Chiểu, Đà Nẵng
 const DEFAULT_LOCATION: DeliveryLocation = {
-  address: "12 Đường Bình Hòa 10, Khuê Trung, Cẩm Lệ, Đà Nẵng",
-  lat: 16.022091,
-  lng: 108.214485,
+  address: "Trường Đại học Duy Tân (Cơ sở Hòa Khánh), 120 Hoàng Minh Thảo, Liên Chiểu, Đà Nẵng",
+  lat: 16.052,
+  lng: 108.1615,
   source: "default",
   isConfirmed: false,
   isSavedHome: false,
