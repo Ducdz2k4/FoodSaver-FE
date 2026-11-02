@@ -76,6 +76,16 @@ function createGeoJSONCircle(center: [number, number], radiusInKm: number, point
   };
 }
 
+function escapeHtml(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export default function FoodMapPage() {
   const { location: deliveryLoc } = useDeliveryLocation();
   const [selectedListing, setSelectedListing] = useState<ListingDTO | null>(null);
@@ -142,6 +152,8 @@ export default function FoodMapPage() {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   const { data: realListings } = useGetListingsQuery({
+    lat: deliveryLoc.lat,
+    lng: deliveryLoc.lng,
     radiusKm,
     category: categoryFilter !== "ALL" ? categoryFilter : undefined,
     urgentOnly,
@@ -149,12 +161,15 @@ export default function FoodMapPage() {
 
   const allListings = useMemo(() => realListings || [], [realListings]);
 
-  const filteredListings = allListings.filter((item) => {
-    if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
-    if (item.distanceKm && item.distanceKm > radiusKm) return false;
-    if (urgentOnly && item.status !== "EXPIRING_SOON") return false;
-    return true;
-  });
+  const filteredListings = useMemo(() => {
+    return allListings.filter((item) => {
+      if (typeof item.lat !== "number" || typeof item.lng !== "number") return false;
+      if (categoryFilter !== "ALL" && item.category !== categoryFilter) return false;
+      if (item.distanceKm && item.distanceKm > radiusKm) return false;
+      if (urgentOnly && item.status !== "EXPIRING_SOON") return false;
+      return true;
+    });
+  }, [allListings, categoryFilter, radiusKm, urgentOnly]);
 
   useEffect(() => {
     if (!selectedListing && allListings.length > 0) setSelectedListing(allListings[0]);
@@ -221,7 +236,7 @@ export default function FoodMapPage() {
           type: "fill",
           source: "radar-radius-source",
           paint: {
-            "fill-color": "#00615f",
+            "fill-color": "#10b981",
             "fill-opacity": 0.08,
           },
         });
@@ -232,9 +247,9 @@ export default function FoodMapPage() {
           type: "line",
           source: "radar-radius-source",
           paint: {
-            "line-color": "#00615f",
+            "line-color": "#059669",
             "line-width": 1.5,
-            "line-opacity": 0.35,
+            "line-opacity": 0.4,
             "line-dasharray": [4, 3],
           },
         });
@@ -273,6 +288,7 @@ export default function FoodMapPage() {
     markersRef.current.push(userMarker);
 
     // Add listing markers as Rich Store Tickets ("tiket cửa hàng ở gần trên bản đồ")
+    // With food image visible and hover card revealing dish name and price ("có cả hình ảnh món ăn hiển thị, khi hover vào thì có tên món và giá tiền")
     filteredListings.forEach((item) => {
       const isSelected = selectedListing?.id === item.id;
       const isUrgent = item.status === "EXPIRING_SOON";
@@ -285,34 +301,88 @@ export default function FoodMapPage() {
         "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200";
 
       const el = document.createElement("div");
-      el.className = `group relative cursor-pointer select-none transition-all duration-200 transform hover:scale-105 hover:z-30 ${
-        isSelected ? "scale-105 z-30" : "z-10"
+      el.className = `group relative cursor-pointer select-none transition-transform duration-200 ${
+        isSelected ? "z-30" : "z-10 hover:z-30"
       }`;
 
       el.innerHTML = `
-        <!-- Store Ticket Card -->
-        <div class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl border transition-all duration-200 ${
+        <!-- Floating Hover / Selection Card (Tên món và Giá tiền khi hover) -->
+        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-60 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-stone-200/90 p-3 transition-all duration-200 pointer-events-none ${
           isSelected
-            ? "bg-white border-[#00615f] ring-3 ring-[#00615f]/25 shadow-2xl scale-102"
-            : isUrgent
-            ? "bg-white border-rose-300 ring-2 ring-rose-400/20 shadow-lg"
-            : "bg-white/95 hover:bg-white border-stone-200/90 shadow-md"
-        }">
-          <!-- Store Food Thumbnail with Discount Badge -->
-          <div class="relative size-10 rounded-xl overflow-hidden shrink-0 bg-stone-100 border border-stone-100">
-            <img src="${thumb}" alt="${item.title}" class="w-full h-full object-cover" />
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
+        } z-50 text-left">
+          <!-- Store Header & Distance -->
+          <div class="flex items-center justify-between gap-1 pb-1.5 border-b border-stone-100">
+            <span class="text-[11px] font-bold text-stone-700 truncate max-w-[130px] flex items-center gap-1">
+              🏪 ${escapeHtml(item.partnerName)}
+            </span>
             ${
-              discountPercent > 0
-                ? `<span class="absolute bottom-0 inset-x-0 bg-rose-600/90 text-white text-[8px] font-black text-center py-0.2 tracking-tighter">-${discountPercent}%</span>`
+              item.distanceKm != null
+                ? `<span class="text-[10px] font-bold text-[#00615f] bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">
+                    ${item.distanceKm} km
+                  </span>`
                 : ""
             }
           </div>
 
-          <!-- Store & Deal Info -->
-          <div class="flex flex-col min-w-0 pr-0.5 text-left">
+          <!-- TÊN MÓN ĂN -->
+          <h4 class="text-xs font-black text-stone-900 leading-snug line-clamp-2 mt-2">
+            ${escapeHtml(item.title)}
+          </h4>
+
+          <!-- GIÁ TIỀN -->
+          <div class="flex items-baseline gap-2 mt-2 pt-2 border-t border-dashed border-stone-200">
+            <span class="text-sm font-black text-[#00615f]">
+              ${item.discountPrice.toLocaleString("vi-VN")}đ
+            </span>
+            ${
+              item.originalPrice > item.discountPrice
+                ? `<span class="text-[11px] text-stone-400 line-through font-medium">
+                    ${item.originalPrice.toLocaleString("vi-VN")}đ
+                  </span>`
+                : ""
+            }
+            ${
+              discountPercent > 0
+                ? `<span class="text-[9px] font-black text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full ml-auto">
+                    -${discountPercent}%
+                  </span>`
+                : ""
+            }
+          </div>
+
+          <!-- Micro CTA hint -->
+          <div class="mt-2 text-[10px] text-center font-bold text-[#00615f] bg-emerald-50/90 py-1 rounded-xl">
+            Nhấp để xem chi tiết & giải cứu →
+          </div>
+        </div>
+
+        <!-- Ticket Cửa Hàng có Hình ảnh món ăn hiển thị -->
+        <div class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl border transition-all duration-200 ${
+          isSelected
+            ? "bg-white border-[#00615f] ring-3 ring-[#00615f]/25 shadow-2xl scale-105"
+            : isUrgent
+            ? "bg-white border-rose-300 ring-2 ring-rose-400/20 shadow-lg group-hover:scale-105 group-hover:shadow-2xl"
+            : "bg-white/95 hover:bg-white border-stone-200/90 shadow-md group-hover:shadow-xl group-hover:scale-105 group-hover:border-[#00615f]"
+        }">
+          <!-- Hình ảnh món ăn hiển thị -->
+          <div class="relative size-11 sm:size-12 rounded-xl overflow-hidden shrink-0 bg-stone-100 border border-stone-100 shadow-inner">
+            <img src="${thumb}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+            ${
+              discountPercent > 0
+                ? `<span class="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1 rounded-bl-md shadow-xs">
+                    -${discountPercent}%
+                  </span>`
+                : ""
+            }
+          </div>
+
+          <!-- Ticket Stub: Tên cửa hàng & Mã vé -->
+          <div class="flex flex-col pr-1 text-left justify-center min-w-0">
             <div class="flex items-center gap-1">
-              <span class="text-[11px] font-black text-stone-900 truncate max-w-[110px] sm:max-w-[140px] leading-tight">
-                ${item.partnerName}
+              <span class="text-[9px] font-black text-[#00615f] bg-emerald-50 px-1.5 py-0.2 rounded tracking-wider uppercase flex items-center gap-0.5">
+                <span>🎟️</span> VÉ MÓN
               </span>
               ${
                 isUrgent
@@ -320,37 +390,19 @@ export default function FoodMapPage() {
                   : ""
               }
             </div>
-
-            <p class="text-[10px] text-stone-500 truncate max-w-[110px] sm:max-w-[140px] leading-tight mt-0.5">
-              ${item.title}
-            </p>
-
-            <div class="flex items-center gap-1.5 mt-1">
-              <span class="text-[11px] font-black text-[#00615f] bg-emerald-50 px-1.5 py-0.2 rounded-md">
-                ${item.discountPrice.toLocaleString("vi-VN")}đ
-              </span>
-              ${
-                item.distanceKm != null
-                  ? `<span class="text-[9px] font-bold text-stone-500">• ${item.distanceKm} km</span>`
-                  : ""
-              }
-            </div>
-          </div>
-
-          <!-- Ticket Perforation Notch Line -->
-          <div class="flex flex-col justify-between self-stretch border-l border-dashed border-stone-200 pl-1.5 py-0.5 text-[#00615f]">
-            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-              <path d="M3 6h18"></path>
-              <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
+            <span class="text-[11px] font-bold text-stone-900 truncate max-w-[95px] sm:max-w-[120px] mt-0.5 leading-tight">
+              ${escapeHtml(item.partnerName)}
+            </span>
+            <span class="text-[9px] text-stone-400 font-medium">
+              ${item.distanceKm != null ? `${item.distanceKm} km` : "Gần bạn"}
+            </span>
           </div>
         </div>
 
         <!-- Bottom Pin Pointer (Triangle) -->
         <div class="flex justify-center -mt-[1px]">
           <div class="w-2.5 h-2 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent ${
-            isSelected ? "border-t-[8px] border-t-[#00615f]" : "border-t-[8px] border-t-stone-300"
+            isSelected ? "border-t-[8px] border-t-[#00615f]" : "border-t-[8px] border-t-white"
           }"></div>
         </div>
       `;
@@ -389,6 +441,9 @@ export default function FoodMapPage() {
             <p className="text-xs sm:text-sm text-stone-600">
               Định vị các tiệm bánh, nhà hàng và cửa hàng tiện lợi có thực phẩm cận date đạt chuẩn ATTP.
             </p>
+            <div className="mt-2.5">
+              <DeliveryHeaderPill />
+            </div>
           </div>
 
           {/* Quick Filters */}
