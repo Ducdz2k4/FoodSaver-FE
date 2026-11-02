@@ -1133,41 +1133,82 @@ export default function FoodMapPage() {
             )}
 
             {/* List of other spots */}
-            <div className="bg-white rounded-3xl p-4 border border-stone-200/80 shadow-sm space-y-2">
-              <span className="text-xs font-bold text-stone-700 block mb-1">
-                Tất cả điểm cứu trợ gần bạn ({filteredListings.length}):
-              </span>
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {filteredListings.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      setSelectedListing(item);
-                      mapRef.current?.flyTo({
-                        center: [item.lng, item.lat],
-                        zoom: 15,
-                        speed: 1.2,
-                      });
-                    }}
-                    className={`p-2.5 rounded-2xl cursor-pointer transition flex items-center justify-between gap-2 border ${
-                      selectedListing?.id === item.id
-                        ? "bg-emerald-50 border-emerald-300"
-                        : "bg-stone-50 hover:bg-stone-100 border-stone-100"
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <strong className="text-xs font-bold text-stone-900 block truncate">
-                        {item.title}
-                      </strong>
-                      <span className="text-[11px] text-stone-500">
-                        {item.partnerName} • {item.distanceKm} km
-                      </span>
+            <div className="bg-white rounded-3xl p-4 border border-stone-200/80 shadow-sm space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-stone-700 block">
+                  Tất cả điểm cứu trợ gần bạn ({filteredListings.length}):
+                </span>
+                <span className="text-[10px] text-stone-400">
+                  Nhấp để xem trên bản đồ
+                </span>
+              </div>
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {filteredListings.map((item) => {
+                  const isSelected = selectedListing?.id === item.id;
+                  const discountPercent =
+                    item.originalPrice > 0
+                      ? Math.round((1 - item.discountPrice / item.originalPrice) * 100)
+                      : 0;
+                  const thumb = getOptimizedThumbnail(item.imageUrls?.[0]);
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        setSelectedListing(item);
+                        mapRef.current?.flyTo({
+                          center: [item.lng, item.lat],
+                          zoom: 15,
+                          speed: 1.2,
+                        });
+                      }}
+                      className={`p-2 rounded-2xl cursor-pointer transition-all duration-200 flex items-center gap-3 border ${
+                        isSelected
+                          ? "bg-emerald-50/90 border-[#00615f] ring-2 ring-[#00615f]/20 shadow-sm"
+                          : "bg-white hover:bg-stone-50 border-stone-100 hover:border-stone-200"
+                      }`}
+                    >
+                      {/* Food Image Thumbnail */}
+                      <div className="relative size-12 rounded-xl overflow-hidden shrink-0 bg-stone-100 border border-stone-100 shadow-inner">
+                        <img
+                          src={thumb}
+                          alt={item.title}
+                          loading="lazy"
+                          width={48}
+                          height={48}
+                          className="size-full object-cover transition-transform duration-200 group-hover:scale-105"
+                        />
+                        {discountPercent > 0 && (
+                          <span className="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1 rounded-bl-md leading-tight">
+                            -{discountPercent}%
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Food & Store Info */}
+                      <div className="min-w-0 flex-1 text-left">
+                        <strong className="text-xs font-bold text-stone-900 block truncate leading-tight">
+                          {item.title}
+                        </strong>
+                        <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                          {item.partnerName} {item.distanceKm != null ? `• ${item.distanceKm} km` : ""}
+                        </p>
+                      </div>
+
+                      {/* Price Section */}
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-black text-[#00615f] block">
+                          {item.discountPrice.toLocaleString("vi-VN")}đ
+                        </span>
+                        {item.originalPrice > item.discountPrice && (
+                          <span className="text-[10px] text-stone-400 line-through block">
+                            {item.originalPrice.toLocaleString("vi-VN")}đ
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-xs font-bold text-[#00615f] shrink-0">
-                      {item.discountPrice.toLocaleString("vi-VN")}đ
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
