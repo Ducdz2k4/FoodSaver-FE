@@ -14,6 +14,7 @@ import {
   ChevronUp,
   ShoppingCart,
   ArrowLeft,
+  LocateFixed,
 } from "lucide-react";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingDTO, FoodCategory } from "@/types/contract";
@@ -143,6 +144,18 @@ export default function FoodMapPage() {
         center: [groceryCart.nearestStore.lng, groceryCart.nearestStore.lat],
         zoom: 15.5,
         speed: 1.2,
+      });
+    }
+  };
+
+  const handleFlyToMyLocation = () => {
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: [deliveryLoc.lng, deliveryLoc.lat],
+        zoom: 14.5,
+        speed: 1.3,
+        curve: 1.42,
+        essential: true,
       });
     }
   };
@@ -547,6 +560,22 @@ export default function FoodMapPage() {
               ref={mapContainerRef}
               className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px]"
             />
+
+            {/* Nút quay về vị trí của mình (Recenter to My Location) */}
+            <button
+              type="button"
+              onClick={handleFlyToMyLocation}
+              title="Quay về vị trí của bạn"
+              aria-label="Quay về vị trí của tôi"
+              className="absolute bottom-4 right-4 z-10 bg-white/95 hover:bg-white text-stone-700 hover:text-[#00615f] px-3.5 py-2.5 rounded-2xl shadow-xl border border-stone-200/90 transition-all duration-200 flex items-center gap-2 group backdrop-blur-md active:scale-95 cursor-pointer ring-1 ring-black/5"
+            >
+              <div className="relative flex items-center justify-center">
+                <LocateFixed className="size-4 sm:size-4.5 text-[#00615f] group-hover:scale-110 transition-transform duration-200" />
+              </div>
+              <span className="text-xs font-bold hidden sm:inline-block">
+                Về vị trí của tôi
+              </span>
+            </button>
 
             {/* Floating Shopping Radar Checklist Drawer */}
             {groceryCart && (
