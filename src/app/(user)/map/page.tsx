@@ -18,6 +18,8 @@ import {
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingDTO, FoodCategory } from "@/types/contract";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
+import { useDeliveryLocation } from "@/context/DeliveryLocationContext";
+import { DeliveryHeaderPill } from "@/components/location/DeliveryHeaderPill";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -51,6 +53,7 @@ interface GroceryCartData {
 }
 
 export default function FoodMapPage() {
+  const { location: deliveryLoc } = useDeliveryLocation();
   const [selectedListing, setSelectedListing] = useState<ListingDTO | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<FoodCategory | "ALL">("ALL");
   const [radiusKm, setRadiusKm] = useState<number>(3);
@@ -142,7 +145,7 @@ export default function FoodMapPage() {
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [106.695, 10.7769], // District 1, HCMC
+      center: [deliveryLoc.lng, deliveryLoc.lat],
       zoom: 14,
       pitch: 35,
     });
@@ -160,6 +163,17 @@ export default function FoodMapPage() {
     };
   }, []);
 
+  // Smoothly center map when confirmed delivery location changes
+  useEffect(() => {
+    if (mapRef.current && mapLoaded) {
+      mapRef.current.flyTo({
+        center: [deliveryLoc.lng, deliveryLoc.lat],
+        zoom: 14,
+        essential: true,
+      });
+    }
+  }, [deliveryLoc.lat, deliveryLoc.lng, mapLoaded]);
+
   // Update Markers when filtered listings change
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
@@ -175,11 +189,11 @@ export default function FoodMapPage() {
       <div class="size-5 rounded-full bg-[#00615f] border-2 border-white shadow-xl flex items-center justify-center">
         <div class="size-2 rounded-full bg-[#79e4a7] animate-ping"></div>
       </div>
-      <span class="text-[9px] font-black text-[#00615f] bg-white/95 px-1.5 py-0.5 rounded shadow mt-1">Bạn đang ở đây</span>
+      <span class="text-[9px] font-black text-[#00615f] bg-white/95 px-1.5 py-0.5 rounded shadow mt-1 whitespace-nowrap max-w-[140px] truncate" title="${deliveryLoc.address}">${deliveryLoc.isSavedHome ? "Nhà của bạn" : "Bạn đang ở đây"}</span>
     `;
 
     const userMarker = new mapboxgl.Marker(userEl)
-      .setLngLat([106.695, 10.7769])
+      .setLngLat([deliveryLoc.lng, deliveryLoc.lat])
       .addTo(mapRef.current);
     markersRef.current.push(userMarker);
 
@@ -219,7 +233,7 @@ export default function FoodMapPage() {
 
       markersRef.current.push(marker);
     });
-  }, [filteredListings, selectedListing, mapLoaded]);
+  }, [filteredListings, selectedListing, mapLoaded, deliveryLoc.lat, deliveryLoc.lng, deliveryLoc.address, deliveryLoc.isSavedHome]);
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-16 px-4 sm:px-6 lg:px-8">
