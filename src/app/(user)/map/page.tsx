@@ -268,9 +268,25 @@ export default function FoodMapPage() {
     });
   }, [allListings, categoryFilter, radiusKm, urgentOnly]);
 
+  // Find listing that needs rescuing most urgently in current radar scope (earliest expiryAt)
+  const mostUrgentListing = useMemo(() => {
+    if (!filteredListings || filteredListings.length === 0) return null;
+    return [...filteredListings].sort((a, b) => {
+      const timeA = new Date(a.expiryAt).getTime();
+      const timeB = new Date(b.expiryAt).getTime();
+      return timeA - timeB;
+    })[0];
+  }, [filteredListings]);
+
+  // When entering the map and no listing has been chosen yet, default to the most urgent listing
   useEffect(() => {
-    if (!selectedListing && allListings.length > 0) setSelectedListing(allListings[0]);
-  }, [allListings, selectedListing]);
+    if (filteredListings.length > 0) {
+      const isCurrentInScope = selectedListing && filteredListings.some((l) => l.id === selectedListing.id);
+      if (!isCurrentInScope && mostUrgentListing) {
+        setSelectedListing(mostUrgentListing);
+      }
+    }
+  }, [filteredListings, mostUrgentListing, selectedListing]);
 
   // Reset route when selected listing changes
   useEffect(() => {
@@ -556,11 +572,12 @@ export default function FoodMapPage() {
       .addTo(mapRef.current);
     markersRef.current.push(userMarker);
 
-    // Add listing markers as Rich Store Tickets ("tiket cửa hàng ở gần trên bản đồ")
-    // With food image visible and hover card revealing dish name and price ("có cả hình ảnh món ăn hiển thị, khi hover vào thì có tên món và giá tiền")
+    // Add listing markers as Rich Teardrop Pin Markers
+    // With food image visible and hover card revealing dish name and price only on hover ("khi hover vào mới hiện chi tiết, hover ra thì không hiển thị")
     filteredListings.forEach((item) => {
       const isSelected = selectedListing?.id === item.id;
-      const isUrgent = item.status === "EXPIRING_SOON";
+      const isMostUrgent = mostUrgentListing?.id === item.id;
+      const isUrgent = item.status === "EXPIRING_SOON" || isMostUrgent;
       const discountPercent =
         item.originalPrice > 0
           ? Math.round((1 - item.discountPrice / item.originalPrice) * 100)
@@ -569,16 +586,12 @@ export default function FoodMapPage() {
 
       const el = document.createElement("div");
       el.className = `group relative cursor-pointer select-none transition-transform duration-200 ${
-        isSelected ? "z-30" : "z-10 hover:z-30"
+        isSelected ? "z-30" : isMostUrgent ? "z-20" : "z-10 hover:z-30"
       }`;
 
       el.innerHTML = `
-        <!-- Floating Hover / Selection Card (Hiện chi tiết tên món, giá tiền khi hover) -->
-        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-60 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-stone-200/90 p-3 transition-all duration-200 pointer-events-none ${
-          isSelected
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto"
-        } z-50 text-left">
+        <!-- Floating Hover Card (Chỉ hiện khi hover vào ghim, hover ra thì ẩn ngay để không che bản đồ) -->
+        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-60 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-stone-200/90 p-3 transition-all duration-200 pointer-events-none opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto z-50 text-left">
           <!-- Store Header & Distance -->
           <div class="flex items-center justify-between gap-1 pb-1.5 border-b border-stone-100">
             <span class="text-[11px] font-bold text-stone-700 truncate max-w-[130px] flex items-center gap-1">
@@ -631,6 +644,8 @@ export default function FoodMapPage() {
           <div class="relative size-11 sm:size-12 rounded-full bg-white p-0.5 shadow-xl border-2.5 ${
             isSelected
               ? "border-[#00615f] ring-4 ring-[#00615f]/30 scale-105"
+              : isMostUrgent
+              ? "border-rose-500 ring-2 ring-rose-400/40"
               : isUrgent
               ? "border-rose-500 ring-2 ring-rose-400/30"
               : "border-emerald-600 group-hover:border-[#00615f]"
@@ -653,6 +668,13 @@ export default function FoodMapPage() {
                   </span>`
                 : ""
             }
+
+            <!-- Active Ping Beacon for the Most Urgent Listing (khi vừa vào map chưa select cái nào thì cái cần cứu nhất ping) -->
+            ${
+              isMostUrgent
+                ? `<span class="absolute -inset-1.5 rounded-full border-2 border-rose-500 animate-ping pointer-events-none opacity-60"></span>`
+                : ""
+            }
           </div>
 
           <!-- Teardrop Pin Pointer Tail Pointing Down to Exact GPS Point -->
@@ -660,7 +682,7 @@ export default function FoodMapPage() {
             <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] ${
               isSelected
                 ? "border-t-[#00615f]"
-                : isUrgent
+                : isMostUrgent || isUrgent
                 ? "border-t-rose-500"
                 : "border-t-emerald-600 group-hover:border-t-[#00615f]"
             }"></div>
