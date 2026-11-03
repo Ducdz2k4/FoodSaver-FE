@@ -1,17 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Sparkles, ShieldCheck, Loader2 } from "lucide-react";
 import { ImageUploadInput } from "@/components/common/ImageUploadInput";
 import { FoodCategory } from "@/types/contract";
-import { useCreateListingMutation } from "@/redux/api/listingApi";
+import { useCreateListingMutation, useGetListingByIdQuery } from "@/redux/api/listingApi";
 import { toast } from "sonner";
 
 export default function NewListingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromId = searchParams.get("from");
+
   const [createListingMutation, { isLoading: isSubmitting }] = useCreateListingMutation();
+  const { data: sourceListing, isLoading: isLoadingSource } = useGetListingByIdQuery(
+    { id: fromId || "" },
+    { skip: !fromId }
+  );
 
   const [title, setTitle] = useState("Túi Bánh Sừng Trâu & Donut Nướng Trong Ngày");
   const [description, setDescription] = useState("Gồm 2 croissant bơ Pháp và 2 donut chocolate nướng thơm lừng, còn hạn đến nửa đêm.");
@@ -26,8 +33,31 @@ export default function NewListingPage() {
   });
   const [pickupStartTime, setPickupStartTime] = useState("18:30");
   const [pickupEndTime, setPickupEndTime] = useState("21:30");
-  const [safetyNotes, setSafetyNotes] = useState("Bảo quản nhiệt độ phòng, nên hâm nóng lại bằng lò nướng 2 phút.");
+  const [safetyNotes, setSafetyNotes] = useState("Bảo quan nhiệt độ phòng, nên hâm nóng lại bằng lò nướng 2 phút.");
   const [imageUrl, setImageUrl] = useState("https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600");
+
+  useEffect(() => {
+    if (sourceListing) {
+      setTitle(sourceListing.title);
+      setDescription(sourceListing.description || "");
+      setCategory(sourceListing.category);
+      setOriginalPrice(sourceListing.originalPrice);
+      setDiscountPrice(sourceListing.discountPrice);
+      setUnit(sourceListing.unit || "phần");
+      if (sourceListing.imageUrls?.[0]) {
+        setImageUrl(sourceListing.imageUrls[0]);
+      }
+      if (sourceListing.safetyNotes) {
+        setSafetyNotes(sourceListing.safetyNotes);
+      }
+      // Khởi tạo hạn dùng mới cho ngày hôm nay (4 tiếng nữa)
+      const freshExpiry = new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16);
+      setExpiryAt(freshExpiry);
+      toast.info(
+        `Đã nạp sẵn thông tin từ món "${sourceListing.title}". Vui lòng xác nhận số lượng & hạn dùng trước khi đăng.`
+      );
+    }
+  }, [sourceListing]);
 
   const discountPercent = originalPrice > 0 ? Math.round(((originalPrice - discountPrice) / originalPrice) * 100) : 0;
 
@@ -74,6 +104,20 @@ export default function NewListingPage() {
           Chia sẻ thực phẩm cận date chuẩn an toàn với mức giá hấp dẫn để giảm thiểu lãng phí.
         </p>
       </div>
+
+      {fromId && sourceListing && (
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-[#00615f] flex items-center justify-between gap-3 text-xs shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="size-4 shrink-0 text-emerald-600" />
+            <span>
+              Đang tạo món mới từ mẫu: <strong>{sourceListing.title}</strong>. Món mới được tạo với mã định danh độc lập, vui lòng xác nhận số lượng phần và hạn dùng hôm nay.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-200/80 text-[#00615f] uppercase tracking-wider shrink-0">
+            Món đăng lại
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Form (7 cols) */}

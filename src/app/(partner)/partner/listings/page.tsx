@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { PlusCircle, Search, Edit3, Power, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Edit3, Power, Loader2, CopyPlus } from "lucide-react";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingStatus } from "@/types/contract";
 import { useGetPartnerListingsQuery, useToggleListingStatusMutation } from "@/redux/api/listingApi";
@@ -154,6 +154,14 @@ export default function PartnerListingsPage() {
 
                   <td className="p-4 pr-6 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/partner/listings/new?from=${item.id}`}
+                        className="px-2 py-1 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-[#00615f] transition flex items-center gap-1 font-bold text-[11px]"
+                        title="Đăng lại (Tạo từ món này)"
+                      >
+                        <CopyPlus className="size-3.5" />
+                        <span>Đăng lại</span>
+                      </Link>
                       <Link
                         href={`/partner/listings/${item.id}/edit`}
                         className="p-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 transition"
