@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, Lock, Mail, MapPin, Phone, ShieldCheck, User } from "lucide-react";
 import { toast } from "sonner";
@@ -84,8 +85,17 @@ export default function RegisterPage() {
   return (
     <div className="w-full max-w-lg p-8 sm:p-9 rounded-3xl bg-white/95 backdrop-blur-xl border border-stone-200/90 shadow-2xl space-y-6">
       <div className="text-center space-y-2">
-        <Link href="/" className="inline-flex items-center gap-2 mb-1">
-          <div className="size-8 rounded-full bg-[#00615f] text-white flex items-center justify-center font-black text-xs shadow-sm"><span className="text-[#79e4a7]">FS</span></div>
+        <Link href="/" className="inline-flex items-center gap-2.5 mb-1 group">
+          <div className="relative size-9 sm:size-10 rounded-full overflow-hidden shadow-sm border border-emerald-100 group-hover:scale-105 transition-transform bg-white">
+            <Image
+              src="/images/logoFS.png"
+              alt="FoodSaver Logo"
+              fill
+              sizes="40px"
+              className="object-cover"
+              priority
+            />
+          </div>
           <span className="font-black text-lg tracking-tight text-[#00615f] uppercase">FOODSAVER</span>
         </Link>
         <h2 className="text-2xl font-black text-foreground tracking-tight">{step === "form" ? "Tạo Tài Khoản Mới" : "Xác Thực Email"}</h2>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -40,8 +41,14 @@ export default function PartnerLayout({
       {/* Mobile Header Bar */}
       <div className="lg:hidden bg-[#00615f] text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <div className="size-8 rounded-full bg-white text-[#00615f] flex items-center justify-center font-black text-xs">
-            FS
+          <div className="relative size-8 rounded-full overflow-hidden bg-white shadow-sm border border-emerald-200">
+            <Image
+              src="/images/logoFS.png"
+              alt="FoodSaver Logo"
+              fill
+              sizes="32px"
+              className="object-cover"
+            />
           </div>
           <span className="font-black text-sm tracking-tight">PARTNER CENTER</span>
         </div>

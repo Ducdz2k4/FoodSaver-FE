@@ -52,6 +52,14 @@ export const metadata: Metadata = {
   title: "FoodSaver | Good food, in its last golden hours",
   description:
     "FoodSaver connects bakeries, convenience stores and neighbours with people nearby who want great food at a fair price, before it expires.",
+  icons: {
+    icon: [
+      { url: "/images/logoFS.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/images/logoFS.png",
+    apple: "/images/logoFS.png",
+  },
 };
 
 export default function RootLayout({

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { Search, Menu, X, ShieldAlert, Store, Clock, ShieldCheck, User, LogOut, Compass, ChefHat, Users } from "lucide-react";
 import { UserMenuDropdown } from "@/components/common/UserMenuDropdown";
@@ -98,8 +99,15 @@ export function TgtgHeader() {
             className="flex items-center gap-2.5 group cursor-pointer"
             aria-label="FoodSaver Homepage"
           >
-            <div className="size-9 sm:size-10 rounded-full bg-[#00615f] text-white flex items-center justify-center font-black text-sm shadow-[0_2px_8px_rgba(0,97,95,0.25)] group-hover:scale-105 transition-transform duration-200">
-              <span className="text-[#79e4a7] font-black tracking-tight">FS</span>
+            <div className="relative size-9 sm:size-10 rounded-full overflow-hidden shadow-[0_2px_8px_rgba(0,97,95,0.2)] group-hover:scale-105 transition-transform duration-200 border border-emerald-200/80 bg-white">
+              <Image
+                src="/images/logoFS.png"
+                alt="FoodSaver Logo"
+                fill
+                sizes="(max-width: 640px) 36px, 40px"
+                className="object-cover"
+                priority
+              />
             </div>
             <span className="font-black text-xl sm:text-2xl tracking-tight text-[#00615f] uppercase select-none">
               FOODSAVER

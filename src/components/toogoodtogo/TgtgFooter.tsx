@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   FooterLinkedInIcon,
   FooterInstagramIcon,
@@ -20,8 +21,14 @@ export function TgtgFooter() {
         <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
           {/* Brand Emblem on the left */}
           <div className="hidden lg:flex items-center gap-3">
-            <div className="size-12 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-              <span className="font-black text-lg text-[#79e4a7]">FS</span>
+            <div className="relative size-12 rounded-full overflow-hidden border border-white/30 bg-white shadow-sm">
+              <Image
+                src="/images/logoFS.png"
+                alt="FoodSaver Logo"
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
             </div>
             <span className="font-black text-xl tracking-tight text-white uppercase">
               FOODSAVER

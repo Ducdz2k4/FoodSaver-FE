@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
@@ -95,8 +96,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/admin">
-                <div className="size-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-black text-xs">
-                  FS
+                <div className="relative size-6 rounded-md overflow-hidden bg-white shrink-0 border border-primary/20">
+                  <Image
+                    src="/images/logoFS.png"
+                    alt="FoodSaver Logo"
+                    fill
+                    sizes="24px"
+                    className="object-cover"
+                  />
                 </div>
                 <span className="text-base font-bold tracking-tight">FoodSaver Admin</span>
               </Link>
