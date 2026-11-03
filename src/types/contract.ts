@@ -132,7 +132,16 @@ export interface NotificationDTO {
   id: string;
   title: string;
   message: string;
-  type: 'NEW_LISTING_NEARBY' | 'ORDER_STATUS_UPDATED' | 'EXPIRY_WARNING' | 'PARTNER_VERIFIED' | 'PARTNER_REJECTED';
+  type:
+    | 'NEW_LISTING_NEARBY'
+    | 'ORDER_STATUS_UPDATED'
+    | 'EXPIRY_WARNING'
+    | 'PARTNER_VERIFIED'
+    | 'PARTNER_REJECTED'
+    | 'PICKUP_REMINDER'
+    | 'NEW_LISTING_FOLLOWED'
+    | 'FOOD_SAFETY_UPDATE';
+  payload?: any;
   read: boolean;
   createdAt: string;
 }
