@@ -114,6 +114,15 @@ export interface OrderDTO {
   isLocked: boolean;
   lockedAt?: string | null;
   pickupTimeWindow: string;
+  pickupStartAt?: string | null;
+  pickupEndAt?: string | null;
+  review?: {
+    id: string;
+    rating: number;
+    comment?: string | null;
+    packagingClean?: boolean | null;
+    createdAt: string;
+  } | null;
   customerNotes?: string;
   cancellationReason?: string | null;
   createdAt: string;

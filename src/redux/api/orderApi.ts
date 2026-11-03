@@ -289,6 +289,49 @@ export const orderApi = baseApi.injectEndpoints({
       transformResponse: (res: any) => res.data,
       invalidatesTags: ["PartnerOrder"],
     }),
+
+    // 18. Khách hàng: Lấy đánh giá của đơn hàng
+    getOrderReview: builder.query<{ review: any }, string>({
+      query: (orderId) => ({
+        url: `/api/v1/orders/${orderId}/review`,
+        method: "GET",
+      }),
+      transformResponse: (res: any) => ({ review: res.data }),
+      providesTags: (_res, _err, orderId) => [{ type: "Order", id: orderId }],
+    }),
+
+    // 19. Khách hàng: Gửi đánh giá sau khi nhận hàng
+    createOrderReview: builder.mutation<
+      any,
+      { orderId: string; rating: number; comment?: string; packagingClean?: boolean }
+    >({
+      query: ({ orderId, ...body }) => ({
+        url: `/api/v1/orders/${orderId}/review`,
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: any) => res.data,
+      invalidatesTags: (_res, _err, { orderId }) => [
+        { type: "Order", id: orderId },
+        "Order",
+      ],
+    }),
+
+    // 20. Xem danh sách đánh giá của quán
+    getPartnerReviews: builder.query<
+      { reviews: any[]; summary: { averageRating: string; totalReviews: number; packagingCleanPercentage: number }; meta?: any },
+      { partnerId: string; page?: number; limit?: number }
+    >({
+      query: ({ partnerId, page = 1, limit = 10 }) => ({
+        url: `/api/v1/partners/${partnerId}/reviews?page=${page}&limit=${limit}`,
+        method: "GET",
+      }),
+      transformResponse: (res: any) => ({
+        reviews: res.data || [],
+        summary: res.summary || { averageRating: "5.0", totalReviews: 0, packagingCleanPercentage: 100 },
+        meta: res.meta,
+      }),
+    }),
   }),
 });
 
@@ -311,4 +354,7 @@ export const {
   useRecordOrderCallMutation,
   useGetPartnerFinanceSummaryQuery,
   useRequestPayoutMutation,
+  useGetOrderReviewQuery,
+  useCreateOrderReviewMutation,
+  useGetPartnerReviewsQuery,
 } = orderApi;

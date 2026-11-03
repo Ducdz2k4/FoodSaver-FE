@@ -79,6 +79,7 @@ export interface TopContributorDTO {
 }
 
 export const communityApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getCommunityPosts: builder.query<
       { data: CommunityPostDTO[]; meta?: { total: number; page: number; limit: number; totalPages: number } },

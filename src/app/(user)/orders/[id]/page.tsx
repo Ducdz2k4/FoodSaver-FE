@@ -29,6 +29,8 @@ import {
   useCancelOrderMutation,
   useLockOrderMutation,
   useCustomerConfirmReceiptMutation,
+  useGetOrderReviewQuery,
+  useCreateOrderReviewMutation,
 } from "@/redux/api/orderApi";
 import { OrderChatModal } from "@/components/common/OrderChatModal";
 import { toast } from "sonner";
@@ -131,10 +133,31 @@ export default function OrderDetailPage({
     }
   };
 
-  const handleReview = (e: React.FormEvent) => {
+  // Real review queries and mutations
+  const { data: reviewData, refetch: refetchReview } = useGetOrderReviewQuery(order?.id || "", {
+    skip: !order?.id || order?.status !== "COMPLETED",
+  });
+  const [createOrderReviewMutation, { isLoading: isSubmittingReview }] = useCreateOrderReviewMutation();
+
+  const currentReview = order?.review || reviewData?.review;
+
+  const handleReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    setReviewModalOpen(false);
-    toast.success("Cảm ơn bạn đã gửi đánh giá chất lượng ATTP cho cửa hàng!");
+    if (!order) return;
+    try {
+      await createOrderReviewMutation({
+        orderId: order.id,
+        rating,
+        comment: reviewText.trim() || undefined,
+        packagingClean: hygieneChecked,
+      }).unwrap();
+      setReviewModalOpen(false);
+      toast.success("✓ Đã gửi đánh giá thành công! Cảm ơn ý kiến của bạn.");
+      refetch();
+      refetchReview();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Không thể gửi đánh giá. Vui lòng thử lại");
+    }
   };
 
   return (
@@ -372,6 +395,52 @@ export default function OrderDetailPage({
             </div>
           </div>
 
+          {/* Hiển thị đánh giá đã lưu nếu có */}
+          {currentReview && (
+            <div className="p-5 rounded-3xl bg-emerald-50/50 border border-emerald-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="size-8 rounded-full bg-white shadow-xs border border-emerald-100 text-[#00615f] flex items-center justify-center">
+                    <Star className="size-4 fill-amber-400 text-amber-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-bold text-stone-900">Đánh giá của bạn về đơn hàng</h4>
+                    <span className="text-[11px] text-stone-400">
+                      {new Date(currentReview.createdAt).toLocaleDateString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric"
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      className={`size-4 ${
+                        s <= currentReview.rating ? "text-amber-400 fill-amber-400" : "text-stone-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              {currentReview.packagingClean && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#00615f] text-xs font-semibold border border-emerald-100 shadow-2xs">
+                  <Check className="size-3.5 text-emerald-600" />
+                  <span>Bao bì đóng gói sạch sẽ, đảm bảo vệ sinh ATTP</span>
+                </div>
+              )}
+              {currentReview.comment && (
+                <p className="text-xs sm:text-sm text-stone-700 bg-white rounded-2xl p-3.5 border border-stone-100 italic leading-relaxed">
+                  "{currentReview.comment}"
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="pt-4 border-t border-stone-100 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -417,7 +486,7 @@ export default function OrderDetailPage({
                 </button>
               )}
 
-              {orderStatus === "COMPLETED" && (
+              {orderStatus === "COMPLETED" && !currentReview && (
                 <button
                   type="button"
                   onClick={() => setReviewModalOpen(true)}
@@ -554,9 +623,11 @@ export default function OrderDetailPage({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold bg-[#00615f] hover:bg-[#089184] text-white rounded-xl shadow-sm"
+                  disabled={isSubmittingReview}
+                  className="px-4 py-2 text-xs font-bold bg-[#00615f] hover:bg-[#089184] text-white rounded-xl shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  Gửi đánh giá
+                  {isSubmittingReview && <Loader2 className="size-3.5 animate-spin" />}
+                  <span>{isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}</span>
                 </button>
               </div>
             </form>
