@@ -11,10 +11,17 @@ import {
   Share2,
   AlertTriangle,
   Loader2,
+  Bell,
+  BellRing,
+  Star,
+  Check,
 } from "lucide-react";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { FoodSafetyBadge } from "@/components/common/FoodSafetyBadge";
 import { useGetListingByIdQuery } from "@/redux/api/listingApi";
+import { useToggleFollowPartnerMutation, useGetFollowStatusQuery } from "@/redux/api/partnerApi";
+import { useGetPartnerReviewsQuery } from "@/redux/api/orderApi";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export default function ListingDetailPage({
@@ -26,8 +33,37 @@ export default function ListingDetailPage({
 
   // Fetch real listing from backend API
   const { data: realListing, isLoading } = useGetListingByIdQuery({ id: resolvedParams.id });
-
   const listing = realListing;
+
+  const { user } = useAuth();
+  const partnerId = listing?.partnerId || "";
+
+  const { data: followStatus, refetch: refetchFollow } = useGetFollowStatusQuery(partnerId, {
+    skip: !partnerId,
+  });
+  const [toggleFollowMutation, { isLoading: isTogglingFollow }] = useToggleFollowPartnerMutation();
+  const { data: partnerReviewsData } = useGetPartnerReviewsQuery({ partnerId }, { skip: !partnerId });
+
+  const isFollowing = followStatus?.isFollowing || false;
+  const followerCount = followStatus?.followerCount || 0;
+
+  const handleToggleFollow = async () => {
+    if (!user) {
+      toast.info("Vui lòng đăng nhập để theo dõi quán và nhận thông báo khi có món mới!");
+      return;
+    }
+    try {
+      const res = await toggleFollowMutation(partnerId).unwrap();
+      if (res.isFollowing) {
+        toast.success(`Đã theo dõi ${listing?.partnerName}! Bạn sẽ nhận thông báo khi quán có món mới.`);
+      } else {
+        toast.info(`Đã bỏ theo dõi ${listing?.partnerName}.`);
+      }
+      refetchFollow();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Không thể thực hiện hành động này");
+    }
+  };
 
   if (isLoading && !listing) {
     return (
@@ -106,20 +142,73 @@ export default function ListingDetailPage({
             </div>
 
             {/* Thông tin đối tác F&B */}
-            <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-sm space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
                   <span className="text-xs font-bold text-stone-400 uppercase tracking-wider block">
                     Đơn vị cung cấp
                   </span>
                   <h2 className="text-lg font-black text-[#00615f]">
                     {listing.partnerName}
                   </h2>
+                  {partnerReviewsData?.summary?.totalReviews ? (
+                    <div className="flex items-center gap-1.5 text-xs text-stone-600">
+                      <div className="flex items-center text-amber-500 font-bold">
+                        <Star className="size-3.5 fill-amber-400 text-amber-400 mr-0.5" />
+                        <span>{partnerReviewsData.summary.averageRating}</span>
+                      </div>
+                      <span>•</span>
+                      <span>{partnerReviewsData.summary.totalReviews} đánh giá</span>
+                      {partnerReviewsData.summary.packagingCleanPercentage >= 80 && (
+                        <>
+                          <span>•</span>
+                          <span className="text-emerald-700 font-semibold">
+                            {partnerReviewsData.summary.packagingCleanPercentage}% bao bì sạch
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
-                <FoodSafetyBadge
-                  certUrl={listing.foodSafetyCertUrl}
-                  partnerName={listing.partnerName}
-                />
+
+                <div className="flex flex-col items-end gap-2">
+                  <FoodSafetyBadge
+                    certUrl={listing.foodSafetyCertUrl}
+                    partnerName={listing.partnerName}
+                  />
+
+                  {/* Nút Theo dõi quán */}
+                  <button
+                    type="button"
+                    onClick={handleToggleFollow}
+                    disabled={isTogglingFollow}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition shadow-xs cursor-pointer ${
+                      isFollowing
+                        ? "bg-emerald-100 text-[#00615f] border border-emerald-300 font-black hover:bg-emerald-200"
+                        : "bg-white text-stone-700 hover:text-[#00615f] hover:bg-emerald-50 border border-stone-300"
+                    }`}
+                  >
+                    {isFollowing ? (
+                      <>
+                        <BellRing className="size-3.5 text-[#00615f]" />
+                        <span>Đang theo dõi ({followerCount})</span>
+                      </>
+                    ) : (
+                      <>
+                        <Bell className="size-3.5 text-stone-500" />
+                        <span>Theo dõi quán {followerCount > 0 ? `(${followerCount})` : ""}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-100 flex items-center justify-between text-[11px] text-stone-500">
+                <span className="flex items-center gap-1">
+                  <Bell className="size-3 text-[#00615f]" />
+                  <span>Nhận thông báo in-app ngay khi quán mở bán món mới</span>
+                </span>
+                {isFollowing && <span className="font-bold text-emerald-700">✓ Đã bật báo món</span>}
               </div>
 
               <div className="flex items-start gap-2 text-xs text-stone-600 pt-2 border-t border-stone-100">

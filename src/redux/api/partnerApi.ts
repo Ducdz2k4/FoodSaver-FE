@@ -83,6 +83,36 @@ export const partnerApi = baseApi.injectEndpoints({
       transformResponse: (response: SinglePartnerResponse) => response.data,
       invalidatesTags: ["PartnerProfile", "User", "UserProfile", "Admin"],
     }),
+
+    // 5. User: Theo dõi hoặc bỏ theo dõi quán (Follow Partner)
+    toggleFollowPartner: builder.mutation<{ isFollowing: boolean; followerCount: number }, string>({
+      query: (partnerId) => ({
+        url: `/api/v1/partners/${partnerId}/follow`,
+        method: "POST",
+      }),
+      transformResponse: (response: any) => response.data,
+      invalidatesTags: ["PartnerProfile"],
+    }),
+
+    // 6. User: Kiểm tra trạng thái theo dõi quán
+    getFollowStatus: builder.query<{ isFollowing: boolean; followerCount: number }, string>({
+      query: (partnerId) => ({
+        url: `/api/v1/partners/${partnerId}/follow-status`,
+        method: "GET",
+      }),
+      transformResponse: (response: any) => response.data,
+      providesTags: (_res, _err, partnerId) => [{ type: "PartnerProfile", id: partnerId }],
+    }),
+
+    // 7. User: Danh sách quán đang theo dõi
+    getFollowedPartners: builder.query<any[], void>({
+      query: () => ({
+        url: "/api/v1/users/me/followed-partners",
+        method: "GET",
+      }),
+      transformResponse: (response: any) => response.data || [],
+      providesTags: ["PartnerProfile"],
+    }),
   }),
 });
 
@@ -92,4 +122,7 @@ export const {
   useGetPendingPartnersQuery,
   useGetAllPartnersQuery,
   useVerifyPartnerMutation,
+  useToggleFollowPartnerMutation,
+  useGetFollowStatusQuery,
+  useGetFollowedPartnersQuery,
 } = partnerApi;
