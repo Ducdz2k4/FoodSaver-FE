@@ -7,6 +7,8 @@ import {
   OrderChatThreadDTO,
   OrderChatMessageDTO,
   PartnerFinanceSummaryDTO,
+  FoodSafetyReportDTO,
+  SafetyReportIssueType,
 } from "@/types/contract";
 
 export interface CreateOrderPayload {
@@ -332,6 +334,33 @@ export const orderApi = baseApi.injectEndpoints({
         meta: res.meta,
       }),
     }),
+
+    // 21. Khách hàng: Gửi báo cáo sự cố ATTP
+    createSafetyReport: builder.mutation<
+      FoodSafetyReportDTO,
+      { orderId: string; issueType: SafetyReportIssueType; description: string; evidenceUrls?: string[] }
+    >({
+      query: ({ orderId, ...body }) => ({
+        url: `/api/v1/orders/${orderId}/safety-report`,
+        method: "POST",
+        body,
+      }),
+      transformResponse: (res: any) => res.data,
+      invalidatesTags: (_res, _err, { orderId }) => [
+        { type: "Order", id: orderId },
+        "Order",
+      ],
+    }),
+
+    // 22. Lấy thông tin sự cố ATTP của đơn
+    getOrderSafetyReport: builder.query<FoodSafetyReportDTO | null, string>({
+      query: (orderId) => ({
+        url: `/api/v1/orders/${orderId}/safety-report`,
+        method: "GET",
+      }),
+      transformResponse: (res: any) => res.data || null,
+      providesTags: (_res, _err, orderId) => [{ type: "Order", id: orderId }],
+    }),
   }),
 });
 
@@ -357,4 +386,6 @@ export const {
   useGetOrderReviewQuery,
   useCreateOrderReviewMutation,
   useGetPartnerReviewsQuery,
+  useCreateSafetyReportMutation,
+  useGetOrderSafetyReportQuery,
 } = orderApi;

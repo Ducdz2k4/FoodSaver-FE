@@ -192,3 +192,59 @@ export interface PartnerFinanceSummaryDTO {
     createdAt: string;
   }>;
 }
+
+export type SafetyReportIssueType =
+  | 'EXPIRED_FOOD'
+  | 'STRANGE_ODOR_MOLD'
+  | 'DAMAGED_PACKAGING'
+  | 'FOREIGN_OBJECT'
+  | 'HEALTH_SYMPTOM'
+  | 'OTHER';
+
+export type SafetyReportStatus = 'OPEN' | 'REVIEWING' | 'RESOLVED' | 'REJECTED';
+
+export interface FoodSafetyReportDTO {
+  id: string;
+  reportNumber: string;
+  orderId: string;
+  customerId: string;
+  partnerId: string;
+  listingId: string;
+  issueType: SafetyReportIssueType;
+  description: string;
+  evidenceUrls?: string[];
+  status: SafetyReportStatus;
+  adminNotes?: string | null;
+  resolution?: string | null;
+  resolvedBy?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer?: {
+    id: string;
+    fullName: string;
+    phone?: string;
+    email?: string;
+  };
+  partner?: {
+    id: string;
+    businessName: string;
+    phone?: string;
+    address?: string;
+    foodSafetyCertUrl?: string;
+  };
+  listing?: {
+    id: string;
+    title: string;
+    status?: string;
+    expiryAt?: string;
+    imageUrls?: string[];
+  };
+  order?: {
+    id: string;
+    orderNumber: string;
+    totalPrice?: number;
+    createdAt?: string;
+    history?: any[];
+  };
+}

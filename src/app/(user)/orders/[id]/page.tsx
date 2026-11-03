@@ -23,6 +23,7 @@ import {
   KeyRound,
   Check,
   PackageCheck,
+  ShieldAlert,
 } from "lucide-react";
 import {
   useGetOrderByIdQuery,
@@ -31,7 +32,10 @@ import {
   useCustomerConfirmReceiptMutation,
   useGetOrderReviewQuery,
   useCreateOrderReviewMutation,
+  useCreateSafetyReportMutation,
+  useGetOrderSafetyReportQuery,
 } from "@/redux/api/orderApi";
+import { SafetyReportIssueType } from "@/types/contract";
 import { OrderChatModal } from "@/components/common/OrderChatModal";
 import { toast } from "sonner";
 
@@ -57,6 +61,12 @@ export default function OrderDetailPage({
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
   const [hygieneChecked, setHygieneChecked] = useState(true);
+
+  // Safety report modal states
+  const [safetyModalOpen, setSafetyModalOpen] = useState(false);
+  const [safetyIssueType, setSafetyIssueType] = useState<SafetyReportIssueType>("EXPIRED_FOOD");
+  const [safetyDescription, setSafetyDescription] = useState("");
+  const [safetyEvidenceUrl, setSafetyEvidenceUrl] = useState("");
 
   const [countdownSeconds, setCountdownSeconds] = useState(0);
   const [isLockedState, setIsLockedState] = useState(false);
@@ -160,6 +170,37 @@ export default function OrderDetailPage({
     }
   };
 
+  // Real food safety report query & mutation
+  const { data: safetyReport, refetch: refetchSafetyReport } = useGetOrderSafetyReportQuery(order?.id || "", {
+    skip: !order?.id,
+  });
+  const [createSafetyReportMutation, { isLoading: isSubmittingSafetyReport }] = useCreateSafetyReportMutation();
+
+  const handleSafetyReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!order) return;
+    if (safetyDescription.trim().length < 10) {
+      toast.error("Vui lòng mô tả chi tiết sự cố gặp phải (ít nhất 10 ký tự)");
+      return;
+    }
+    try {
+      await createSafetyReportMutation({
+        orderId: order.id,
+        issueType: safetyIssueType,
+        description: safetyDescription.trim(),
+        evidenceUrls: safetyEvidenceUrl.trim() ? [safetyEvidenceUrl.trim()] : [],
+      }).unwrap();
+      setSafetyModalOpen(false);
+      setSafetyDescription("");
+      setSafetyEvidenceUrl("");
+      toast.success("✓ Đã gửi báo cáo sự cố ATTP tới Ban Quản Trị để thẩm định");
+      refetch();
+      refetchSafetyReport();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Không thể gửi báo cáo sự cố");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-28 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -224,6 +265,63 @@ export default function OrderDetailPage({
               )}
               <span>✓ Tôi đã nhận đủ món (Xác nhận hoàn tất)</span>
             </button>
+          </div>
+        )}
+
+        {/* Safety Report Status Banner */}
+        {safetyReport && (
+          <div
+            className={`p-5 rounded-3xl border shadow-sm space-y-3 ${
+              safetyReport.status === "RESOLVED"
+                ? "bg-emerald-50/90 border-emerald-200 text-emerald-950"
+                : safetyReport.status === "REJECTED"
+                ? "bg-stone-100 border-stone-200 text-stone-800"
+                : "bg-amber-50/90 border-amber-200 text-amber-950"
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <ShieldAlert
+                  className={`size-5 shrink-0 ${
+                    safetyReport.status === "RESOLVED"
+                      ? "text-emerald-700"
+                      : safetyReport.status === "REJECTED"
+                      ? "text-stone-600"
+                      : "text-amber-700"
+                  }`}
+                />
+                <span className="font-extrabold text-xs sm:text-sm">
+                  🛡️ Báo cáo sự cố ATTP #{safetyReport.reportNumber}
+                </span>
+              </div>
+              <span
+                className={`text-[11px] font-bold px-3 py-1 rounded-full inline-block w-fit ${
+                  safetyReport.status === "RESOLVED"
+                    ? "bg-emerald-200 text-emerald-900"
+                    : safetyReport.status === "REJECTED"
+                    ? "bg-stone-200 text-stone-800"
+                    : safetyReport.status === "REVIEWING"
+                    ? "bg-sky-200 text-sky-900"
+                    : "bg-amber-200 text-amber-900"
+                }`}
+              >
+                {safetyReport.status === "OPEN" && "Đang tiếp nhận xử lý"}
+                {safetyReport.status === "REVIEWING" && "Đang thẩm định & làm việc với quán"}
+                {safetyReport.status === "RESOLVED" && "Đã xử lý & kết luận"}
+                {safetyReport.status === "REJECTED" && "Đã bác bỏ khiếu nại"}
+              </span>
+            </div>
+
+            <p className="text-xs sm:text-sm text-stone-700 italic">
+              "Lý do: {safetyReport.description}"
+            </p>
+
+            {safetyReport.resolution && (
+              <div className="p-3.5 bg-white/90 rounded-2xl border border-stone-200 text-xs sm:text-sm text-stone-800 space-y-1">
+                <strong className="text-emerald-800 font-bold block">Kết luận từ Ban Quản Trị FoodSaver:</strong>
+                <p className="leading-relaxed">{safetyReport.resolution}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -496,6 +594,17 @@ export default function OrderDetailPage({
                   <span>Đánh giá món ăn</span>
                 </button>
               )}
+
+              {["HANDED_OVER", "COMPLETED", "DISPUTED"].includes(orderStatus) && !safetyReport && (
+                <button
+                  type="button"
+                  onClick={() => setSafetyModalOpen(true)}
+                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold transition flex items-center justify-center gap-1.5"
+                >
+                  <ShieldAlert className="size-3.5 text-amber-700" />
+                  <span>Báo sự cố ATTP</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -628,6 +737,98 @@ export default function OrderDetailPage({
                 >
                   {isSubmittingReview && <Loader2 className="size-3.5 animate-spin" />}
                   <span>{isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Báo Cáo Sự Cố An Toàn Thực Phẩm */}
+      {safetyModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={() => setSafetyModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 text-amber-700 font-extrabold text-sm sm:text-base">
+              <ShieldAlert className="size-5 shrink-0" />
+              <span>Báo Cáo Sự Cố An Toàn Thực Phẩm</span>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              FoodSaver ưu tiên sức khỏe và an toàn của bạn trên hết. Vui lòng cung cấp chi tiết sự cố để Ban Quản Trị thẩm tra ngay lập tức.
+            </p>
+
+            <form onSubmit={handleSafetyReportSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-stone-800 mb-1.5">
+                  Phân loại sự cố <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={safetyIssueType}
+                  onChange={(e) => setSafetyIssueType(e.target.value as SafetyReportIssueType)}
+                  className="w-full p-3 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-bold text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                >
+                  <option value="EXPIRED_FOOD">Món ăn đã hết hạn / biến chất</option>
+                  <option value="STRANGE_ODOR_MOLD">Có mùi lạ, dấu hiệu ôi thiu hoặc mốc</option>
+                  <option value="DAMAGED_PACKAGING">Hộp / bao bì rách, hở niêm phong</option>
+                  <option value="FOREIGN_OBJECT">Có dị vật bất thường trong món ăn</option>
+                  <option value="HEALTH_SYMPTOM">Xuất hiện triệu chứng bất thường sau khi dùng</option>
+                  <option value="OTHER">Sự cố an toàn thực phẩm khác</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-800 mb-1.5">
+                  Mô tả chi tiết sự cố <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={safetyDescription}
+                  onChange={(e) => setSafetyDescription(e.target.value)}
+                  placeholder="Mô tả cụ thể tình trạng món ăn khi nhận được, mùi vị, dấu hiệu bất thường..."
+                  className="w-full p-3 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/20 leading-relaxed"
+                />
+                <span className="text-[11px] text-stone-400">Tối thiểu 10 ký tự ({safetyDescription.length}/10)</span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-800 mb-1.5">
+                  Link ảnh bằng chứng (URL ảnh chụp món hoặc bao bì)
+                </label>
+                <input
+                  type="url"
+                  value={safetyEvidenceUrl}
+                  onChange={(e) => setSafetyEvidenceUrl(e.target.value)}
+                  placeholder="https://example.com/anh-bang-chung.jpg"
+                  className="w-full p-3 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                />
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                🛡️ <strong>Chính sách bảo vệ:</strong> Khi gửi báo cáo, đơn hàng sẽ chuyển sang diện <strong>Khiếu nại (DISPUTED)</strong>. Hệ thống tạm giữ đối soát thanh toán với quán và liên hệ hỗ trợ bạn trong vòng 24 giờ.
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSafetyModalOpen(false)}
+                  className="px-4 py-2.5 text-xs font-bold text-stone-500 hover:bg-stone-100 rounded-xl"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingSafetyReport || safetyDescription.trim().length < 10}
+                  className="px-5 py-2.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSubmittingSafetyReport && <Loader2 className="size-3.5 animate-spin" />}
+                  <span>{isSubmittingSafetyReport ? "Đang gửi báo cáo..." : "Gửi Báo Cáo Sự Cố"}</span>
                 </button>
               </div>
             </form>

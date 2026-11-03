@@ -27,6 +27,7 @@ import {
   ActivityIcon,
   UtensilsCrossed,
   BarChart3,
+  ShieldAlert,
 } from "lucide-react";
 
 const data = {
@@ -45,6 +46,11 @@ const data = {
       title: "Kiểm duyệt món ăn",
       url: "/admin/listings",
       icon: <UtensilsCrossed />,
+    },
+    {
+      title: "Sự cố ATTP",
+      url: "/admin/safety-reports",
+      icon: <ShieldAlert />,
     },
     {
       title: "Quản lý người dùng",
