@@ -38,6 +38,8 @@ export interface PartnerProfileDTO {
   lng: number;
   geohash: string;
   phone: string;
+  isOpen?: boolean;
+  metadata?: any;
   user?: {
     id: string;
     email: string;
@@ -145,8 +147,6 @@ export interface NotificationDTO {
   read: boolean;
   createdAt: string;
 }
-
-
 
 export interface OrderChatMessageDTO {
   id: string;

@@ -19,6 +19,7 @@ import {
   CreditCard,
   ShieldAlert,
   X,
+  Store,
 } from "lucide-react";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { useGetPartnerListingsQuery } from "@/redux/api/listingApi";
@@ -27,6 +28,10 @@ import {
   useGetPartnerFinanceSummaryQuery,
   useRequestPayoutMutation,
 } from "@/redux/api/orderApi";
+import {
+  useGetMyPartnerProfileQuery,
+  useUpdateMyPartnerProfileMutation,
+} from "@/redux/api/partnerApi";
 import { toast } from "sonner";
 
 export default function PartnerDashboardPage() {
@@ -34,6 +39,12 @@ export default function PartnerDashboardPage() {
   const { data: realOrders, isLoading: isOrdersLoading } = useGetPartnerOrdersQuery();
   const { data: financeSummary, isLoading: isFinanceLoading, refetch: refetchFinance } = useGetPartnerFinanceSummaryQuery();
   const [requestPayoutMutation, { isLoading: isRequestingPayout }] = useRequestPayoutMutation();
+
+  // Store status (isOpen)
+  const { data: partnerProfile, refetch: refetchProfile } = useGetMyPartnerProfileQuery();
+  const [updateProfileMutation, { isLoading: isUpdatingStoreStatus }] = useUpdateMyPartnerProfileMutation();
+
+  const isStoreOpen = partnerProfile?.isOpen ?? partnerProfile?.metadata?.isOpen ?? true;
 
   const [payoutModalOpen, setPayoutModalOpen] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState<number>(100000);
@@ -90,6 +101,21 @@ export default function PartnerDashboardPage() {
   const debtLimit = financeSummary?.debtLimit || 500000;
   const debtPercent = Math.min(100, Math.round((cashDebtBalance / debtLimit) * 100));
 
+  const handleToggleStoreStatus = async () => {
+    const nextStatus = !isStoreOpen;
+    try {
+      await updateProfileMutation({ isOpen: nextStatus }).unwrap();
+      if (nextStatus) {
+        toast.success("✓ Đã mở cửa nhận đơn! Món ăn của quán đang hiển thị bình thường trên chợ cứu trợ.");
+      } else {
+        toast.warning("Đã tạm đóng cửa quán! Khách hàng sẽ thấy thông báo quán đang tạm dừng nhận đơn.");
+      }
+      refetchProfile();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Không thể thay đổi trạng thái mở cửa quán");
+    }
+  };
+
   const handleOpenPayout = () => {
     if (availableBalance < 50000) {
       toast.error("Số dư khả dụng tối thiểu để rút tiền là 50.000đ!");
@@ -122,7 +148,7 @@ export default function PartnerDashboardPage() {
         bankAccountName: bankAccountName.trim().toUpperCase(),
       }).unwrap();
 
-      toast.success("✓ Đã gửi yêu cầu rút tiền thành công! Hệ thống đang xử lý đối soát.");
+      toast.success("✓ Đã gửi yêu cầu rút tiền thành công! Ban Quản Trị đang xử lý đối soát.");
       setPayoutModalOpen(false);
       refetchFinance();
     } catch (err: any) {
@@ -135,10 +161,35 @@ export default function PartnerDashboardPage() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#00615f] tracking-tight">
-            Tổng quan đối tác
-          </h1>
-          <p className="text-xs sm:text-sm text-stone-500">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#00615f] tracking-tight">
+              Tổng quan đối tác
+            </h1>
+
+            {/* Store Status Pill / Switch */}
+            <button
+              type="button"
+              onClick={handleToggleStoreStatus}
+              disabled={isUpdatingStoreStatus}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border text-xs font-bold transition shadow-xs cursor-pointer ${
+                isStoreOpen
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                  : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+              }`}
+              title={isStoreOpen ? "Bấm để tạm đóng cửa quán" : "Bấm để mở cửa quán nhận đơn"}
+            >
+              <span
+                className={`size-2.5 rounded-full ${
+                  isStoreOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                }`}
+              />
+              <span>{isStoreOpen ? "Đang mở cửa" : "Tạm nghỉ bán"}</span>
+              <span className="text-[10px] underline ml-1 font-semibold text-stone-500">
+                {isStoreOpen ? "Đóng" : "Mở"}
+              </span>
+            </button>
+          </div>
+          <p className="text-xs sm:text-sm text-stone-500 mt-1">
             Theo dõi hiệu quả giải cứu thực phẩm, đơn hàng và quản lý tài chính kế toán kép minh bạch.
           </p>
         </div>
@@ -162,6 +213,32 @@ export default function PartnerDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Notice Banner when store is temporarily closed */}
+      {!isStoreOpen && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-900 shadow-sm animate-in fade-in-50">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-700">
+              <Store className="size-5" />
+            </div>
+            <div>
+              <strong className="text-xs font-bold block">
+                Cửa hàng đang ở trạng thái TẠM NGHỈ BÁN
+              </strong>
+              <span className="text-[11px] text-amber-800/80">
+                Khách hàng sẽ nhìn thấy thông báo quán đang tạm dừng nhận đơn mới. Các đơn hàng cũ vẫn được xử lý bình thường.
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={handleToggleStoreStatus}
+            disabled={isUpdatingStoreStatus}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shrink-0 shadow-sm transition"
+          >
+            Mở cửa quán lại ngay
+          </button>
+        </div>
+      )}
 
       {/* 4 Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
