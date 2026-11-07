@@ -29,6 +29,7 @@ import {
   BarChart3,
   ShieldAlert,
   CreditCard,
+  Landmark,
 } from "lucide-react";
 
 const data = {

@@ -50,6 +50,7 @@ import {
   CreditCard,
   AlertTriangle,
   FileCheck2,
+  QrCode,
 } from "lucide-react";
 
 const STATUS_LABELS: Record<PayoutStatus, string> = {
@@ -67,6 +68,7 @@ export default function AdminPayoutsPage() {
   // Dialog States
   const [completeTarget, setCompleteTarget] = useState<AdminPayoutItem | null>(null);
   const [bankRefCode, setBankRefCode] = useState("");
+  const [showPayoutQr, setShowPayoutQr] = useState(true);
 
   const [rejectTarget, setRejectTarget] = useState<AdminPayoutItem | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -107,6 +109,7 @@ export default function AdminPayoutsPage() {
   const handleOpenCompleteDialog = (payout: AdminPayoutItem) => {
     setCompleteTarget(payout);
     setBankRefCode("");
+    setShowPayoutQr(true);
   };
 
   const handleConfirmComplete = async () => {
@@ -483,6 +486,39 @@ export default function AdminPayoutsPage() {
                     <span className="font-semibold text-foreground">{completeTarget.bankAccountName}</span>
                   </div>
                 </div>
+                  {/* VietQR Quick Transfer for Admin */}
+                  <div className="p-3 bg-muted/40 rounded-xl border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-foreground flex items-center gap-1.5">
+                        <QrCode className="size-4 text-primary" />
+                        Mã VietQR chuyển tiền cho quán
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPayoutQr((prev) => !prev)}
+                        className="h-6 px-2 text-[10px]"
+                      >
+                        {showPayoutQr ? "Ẩn mã QR" : "Hiện mã QR"}
+                      </Button>
+                    </div>
+
+                    {showPayoutQr && (
+                      <div className="pt-2 text-center space-y-1.5 bg-white p-3 rounded-xl border border-dashed border-primary/30">
+                        <img
+                          src={`https://img.vietqr.io/image/${(completeTarget.bankName || "bidv").toLowerCase().replace(/[^a-z0-9]/g, "")}-${completeTarget.bankAccountNo}-compact2.png?amount=${completeTarget.amount}&addInfo=RUT%20TIEN%20FS%20${completeTarget.id.slice(0, 8).toUpperCase()}&accountName=${encodeURIComponent(completeTarget.bankAccountName || "")}`}
+                          alt="VietQR Chuyển Tiền"
+                          className="size-44 mx-auto object-contain rounded-lg border p-1"
+                        />
+                        <p className="text-[10px] text-muted-foreground">
+                          Mở App BIDV quét mã trên để chuyển tiền tự động đúng số tiền và nội dung.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+
 
                 {/* Bank Reference Code Input */}
                 <div className="space-y-1.5">
