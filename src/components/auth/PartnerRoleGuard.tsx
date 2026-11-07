@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Store, Clock, AlertCircle, RefreshCw, LogIn, ArrowRight, ShieldCheck } from "lucide-react";
+import { Store, Clock, AlertCircle, RefreshCw, LogIn, ArrowRight } from "lucide-react";
 
 export function PartnerRoleGuard({ children }: { children: React.ReactNode }) {
   const {
@@ -18,22 +18,28 @@ export function PartnerRoleGuard({ children }: { children: React.ReactNode }) {
 
   const pathname = usePathname();
   const router = useRouter();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Allow open access to onboarding apply pages
   const isApplyPage = pathname.startsWith("/partner/apply");
 
   useEffect(() => {
-    if (isApplyPage) return;
+    if (!hasMounted || isApplyPage) return;
     if (!isLoading && !isAuthenticated) {
       router.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [isLoading, isAuthenticated, isApplyPage, pathname, router]);
+  }, [hasMounted, isLoading, isAuthenticated, isApplyPage, pathname, router]);
 
   if (isApplyPage) {
     return <>{children}</>;
   }
 
-  if (isLoading && !user) {
+  // During SSR and initial client hydration pass, render stable loading state to prevent hydration mismatch
+  if (!hasMounted || (isLoading && !user)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-stone-50 text-stone-800 p-4">
         <RefreshCw className="size-8 animate-spin text-[#00615f] mb-3.5" />
@@ -170,4 +176,3 @@ export function PartnerRoleGuard({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -13,24 +13,29 @@ export function AdminRoleGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading, isAuthenticated, isAdmin, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
-    if (isLoginPage) return;
+    if (!hasMounted || isLoginPage) return;
 
     if (!isLoading && !isAuthenticated) {
       const returnUrl = encodeURIComponent(pathname);
       router.replace(`/login?redirect=${returnUrl}`);
     }
-  }, [isLoading, isAuthenticated, isLoginPage, pathname, router]);
+  }, [hasMounted, isLoading, isAuthenticated, isLoginPage, pathname, router]);
 
   if (isLoginPage) {
     return <>{children}</>;
   }
 
-  // Only show full-screen loader during initial load when user is not yet loaded
-  if (isLoading && !user) {
+  // During SSR and initial client hydration pass, render stable loading state to prevent hydration mismatch
+  if (!hasMounted || (isLoading && !user)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4">
         <RefreshCw className="size-8 animate-spin text-primary mb-3.5" />

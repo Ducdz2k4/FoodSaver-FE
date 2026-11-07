@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -28,25 +28,30 @@ export function UserRouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   const isProtected = useMemo(() => isProtectedUserRoute(pathname), [pathname]);
 
   useEffect(() => {
-    if (!isProtected) return;
+    if (!hasMounted || !isProtected) return;
 
     if (!isLoading && !isAuthenticated) {
       const returnUrl = encodeURIComponent(pathname);
       router.replace(`/login?redirect=${returnUrl}`);
     }
-  }, [isLoading, isAuthenticated, isProtected, pathname, router]);
+  }, [hasMounted, isLoading, isAuthenticated, isProtected, pathname, router]);
 
   // Nếu là route công khai (trang chủ, search, map, listing, meal-planner...), cho phép hiển thị ngay lập tức
   if (!isProtected) {
     return <>{children}</>;
   }
 
-  // Nếu là route yêu cầu login và đang tải thông tin auth lần đầu
-  if (isLoading && !user) {
+  // Nếu là route yêu cầu login và chưa mount ở client hoặc đang tải auth
+  if (!hasMounted || (isLoading && !user)) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-stone-700">
         <RefreshCw className="size-8 animate-spin text-[#00615f] mb-3.5" />
