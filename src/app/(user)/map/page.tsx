@@ -1309,7 +1309,7 @@ export default function FoodMapPage() {
           </div>
 
           {/* Right Column (4 cols): Sticky Selected Food Detail Card */}
-          <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4 max-h-[calc(100vh-7rem)] overflow-y-auto pr-0.5 scrollbar-thin">
+          <div className="lg:col-span-4 lg:sticky lg:top-24 space-y-4">
             <span className="text-xs font-bold text-stone-400 uppercase tracking-wider block">
               Địa điểm đã chọn
             </span>
@@ -1419,14 +1419,14 @@ export default function FoodMapPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white p-2 rounded-xl border border-emerald-100 shadow-xs">
-                        <span className="text-stone-400 text-[10px] block">Khoảng cách xe</span>
+                      <div className="bg-white p-2.5 rounded-2xl border border-emerald-100 shadow-2xs">
+                        <span className="text-stone-400 text-[10px] block font-medium">Khoảng cách xe</span>
                         <span className="font-black text-stone-900 text-sm">
                           {(activeRoute.distanceMeters / 1000).toFixed(1)} km
                         </span>
                       </div>
-                      <div className="bg-white p-2 rounded-xl border border-emerald-100 shadow-xs">
-                        <span className="text-stone-400 text-[10px] block">Thời gian ước tính</span>
+                      <div className="bg-white p-2.5 rounded-2xl border border-emerald-100 shadow-2xs">
+                        <span className="text-stone-400 text-[10px] block font-medium">Thời gian ước tính</span>
                         <span className="font-black text-[#00615f] text-sm">
                           ~{Math.max(1, Math.round(activeRoute.durationSeconds / 60))} phút
                         </span>
@@ -1439,7 +1439,7 @@ export default function FoodMapPage() {
                         href={getGoogleMapsDirectionsUrl(selectedListing)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 py-2 px-2.5 rounded-xl bg-white hover:bg-emerald-100/70 text-[#00615f] border border-emerald-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
+                        className="flex-1 py-2.5 px-3 rounded-2xl bg-white hover:bg-emerald-50 text-[#00615f] border border-emerald-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
                       >
                         <ExternalLink className="size-3.5" />
                         <span>Mở Google Maps</span>
@@ -1447,7 +1447,7 @@ export default function FoodMapPage() {
                       <button
                         type="button"
                         onClick={() => handleShareGoogleMapsRoute()}
-                        className="flex-1 py-2 px-2.5 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                        className="flex-1 py-2.5 px-3 rounded-2xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
                       >
                         {isCopiedRoute ? (
                           <>
