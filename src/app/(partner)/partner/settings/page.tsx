@@ -11,10 +11,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useGetMyPartnerProfileQuery } from "@/redux/api/partnerApi";
+import { useGetMyPartnerProfileQuery, useUpdateMyPartnerProfileMutation } from "@/redux/api/partnerApi";
 
 export default function PartnerSettingsPage() {
   const { data: realProfile, isLoading } = useGetMyPartnerProfileQuery();
+  const [updateProfileMutation, { isLoading: isUpdating }] = useUpdateMyPartnerProfileMutation();
   const profile = realProfile;
 
   const [businessName, setBusinessName] = useState("");
@@ -28,15 +29,31 @@ export default function PartnerSettingsPage() {
 
   useEffect(() => {
     if (realProfile) {
-      setBusinessName(realProfile.businessName);
-      setPhone(realProfile.phone);
-      setAddress(realProfile.address);
+      setBusinessName(realProfile.businessName || "");
+      setPhone(realProfile.phone || "");
+      setAddress(realProfile.address || "");
+      const meta = (realProfile as any).metadata;
+      if (meta?.defaultPickupStart) setDefaultPickupStart(meta.defaultPickupStart);
+      if (meta?.defaultPickupEnd) setDefaultPickupEnd(meta.defaultPickupEnd);
+      if (meta?.pickupInstructions) setPickupInstructions(meta.pickupInstructions);
     }
   }, [realProfile]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Đã lưu thông tin cài đặt cửa hàng thành công!");
+    try {
+      await updateProfileMutation({
+        businessName: businessName.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        defaultPickupStart,
+        defaultPickupEnd,
+        pickupInstructions: pickupInstructions.trim(),
+      }).unwrap();
+      toast.success("Đã lưu thông tin cài đặt cửa hàng vào cơ sở dữ liệu thành công!");
+    } catch (err: any) {
+      toast.error(err?.data?.message || err?.message || "Lưu thông tin thất bại");
+    }
   };
 
   if (isLoading && !profile) {
@@ -205,10 +222,11 @@ export default function PartnerSettingsPage() {
         <div className="flex justify-end">
           <button
             type="submit"
-            className="px-6 py-3 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold shadow-md transition flex items-center gap-2 active:scale-95"
+            disabled={isUpdating}
+            className="px-6 py-3 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-bold shadow-md transition flex items-center gap-2 active:scale-95 disabled:opacity-60 cursor-pointer"
           >
-            <Save className="size-4" />
-            <span>Lưu thay đổi cài đặt</span>
+            {isUpdating ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            <span>{isUpdating ? "Đang lưu..." : "Lưu thay đổi cài đặt"}</span>
           </button>
         </div>
       </form>

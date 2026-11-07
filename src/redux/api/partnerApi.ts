@@ -25,6 +25,47 @@ export interface ListPartnersResponse {
   data: PartnerProfileDTO[];
 }
 
+
+export interface UpdatePartnerPayload {
+  businessName?: string;
+  phone?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  defaultPickupStart?: string;
+  defaultPickupEnd?: string;
+  pickupInstructions?: string;
+  isOpen?: boolean;
+}
+
+export interface PartnerReviewItem {
+  id: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  customer?: {
+    fullName: string;
+    avatar?: string;
+  };
+  order?: {
+    orderNumber: string;
+    listing?: {
+      title: string;
+      imageUrls?: string | string[];
+    };
+  };
+}
+
+export interface PartnerReviewsResponse {
+  reviews: PartnerReviewItem[];
+  total: number;
+  avgRating: number;
+  totalReviews: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const partnerApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // 1. User: Nộp hoặc sửa lại hồ sơ đối tác
@@ -45,6 +86,28 @@ export const partnerApi = baseApi.injectEndpoints({
         method: "GET",
       }),
       transformResponse: (response: SinglePartnerResponse) => response.data,
+      providesTags: ["PartnerProfile"],
+    }),
+
+    // 8. Partner: Cập nhật cài đặt cửa hàng
+    updateMyPartnerProfile: builder.mutation<PartnerProfileDTO, UpdatePartnerPayload>({
+      query: (body) => ({
+        url: "/api/v1/partners/me",
+        method: "PUT",
+        body,
+      }),
+      transformResponse: (response: SinglePartnerResponse) => response.data,
+      invalidatesTags: ["PartnerProfile"],
+    }),
+
+    // 9. Partner: Lấy danh sách đánh giá từ khách hàng
+    getMyPartnerReviews: builder.query<PartnerReviewsResponse, { page?: number; limit?: number } | void>({
+      query: (params) => ({
+        url: "/api/v1/partners/me/reviews",
+        method: "GET",
+        params: params || {},
+      }),
+      transformResponse: (response: any) => response.data,
       providesTags: ["PartnerProfile"],
     }),
 
@@ -125,4 +188,6 @@ export const {
   useToggleFollowPartnerMutation,
   useGetFollowStatusQuery,
   useGetFollowedPartnersQuery,
+  useUpdateMyPartnerProfileMutation,
+  useGetMyPartnerReviewsQuery,
 } = partnerApi;

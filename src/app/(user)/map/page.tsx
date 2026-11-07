@@ -20,7 +20,11 @@ import {
   Navigation,
   Route,
   X,
+  Share2,
+  ExternalLink,
+  Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import { ExpiryCountdown } from "@/components/common/ExpiryCountdown";
 import { ListingDTO, FoodCategory } from "@/types/contract";
 import { useGetListingsQuery } from "@/redux/api/listingApi";
@@ -128,6 +132,7 @@ export default function FoodMapPage() {
   // Shortest route directions state
   const [activeRoute, setActiveRoute] = useState<RouteDirectionsResult | null>(null);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const [isCopiedRoute, setIsCopiedRoute] = useState(false);
 
   // Smart Grocery Radar integration from Meal Planner
   const [groceryCart, setGroceryCart] = useState<GroceryCartData | null>(null);
@@ -246,6 +251,53 @@ export default function FoodMapPage() {
 
   const handleClearRoute = () => {
     setActiveRoute(null);
+  };
+
+  const getGoogleMapsDirectionsUrl = (targetListing?: ListingDTO | null) => {
+    const target = targetListing || selectedListing;
+    if (!target || typeof target.lat !== "number" || typeof target.lng !== "number") {
+      return "";
+    }
+    return `https://www.google.com/maps/dir/?api=1&origin=${deliveryLoc.lat},${deliveryLoc.lng}&destination=${target.lat},${target.lng}&travelmode=driving`;
+  };
+
+  const handleShareGoogleMapsRoute = async (targetListing?: ListingDTO | null) => {
+    const target = targetListing || selectedListing;
+    if (!target || typeof target.lat !== "number" || typeof target.lng !== "number") {
+      toast.error("Vui lòng chọn một điểm cứu trợ có toạ độ hợp lệ.");
+      return;
+    }
+
+    const url = getGoogleMapsDirectionsUrl(target);
+    const title = `Lộ trình tới ${target.partnerName} - FoodSaver`;
+    const text = `Xem chỉ đường cứu trợ món "${target.title}" tại ${target.partnerName} (${target.distanceKm != null ? `${target.distanceKm}km` : ""}) trên Google Maps:`;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url,
+        });
+        toast.success("Đã mở chia sẻ lộ trình Google Maps!");
+        return;
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.warn("navigator.share failed, fallback to clipboard:", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setIsCopiedRoute(true);
+      toast.success("Đã sao chép liên kết dẫn đường Google Maps vào clipboard!");
+      setTimeout(() => setIsCopiedRoute(false), 2500);
+    } catch (err) {
+      toast.error("Không thể tự động sao chép. Bạn có thể mở liên kết trực tiếp.");
+    }
   };
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -871,14 +923,33 @@ export default function FoodMapPage() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleClearRoute}
-                    title="Xóa đường đi"
-                    className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
-                  >
-                    <X className="size-4" />
-                  </button>
+                  <div className="flex items-center gap-1 border-l border-stone-200 pl-2">
+                    <a
+                      href={getGoogleMapsDirectionsUrl(selectedListing)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Mở Google Maps dẫn đường"
+                      className="p-1.5 rounded-xl text-stone-500 hover:text-[#00615f] hover:bg-emerald-50 transition cursor-pointer"
+                    >
+                      <ExternalLink className="size-4" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleShareGoogleMapsRoute(selectedListing)}
+                      title="Chia sẻ lộ trình Google Maps"
+                      className="p-1.5 rounded-xl text-stone-500 hover:text-[#00615f] hover:bg-emerald-50 transition cursor-pointer"
+                    >
+                      <Share2 className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearRoute}
+                      title="Xóa đường đi"
+                      className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1144,7 +1215,7 @@ export default function FoodMapPage() {
                               </h4>
                             </div>
 
-                            <div className="flex items-baseline justify-between pt-2 border-t border-stone-100/80 mt-1">
+                            <div className="flex items-center justify-between pt-2 border-t border-stone-100/80 mt-1">
                               <div>
                                 <span className="text-xs sm:text-sm font-black text-[#00615f]">
                                   {item.discountPrice.toLocaleString("vi-VN")}đ
@@ -1155,9 +1226,29 @@ export default function FoodMapPage() {
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[10px] text-stone-500 font-medium">
-                                Còn {item.quantity} {item.unit}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  title="Chia sẻ lộ trình Google Maps"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShareGoogleMapsRoute(item);
+                                  }}
+                                  className="p-1 rounded-lg text-stone-400 hover:text-[#00615f] hover:bg-emerald-50 transition cursor-pointer"
+                                >
+                                  <Share2 className="size-3.5" />
+                                </button>
+                                <a
+                                  href={getGoogleMapsDirectionsUrl(item)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Mở trên Google Maps"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1 rounded-lg text-stone-400 hover:text-[#00615f] hover:bg-emerald-50 transition cursor-pointer"
+                                >
+                                  <ExternalLink className="size-3.5" />
+                                </a>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1268,29 +1359,50 @@ export default function FoodMapPage() {
                   </span>
                 </div>
 
-                {/* Nút Tìm đường đi ngắn nhất */}
-                <button
-                  type="button"
-                  onClick={() => handleFindShortestRoute()}
-                  disabled={isLoadingRoute}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-[#00615f] hover:from-emerald-700 hover:to-[#004e4c] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 active:scale-[0.99]"
-                >
-                  {isLoadingRoute ? (
-                    <>
-                      <div className="size-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Đang tính toán tuyến đường ngắn nhất...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Navigation className="size-3.5 fill-current" />
-                      <span>Tìm đường đi ngắn nhất</span>
-                    </>
-                  )}
-                </button>
+                {/* Nút Tìm đường đi ngắn nhất + Chia sẻ Google Maps nhanh */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleFindShortestRoute()}
+                    disabled={isLoadingRoute}
+                    className="flex-1 py-2.5 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-[#00615f] hover:from-emerald-700 hover:to-[#004e4c] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75 active:scale-[0.99]"
+                  >
+                    {isLoadingRoute ? (
+                      <>
+                        <div className="size-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Đang tính...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Navigation className="size-3.5 fill-current" />
+                        <span>Tìm đường đi</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleShareGoogleMapsRoute()}
+                    title="Chia sẻ lộ trình hoặc sao chép link Google Maps"
+                    className="py-2.5 px-3.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-[#00615f] border border-emerald-200/90 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-[0.98]"
+                  >
+                    {isCopiedRoute ? (
+                      <>
+                        <Check className="size-3.5 text-emerald-600" />
+                        <span>Đã chép!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="size-3.5" />
+                        <span>Chia sẻ GG Map</span>
+                      </>
+                    )}
+                  </button>
+                </div>
 
                 {/* Kết quả tuyến đường ngắn nhất */}
                 {activeRoute && (
-                  <div className="p-3.5 bg-emerald-50/90 rounded-2xl border border-emerald-200/90 space-y-2.5 animate-in fade-in duration-200">
+                  <div className="p-3.5 bg-emerald-50/90 rounded-2xl border border-emerald-200/90 space-y-3 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between text-xs font-bold text-[#00615f]">
                       <span className="flex items-center gap-1.5">
                         <Route className="size-3.5 text-[#00615f]" />
@@ -1321,16 +1433,35 @@ export default function FoodMapPage() {
                       </div>
                     </div>
 
-                    {/* Google Maps External Fallback Link */}
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&origin=${deliveryLoc.lat},${deliveryLoc.lng}&destination=${selectedListing.lat},${selectedListing.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#00615f] hover:underline pt-0.5"
-                    >
-                      <Compass className="size-3" />
-                      <span>Mở dẫn đường chi tiết trên Google Maps ↗</span>
-                    </a>
+                    {/* Google Maps Actions & Direct Navigation Link */}
+                    <div className="pt-2 border-t border-emerald-200/80 flex items-center gap-2">
+                      <a
+                        href={getGoogleMapsDirectionsUrl(selectedListing)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2 px-2.5 rounded-xl bg-white hover:bg-emerald-100/70 text-[#00615f] border border-emerald-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <ExternalLink className="size-3.5" />
+                        <span>Mở Google Maps</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleShareGoogleMapsRoute()}
+                        className="flex-1 py-2 px-2.5 rounded-xl bg-[#00615f] hover:bg-[#004e4c] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 cursor-pointer"
+                      >
+                        {isCopiedRoute ? (
+                          <>
+                            <Check className="size-3.5 text-emerald-300" />
+                            <span>Đã sao chép!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="size-3.5" />
+                            <span>Chia sẻ lộ trình</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
 
