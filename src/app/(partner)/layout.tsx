@@ -16,9 +16,12 @@ import {
   X,
   ShieldCheck,
   Star,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { PartnerRoleGuard } from "@/components/auth/PartnerRoleGuard";
+import { useSocket } from "@/context/SocketContext";
 
 export default function PartnerLayout({
   children,
@@ -28,6 +31,7 @@ export default function PartnerLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const currentUser = useAppSelector((state) => state.auth.user);
+  const { soundEnabled, toggleSound } = useSocket();
 
   const navigation = [
     { name: "Tổng quan", href: "/partner/dashboard", icon: LayoutDashboard },
@@ -54,12 +58,21 @@ export default function PartnerLayout({
           </div>
           <span className="font-black text-sm tracking-tight">PARTNER CENTER</span>
         </div>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-1 rounded-lg hover:bg-white/10"
-        >
-          {sidebarOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleSound}
+            className="p-1.5 rounded-lg hover:bg-white/10 text-white/80"
+            title={soundEnabled ? "Tắt chuông" : "Bật chuông"}
+          >
+            {soundEnabled ? <Volume2 className="size-5 text-[#79e4a7]" /> : <VolumeX className="size-5 text-white/50" />}
+          </button>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1 rounded-lg hover:bg-white/10"
+          >
+            {sidebarOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Sidebar Navigation */}
@@ -109,8 +122,23 @@ export default function PartnerLayout({
         </div>
 
         {/* Footer Sidebar */}
-        <div className="pt-4 border-t border-white/15 space-y-3">
-          <div className="flex items-center gap-2 text-[11px] text-[#79e4a7] bg-white/5 p-2.5 rounded-xl border border-white/10">
+        <div className="pt-4 border-t border-white/15 space-y-2">
+          {/* Sound Notification Toggle */}
+          <button
+            onClick={toggleSound}
+            className="flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white transition px-2.5 py-2 w-full rounded-xl hover:bg-white/10 border border-white/10"
+          >
+            {soundEnabled ? (
+              <Volume2 className="size-4 text-[#79e4a7] shrink-0" />
+            ) : (
+              <VolumeX className="size-4 text-white/50 shrink-0" />
+            )}
+            <span className="truncate">
+              {soundEnabled ? "Chuông đơn: Bật" : "Chuông đơn: Tắt"}
+            </span>
+          </button>
+
+          <div className="flex items-center gap-2 text-[11px] text-[#79e4a7] bg-white/5 p-2 rounded-xl border border-white/10">
             <ShieldCheck className="size-4 shrink-0" />
             <span>Đối tác ATTP Verified</span>
           </div>
