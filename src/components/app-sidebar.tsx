@@ -28,6 +28,7 @@ import {
   UtensilsCrossed,
   BarChart3,
   ShieldAlert,
+  CreditCard,
 } from "lucide-react";
 
 const data = {
@@ -41,6 +42,11 @@ const data = {
       title: "Duyệt đối tác F&B",
       url: "/admin/partners/pending",
       icon: <ShieldCheckIcon />,
+    },
+    {
+      title: "Duyệt rút tiền F&B",
+      url: "/admin/payouts",
+      icon: <CreditCard />,
     },
     {
       title: "Kiểm duyệt món ăn",
@@ -128,5 +134,3 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   );
 }
-
-
