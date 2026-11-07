@@ -55,45 +55,6 @@ export function LocationPickerDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocatingGPS, setIsLocatingGPS] = useState(false);
 
-  // Sync draft with current location when opening
-  useEffect(() => {
-    if (isOpen) {
-      setDraftAddress(location.address);
-      setDraftLat(location.lat);
-      setDraftLng(location.lng);
-      setDraftSource(location.source);
-      setSaveToProfile(false);
-      setActiveTab(initialMode === "map" ? "map" : "search");
-
-      if (initialMode === "gps") {
-        handleTriggerGPS();
-      }
-    }
-  }, [isOpen, location, initialMode]);
-
-  // Handle ESC key press
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen && !isSubmitting) {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSubmitting, onClose]);
-
-  // Lock body scroll while modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
   const handleTriggerGPS = () => {
     if (!navigator.geolocation) {
       toast.error("Trình duyệt không hỗ trợ định vị GPS.");
@@ -137,6 +98,47 @@ export function LocationPickerDialog({
       { timeout: 10000, enableHighAccuracy: true }
     );
   };
+
+  // Sync draft with current location when opening
+  useEffect(() => {
+    if (isOpen) {
+      setDraftAddress(location.address);
+      setDraftLat(location.lat);
+      setDraftLng(location.lng);
+      setDraftSource(location.source);
+      setSaveToProfile(false);
+      setActiveTab(initialMode === "map" ? "map" : "search");
+
+      if (initialMode === "gps") {
+        handleTriggerGPS();
+      }
+    }
+  }, [isOpen, location, initialMode]);
+
+  // Handle ESC key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isSubmitting, onClose]);
+
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  
 
   const handleSelectSuggestion = (item: GeocodeSuggestion) => {
     setDraftAddress(item.fullAddress || item.name);

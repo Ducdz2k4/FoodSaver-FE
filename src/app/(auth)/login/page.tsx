@@ -99,7 +99,11 @@ function LoginForm() {
       toast.success("Đăng nhập thành công!");
       await goAfterLogin(result.user);
     } catch (error: any) {
-      toast.error(error?.data?.message || error?.message || "Email hoặc mật khẩu không chính xác");
+      if (error?.status === "FETCH_ERROR" || error?.error?.includes("fetch")) {
+        toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại dịch vụ Backend!");
+      } else {
+        toast.error(error?.data?.message || error?.message || "Email hoặc mật khẩu không chính xác");
+      }
     } finally {
       setLoading(false);
     }

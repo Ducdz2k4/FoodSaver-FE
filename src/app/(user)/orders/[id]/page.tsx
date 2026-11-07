@@ -96,6 +96,20 @@ export default function OrderDetailPage({
     setCountdownSeconds(Math.max(0, 5 - elapsed));
   }, [order]);
 
+
+  
+  // Real review queries and mutations (top-level hook)
+  const { data: reviewData, refetch: refetchReview } = useGetOrderReviewQuery(resolvedParams.id || "", {
+    skip: !resolvedParams.id || order?.status !== "COMPLETED",
+  });
+  const [createOrderReviewMutation, { isLoading: isSubmittingReview }] = useCreateOrderReviewMutation();
+
+  // Real food safety report query & mutation (top-level hook)
+  const { data: safetyReport, refetch: refetchSafetyReport } = useGetOrderSafetyReportQuery(resolvedParams.id || "", {
+    skip: !resolvedParams.id,
+  });
+  const [createSafetyReportMutation, { isLoading: isSubmittingSafetyReport }] = useCreateSafetyReportMutation();
+
   if (isLoading && !order) {
     return (
       <div className="min-h-screen bg-[#f9f3f0] flex items-center justify-center">
@@ -144,10 +158,7 @@ export default function OrderDetailPage({
   };
 
   // Real review queries and mutations
-  const { data: reviewData, refetch: refetchReview } = useGetOrderReviewQuery(order?.id || "", {
-    skip: !order?.id || order?.status !== "COMPLETED",
-  });
-  const [createOrderReviewMutation, { isLoading: isSubmittingReview }] = useCreateOrderReviewMutation();
+  
 
   const currentReview = order?.review || reviewData?.review;
 
@@ -171,10 +182,7 @@ export default function OrderDetailPage({
   };
 
   // Real food safety report query & mutation
-  const { data: safetyReport, refetch: refetchSafetyReport } = useGetOrderSafetyReportQuery(order?.id || "", {
-    skip: !order?.id,
-  });
-  const [createSafetyReportMutation, { isLoading: isSubmittingSafetyReport }] = useCreateSafetyReportMutation();
+  
 
   const handleSafetyReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -313,7 +321,7 @@ export default function OrderDetailPage({
             </div>
 
             <p className="text-xs sm:text-sm text-stone-700 italic">
-              "Lý do: {safetyReport.description}"
+              &ldquo;Lý do: {safetyReport.description}&rdquo;
             </p>
 
             {safetyReport.resolution && (
@@ -533,7 +541,7 @@ export default function OrderDetailPage({
               )}
               {currentReview.comment && (
                 <p className="text-xs sm:text-sm text-stone-700 bg-white rounded-2xl p-3.5 border border-stone-100 italic leading-relaxed">
-                  "{currentReview.comment}"
+                  &ldquo;{currentReview.comment}&rdquo;
                 </p>
               )}
             </div>

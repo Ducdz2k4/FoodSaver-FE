@@ -153,7 +153,7 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
       console.error("[DeliveryLocation] Failed to load saved addresses:", e);
       setSavedAddresses([]);
     }
-  }, [user?.id]);
+  }, [user]);
 
   // Handle User Change & Session Initialization
   useEffect(() => {
@@ -306,7 +306,7 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
         console.error("[DeliveryLocation] Failed to clear saved addresses:", e);
       }
     }
-  }, [user?.id]);
+  }, [user]);
 
   /**
    * Set delivery location for current session ("dùng cho lần này")
@@ -345,7 +345,7 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
         return updated;
       });
     },
-    [user?.id, getStorageKey, persistSavedAddresses]
+    [user, getStorageKey, persistSavedAddresses]
   );
 
   /**
@@ -435,7 +435,7 @@ export function DeliveryLocationProvider({ children }: { children: React.ReactNo
         })
         .finally(() => setIsLoading(false));
     }
-  }, [user?.address, user?.id, getStorageKey]);
+  }, [user, getStorageKey]);
 
   return (
     <DeliveryLocationContext.Provider

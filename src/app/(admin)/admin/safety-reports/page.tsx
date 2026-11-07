@@ -408,7 +408,7 @@ export default function AdminSafetyReportsPage() {
                     Nội dung mô tả từ khách hàng:
                   </label>
                   <div className="p-3 bg-card border rounded-lg text-xs leading-relaxed text-foreground italic">
-                    "{selectedReport.description}"
+                    &ldquo;{selectedReport.description}&rdquo;
                   </div>
                 </div>
 

@@ -634,7 +634,7 @@ export default function AdminPayoutsPage() {
                   <div className="pt-2 border-t space-y-1">
                     <span className="text-destructive font-semibold block">Lý do từ chối:</span>
                     <div className="p-2 bg-destructive/10 text-destructive rounded text-xs italic">
-                      "{detailTarget.rejectionReason}"
+                      &ldquo;{detailTarget.rejectionReason}&rdquo;
                     </div>
                   </div>
                 )}

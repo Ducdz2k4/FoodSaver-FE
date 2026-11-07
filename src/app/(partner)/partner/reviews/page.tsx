@@ -346,7 +346,7 @@ export default function PartnerReviewsPage() {
               {/* Customer Comment */}
               {review.comment ? (
                 <p className="text-xs sm:text-sm text-stone-700 leading-relaxed italic bg-amber-50/40 p-3.5 rounded-2xl border border-amber-100/50">
-                  "{review.comment}"
+                  &ldquo;{review.comment}&rdquo;
                 </p>
               ) : (
                 <p className="text-xs text-stone-400 italic">Khách hàng không để lại nhận xét chi tiết.</p>
@@ -444,7 +444,7 @@ export default function PartnerReviewsPage() {
                 </span>
               </div>
               {replyTarget.comment && (
-                <p className="italic text-stone-700">"{replyTarget.comment}"</p>
+                <p className="italic text-stone-700">&ldquo;{replyTarget.comment}&rdquo;</p>
               )}
             </div>
 
