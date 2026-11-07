@@ -60,6 +60,7 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL || 'https://api.foodsaver.voxelle.io.vn' }}
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
 
   deploy:
     name: Deploy to Production VPS
@@ -78,6 +79,7 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER || 'ubuntu' }}
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL || 'https://api.foodsaver.voxelle.io.vn' }}
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_MAPBOX_TOKEN: ${{ secrets.NEXT_PUBLIC_MAPBOX_TOKEN }}
         run: |
           if [ -z "$SSH_PRIVATE_KEY" ]; then
             echo "::error ::SSH_PRIVATE_KEY secret is not configured in GitHub Secrets!"
@@ -113,6 +115,7 @@ jobs:
             {
               echo \"NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL\"
               echo \"NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID\"
+              echo \"NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN\"
             } > .env.local
 
             # Install dependencies
@@ -124,7 +127,7 @@ jobs:
 
             # Zero-downtime reload via PM2
             echo '🔄 Reloading PM2 service...'
-            pm2 reload foodsaver-fe || pm2 restart foodsaver-fe || pm2 start npm --name \"foodsaver-fe\" -- start -p 4000
+            pm2 reload foodsaver-fe || pm2 restart foodsaver-fe || pm2 start npm --name \"foodsaver-fe\" -- start
             pm2 save
 
             echo '⏳ Checking service status...'
