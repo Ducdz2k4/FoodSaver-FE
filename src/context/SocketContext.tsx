@@ -184,6 +184,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       dispatch(baseApi.util.invalidateTags(["PartnerOrder", "PartnerListing", "Order"]));
     });
 
+    socketInstance.on("PAYMENT_SUCCESS", (data) => {
+      if (soundEnabled) {
+        playDualToneChime();
+      }
+      toast.success(`🎉 Đã nhận thanh toán đơn #${data?.orderNumber || ""}!`, {
+        description: `Giao dịch ${Number(data?.amount || 0).toLocaleString("vi-VN")}đ đã được xác nhận qua ngân hàng BIDV. Tiền đã vào Escrow ký quỹ an toàn.`,
+        duration: 8000,
+      });
+      dispatch(baseApi.util.invalidateTags(["Order", "PartnerOrder"]));
+    });
+
     socketInstance.on("ORDER_STATUS_CHANGED", (data) => {
       const statusMap: Record<string, string> = {
         ACCEPTED: "Quán đã xác nhận chuẩn bị đơn",

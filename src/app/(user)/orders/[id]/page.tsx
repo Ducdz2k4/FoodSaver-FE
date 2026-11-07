@@ -34,6 +34,7 @@ import {
   useCreateOrderReviewMutation,
   useCreateSafetyReportMutation,
   useGetOrderSafetyReportQuery,
+  useVerifyOrderPaymentMutation,
 } from "@/redux/api/orderApi";
 import { SafetyReportIssueType } from "@/types/contract";
 import { OrderChatModal } from "@/components/common/OrderChatModal";
@@ -67,6 +68,33 @@ export default function OrderDetailPage({
   const [safetyIssueType, setSafetyIssueType] = useState<SafetyReportIssueType>("EXPIRED_FOOD");
   const [safetyDescription, setSafetyDescription] = useState("");
   const [safetyEvidenceUrl, setSafetyEvidenceUrl] = useState("");
+
+  const [verifyOrderPayment, { isLoading: isVerifyingPayment }] = useVerifyOrderPaymentMutation();
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, field: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      toast.success(`Đã sao chép ${field}!`);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  const handleManualVerify = async () => {
+    if (!order) return;
+    try {
+      const res = await verifyOrderPayment(order.id).unwrap();
+      if (res.verified) {
+        toast.success("✓ Đã xác nhận thanh toán thành công từ ngân hàng BIDV!");
+        refetch();
+      } else {
+        toast.info(res.message || "Chưa tìm thấy giao dịch ngân hàng. Vui lòng kiểm tra lại sau vài giây.");
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Không thể kiểm tra giao dịch lúc này");
+    }
+  };
 
   const [countdownSeconds, setCountdownSeconds] = useState(0);
   const [isLockedState, setIsLockedState] = useState(false);

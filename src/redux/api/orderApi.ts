@@ -1,3 +1,19 @@
+export interface VietQrData {
+  orderId: string;
+  orderNumber: string;
+  amount: number;
+  paymentStatus: string;
+  bank: {
+    bankName: string;
+    bankCode: string;
+    accountNumber: string;
+    accountName: string;
+    qrTemplate: string;
+  };
+  qrUrl: string;
+  transferMemo: string;
+}
+
 import { baseApi } from "./baseApi";
 import {
   OrderDTO,
@@ -361,6 +377,27 @@ export const orderApi = baseApi.injectEndpoints({
       transformResponse: (res: any) => res.data || null,
       providesTags: (_res, _err, orderId) => [{ type: "Order", id: orderId }],
     }),
+    // 23. Lấy thông tin VietQR thanh toán tự động cho đơn hàng
+    getVietQr: builder.query<VietQrData, string>({
+      query: (orderId) => ({
+        url: `/api/v1/payments/vietqr/${orderId}`,
+        method: "GET",
+      }),
+      transformResponse: (res: any) => res.data,
+      providesTags: (_res, _err, orderId) => [{ type: "Order", id: orderId }],
+    }),
+
+    // 24. Xác thực thanh toán trực tiếp qua ngân hàng / xGate
+    verifyOrderPayment: builder.mutation<
+      { success: boolean; verified: boolean; message: string; result?: any },
+      string
+    >({
+      query: (orderId) => ({
+        url: `/api/v1/payments/verify-order/${orderId}`,
+        method: "POST",
+      }),
+      invalidatesTags: (_res, _err, orderId) => [{ type: "Order", id: orderId }],
+    }),
   }),
 });
 
@@ -388,4 +425,6 @@ export const {
   useGetPartnerReviewsQuery,
   useCreateSafetyReportMutation,
   useGetOrderSafetyReportQuery,
+  useGetVietQrQuery,
+  useVerifyOrderPaymentMutation,
 } = orderApi;
