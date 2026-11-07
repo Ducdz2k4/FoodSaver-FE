@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  Star,
 } from "lucide-react";
 import { useAppSelector } from "@/redux/hooks";
 import { PartnerRoleGuard } from "@/components/auth/PartnerRoleGuard";
@@ -33,6 +34,7 @@ export default function PartnerLayout({
     { name: "Quản lý món ăn", href: "/partner/listings", icon: UtensilsCrossed },
     { name: "Đăng món mới", href: "/partner/listings/new", icon: PlusCircle },
     { name: "Đơn hàng đến", href: "/partner/orders", icon: ShoppingBag },
+    { name: "Đánh giá của khách", href: "/partner/reviews", icon: Star },
     { name: "Cài đặt quán", href: "/partner/settings", icon: Settings },
   ];
 
@@ -130,5 +132,3 @@ export default function PartnerLayout({
     </div>
   );
 }
-
-

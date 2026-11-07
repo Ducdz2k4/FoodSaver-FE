@@ -25,7 +25,6 @@ export interface ListPartnersResponse {
   data: PartnerProfileDTO[];
 }
 
-
 export interface UpdatePartnerPayload {
   businessName?: string;
   phone?: string;
@@ -42,6 +41,9 @@ export interface PartnerReviewItem {
   id: string;
   rating: number;
   comment?: string;
+  packagingClean?: boolean;
+  replyText?: string;
+  repliedAt?: string;
   createdAt: string;
   customer?: {
     fullName: string;
@@ -61,6 +63,7 @@ export interface PartnerReviewsResponse {
   total: number;
   avgRating: number;
   totalReviews: number;
+  packagingCleanPercentage?: number;
   page: number;
   limit: number;
   totalPages: number;
@@ -109,6 +112,17 @@ export const partnerApi = baseApi.injectEndpoints({
       }),
       transformResponse: (response: any) => response.data,
       providesTags: ["PartnerProfile"],
+    }),
+
+    // 9b. Partner: Phản hồi đánh giá của khách hàng (Store Reply)
+    replyPartnerReview: builder.mutation<PartnerReviewItem, { reviewId: string; replyText: string }>({
+      query: ({ reviewId, replyText }) => ({
+        url: `/api/v1/partners/me/reviews/${reviewId}/reply`,
+        method: "POST",
+        body: { replyText },
+      }),
+      transformResponse: (response: any) => response.data,
+      invalidatesTags: ["PartnerProfile"],
     }),
 
     // 3. Admin: Lấy danh sách hồ sơ đối tác đang chờ duyệt
@@ -190,4 +204,5 @@ export const {
   useGetFollowedPartnersQuery,
   useUpdateMyPartnerProfileMutation,
   useGetMyPartnerReviewsQuery,
+  useReplyPartnerReviewMutation,
 } = partnerApi;
