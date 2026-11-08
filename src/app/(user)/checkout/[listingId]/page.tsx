@@ -571,9 +571,101 @@ export default function CheckoutPage({
                 </p>
               </button>
             </div>
+
+            {/* Khung Thông Tin Thanh Toán Trực Tuyến & VietQR */}
+            {paymentMethod === "SYSTEM_QR" && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 border border-emerald-200/90 space-y-4 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-9 rounded-xl bg-[#00615f] text-white flex items-center justify-center shadow-xs">
+                      <QrCode className="size-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-stone-900 text-xs sm:text-sm">
+                        Thanh toán VietQR 24/7 & Ký quỹ Escrow
+                      </h4>
+                      <p className="text-[11px] text-stone-500 font-medium">
+                        Tự động khớp lệnh qua cổng ngân hàng BIDV & xGate trong 2 - 5 giây
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full w-fit">
+                    <ShieldCheck className="size-3.5 text-emerald-700" />
+                    <span>Ký quỹ Escrow an toàn 100%</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                  {/* Cột trái: QR Code Preview */}
+                  <div className="md:col-span-4 flex flex-col items-center text-center p-3.5 bg-white rounded-2xl border border-emerald-100 shadow-xs">
+                    <div className="relative size-36 bg-white p-2 rounded-xl border border-stone-200 shadow-inner flex items-center justify-center">
+                      <img
+                        src={`https://api.vietqr.io/image/970418-6240247363-compact2.png?amount=${totalPrice}&addInfo=FoodSaver%20Thanh%20toan&accountName=NGUYEN%20QUANG%20DUC`}
+                        alt="VietQR Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-stone-500 mt-2">
+                      Quét bằng app mọi ngân hàng & ví điện tử
+                    </span>
+                  </div>
+
+                  {/* Cột phải: Chi tiết tài khoản & Cam kết */}
+                  <div className="md:col-span-8 space-y-2 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="p-2.5 rounded-xl bg-white border border-stone-200">
+                        <span className="text-[10px] text-stone-400 font-bold block">NGÂN HÀNG THỤ HƯỞNG</span>
+                        <span className="font-black text-stone-900 text-xs sm:text-sm">BIDV (Chi nhánh Đà Nẵng)</span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white border border-stone-200 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-stone-400 font-bold block">SỐ TÀI KHOẢN</span>
+                          <span className="font-mono font-black text-[#00615f] text-xs sm:text-sm">6240247363</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof navigator !== "undefined" && navigator.clipboard) {
+                              navigator.clipboard.writeText("6240247363");
+                              toast.success("Đã sao chép số tài khoản BIDV: 6240247363");
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-[10px] transition cursor-pointer"
+                        >
+                          Sao chép
+                        </button>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white border border-stone-200">
+                        <span className="text-[10px] text-stone-400 font-bold block">CHỦ TÀI KHOẢN</span>
+                        <span className="font-bold text-stone-900 text-xs">NGUYEN QUANG DUC</span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-white border border-stone-200">
+                        <span className="text-[10px] text-stone-400 font-bold block">SỐ TIỀN CẦN CHUYỂN</span>
+                        <span className="font-black text-emerald-700 text-xs sm:text-sm">
+                          {totalPrice.toLocaleString("vi-VN")}đ
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Ghi chú Escrow */}
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-200/80 text-[11px] text-emerald-950 space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <Lock className="size-3.5 text-emerald-700 shrink-0" />
+                        <span>Bảo vệ quyền lợi bằng ký quỹ Escrow:</span>
+                      </div>
+                      <p className="text-stone-600 leading-relaxed">
+                        Tiền được giữ tại tài khoản trung gian của FoodSaver. Sau khi bạn nhận món và bấm <strong>&ldquo;Xác nhận đã nhận đủ món&rdquo;</strong>, tiền mới được giải ngân cho quán. Bạn được hoàn tiền 100% nếu đơn hàng bị hủy hoặc không đảm bảo chất lượng.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          
           {/* Card Mã Giảm Giá */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-3">
             <h3 className="font-extrabold text-stone-900 text-sm flex items-center gap-1.5">
