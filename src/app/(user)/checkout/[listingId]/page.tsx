@@ -227,7 +227,8 @@ export default function CheckoutPage({
   const currentShippingFee = fulfillmentType === "DELIVERY" ? finalAgreedFee : 0;
   const finalTotalPrice = Math.max(0, itemSubtotal + currentShippingFee - (appliedCoupon?.discountAmount || 0));
   const totalPrice = finalTotalPrice;
-  const isOutOfStock = (listing?.quantity ?? 0) <= 0 || (listing?.status !== "AVAILABLE" && listing?.status !== "EXPIRING_SOON");
+  const isExpired = listing?.expiryAt ? new Date(listing.expiryAt) <= new Date() : false;
+  const isOutOfStock = (listing?.quantity ?? 0) <= 0 || (listing?.status !== "AVAILABLE" && listing?.status !== "EXPIRING_SOON") || isExpired;
 
   
   const handleApplyCoupon = async (e: React.FormEvent) => {
@@ -287,8 +288,10 @@ export default function CheckoutPage({
   const handleConfirmOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isCreatingOrder) return;
+
     if (isOutOfStock) {
-      toast.error("Món ăn này hiện không còn khả dụng để đặt!", { id: "checkout-order-error" });
+      toast.error(isExpired ? "Món ăn này đã hết hạn sử dụng / hết giờ giải cứu!" : "Món ăn này hiện không còn khả dụng để đặt!", { id: "checkout-order-error" });
       return;
     }
 

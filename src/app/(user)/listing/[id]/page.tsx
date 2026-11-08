@@ -83,6 +83,8 @@ export default function ListingDetailPage({
   const discountPercent = Math.round(
     ((listing.originalPrice - listing.discountPrice) / listing.originalPrice) * 100
   );
+  const isExpired = new Date(listing.expiryAt) <= new Date();
+  const isOutOfStock = (listing?.quantity ?? 0) <= 0 || (listing?.status !== "AVAILABLE" && listing?.status !== "EXPIRING_SOON") || isExpired;
 
   return (
     <div className="min-h-screen bg-[#f9f3f0] pt-24 pb-32 px-4 sm:px-6 lg:px-8">
@@ -289,13 +291,24 @@ export default function ListingDetailPage({
                   </div>
                 </div>
 
-                <Link
-                  href={`/checkout/${listing.id}`}
-                  className="w-full py-3.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all active:scale-98"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  <span>Đặt Giữ Món Này Ngay</span>
-                </Link>
+                {isOutOfStock ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-full py-3.5 rounded-2xl bg-stone-200 text-stone-500 font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 cursor-not-allowed shadow-none"
+                  >
+                    <AlertTriangle className="w-5 h-5 text-stone-400" />
+                    <span>{isExpired ? "Món Ăn Đã Hết Giờ Giải Cứu" : "Món Ăn Đã Hết Suất"}</span>
+                  </button>
+                ) : (
+                  <Link
+                    href={`/checkout/${listing.id}`}
+                    className="w-full py-3.5 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all active:scale-98"
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    <span>Đặt Giữ Món Này Ngay</span>
+                  </Link>
+                )}
 
                 <p className="text-center text-[11px] text-stone-400">
                   Thanh toán trực tiếp tại quán khi nhận đồ • Không trừ tiền trước
