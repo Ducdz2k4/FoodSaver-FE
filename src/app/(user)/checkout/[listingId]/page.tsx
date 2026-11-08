@@ -27,8 +27,9 @@ import {
   useCreateOrderMutation,
   useEstimateShippingMutation,
   useVerifyCouponMutation,
+  useVerifyOrderPaymentMutation,
 } from "@/redux/api/orderApi";
-import { FulfillmentType, PaymentMethod } from "@/types/contract";
+import { FulfillmentType, PaymentMethod, OrderDTO } from "@/types/contract";
 import { useSocket } from "@/context/SocketContext";
 import { toast } from "sonner";
 
@@ -70,6 +71,63 @@ export default function CheckoutPage({
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; description: string } | null>(null);
 
   const [partnerMessage, setPartnerMessage] = useState<string>("");
+
+  // Payment Modal State for Online Payment
+  const [paymentModalOrder, setPaymentModalOrder] = useState<OrderDTO | null>(null);
+  const [isPaidSuccess, setIsPaidSuccess] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [verifyOrderPayment, { isLoading: isVerifyingModalPayment }] = useVerifyOrderPaymentMutation();
+
+  const handleCopy = (text: string, field: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      toast.success(`Đã sao chép ${field}!`);
+      setTimeout(() => setCopiedField(null), 2000);
+    }
+  };
+
+  // Socket listener for real-time payment confirmation in modal
+  useEffect(() => {
+    if (!socket || !paymentModalOrder) return;
+
+    const handlePaymentSuccess = (data: any) => {
+      if (
+        data?.orderId === paymentModalOrder.id ||
+        data?.orderNumber === paymentModalOrder.orderNumber
+      ) {
+        setIsPaidSuccess(true);
+        toast.success("🎉 Thanh toán thành công! Đang chuyển hướng đến đơn hàng...");
+        setTimeout(() => {
+          router.push(`/orders/${paymentModalOrder.id}`);
+        }, 1500);
+      }
+    };
+
+    socket.on("PAYMENT_SUCCESS", handlePaymentSuccess);
+
+    return () => {
+      socket.off("PAYMENT_SUCCESS", handlePaymentSuccess);
+    };
+  }, [socket, paymentModalOrder, router]);
+
+  const handleManualVerifyInModal = async () => {
+    if (!paymentModalOrder) return;
+    try {
+      const res = await verifyOrderPayment(paymentModalOrder.id).unwrap();
+      if (res.verified) {
+        setIsPaidSuccess(true);
+        toast.success("🎉 Đã nhận được thanh toán thành công!");
+        setTimeout(() => {
+          router.push(`/orders/${paymentModalOrder.id}`);
+        }, 1500);
+      } else {
+        toast.info(res.message || "Chưa tìm thấy giao dịch chuyển khoản. Vui lòng thử lại sau vài giây!");
+      }
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Không thể kiểm tra giao dịch lúc này");
+    }
+  };
 
   const [pickupSlot, setPickupSlot] = useState("19:00 - 20:00");
   const [customerNotes, setCustomerNotes] = useState("");
@@ -227,8 +285,13 @@ export default function CheckoutPage({
         customerPhone: customerPhone.trim() || undefined,
       }).unwrap();
 
-      toast.success("Tạo đơn hàng thành công!");
-      router.push(`/orders/${result.id}`);
+      if (paymentMethod === "SYSTEM_QR") {
+        setPaymentModalOrder(result);
+        toast.info("Vui lòng quét mã VietQR trên bảng thanh toán để hoàn tất!");
+      } else {
+        toast.success("Tạo đơn hàng thành công!");
+        router.push(`/orders/${result.id}`);
+      }
     } catch (error: any) {
       const errDetails = Array.isArray(error?.data?.errors)
         ? error.data.errors.map((e: any) => e.message || `${e.field}: ${e.message}`).join(", ")
@@ -572,96 +635,26 @@ export default function CheckoutPage({
               </button>
             </div>
 
-            {/* Khung Thông Tin Thanh Toán Trực Tuyến & VietQR */}
+{/* Khung Thông Tin Thanh Toán Trực Tuyến & VietQR */}
             {paymentMethod === "SYSTEM_QR" && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 border border-emerald-200/90 space-y-4 animate-in fade-in duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-9 rounded-xl bg-[#00615f] text-white flex items-center justify-center shadow-xs">
-                      <QrCode className="size-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-stone-900 text-xs sm:text-sm">
-                        Thanh toán VietQR 24/7 & Ký quỹ Escrow
-                      </h4>
-                      <p className="text-[11px] text-stone-500 font-medium">
-                        Tự động khớp lệnh qua cổng ngân hàng BIDV & xGate trong 2 - 5 giây
-                      </p>
-                    </div>
+              <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-xs text-emerald-950 flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-8 rounded-xl bg-[#00615f] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <QrCode className="size-4" />
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-full w-fit">
-                    <ShieldCheck className="size-3.5 text-emerald-700" />
-                    <span>Ký quỹ Escrow an toàn 100%</span>
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                  {/* Cột trái: QR Code Preview */}
-                  <div className="md:col-span-4 flex flex-col items-center text-center p-3.5 bg-white rounded-2xl border border-emerald-100 shadow-xs">
-                    <div className="relative size-36 bg-white p-2 rounded-xl border border-stone-200 shadow-inner flex items-center justify-center">
-                      <img
-                        src={`https://api.vietqr.io/image/970418-6240247363-compact2.png?amount=${totalPrice}&addInfo=FoodSaver%20Thanh%20toan&accountName=NGUYEN%20QUANG%20DUC`}
-                        alt="VietQR Preview"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                    <span className="text-[10px] font-bold text-stone-500 mt-2">
-                      Quét bằng app mọi ngân hàng & ví điện tử
+                  <div>
+                    <span className="font-bold block text-emerald-950">
+                      Popup mã VietQR sẽ xuất hiện ngay sau khi bấm &ldquo;Xác Nhận Đặt Hàng&rdquo;
+                    </span>
+                    <span className="text-[11px] text-emerald-700">
+                      Tự động xác nhận giao dịch & chuyển hướng tức thì khi chuyển khoản thành công.
                     </span>
                   </div>
-
-                  {/* Cột phải: Chi tiết tài khoản & Cam kết */}
-                  <div className="md:col-span-8 space-y-2 text-xs">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div className="p-2.5 rounded-xl bg-white border border-stone-200">
-                        <span className="text-[10px] text-stone-400 font-bold block">NGÂN HÀNG THỤ HƯỞNG</span>
-                        <span className="font-black text-stone-900 text-xs sm:text-sm">BIDV (Chi nhánh Đà Nẵng)</span>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-white border border-stone-200 flex items-center justify-between">
-                        <div>
-                          <span className="text-[10px] text-stone-400 font-bold block">SỐ TÀI KHOẢN</span>
-                          <span className="font-mono font-black text-[#00615f] text-xs sm:text-sm">6240247363</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (typeof navigator !== "undefined" && navigator.clipboard) {
-                              navigator.clipboard.writeText("6240247363");
-                              toast.success("Đã sao chép số tài khoản BIDV: 6240247363");
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-[10px] transition cursor-pointer"
-                        >
-                          Sao chép
-                        </button>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-white border border-stone-200">
-                        <span className="text-[10px] text-stone-400 font-bold block">CHỦ TÀI KHOẢN</span>
-                        <span className="font-bold text-stone-900 text-xs">NGUYEN QUANG DUC</span>
-                      </div>
-
-                      <div className="p-2.5 rounded-xl bg-white border border-stone-200">
-                        <span className="text-[10px] text-stone-400 font-bold block">SỐ TIỀN CẦN CHUYỂN</span>
-                        <span className="font-black text-emerald-700 text-xs sm:text-sm">
-                          {totalPrice.toLocaleString("vi-VN")}đ
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Ghi chú Escrow */}
-                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-200/80 text-[11px] text-emerald-950 space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <Lock className="size-3.5 text-emerald-700 shrink-0" />
-                        <span>Bảo vệ quyền lợi bằng ký quỹ Escrow:</span>
-                      </div>
-                      <p className="text-stone-600 leading-relaxed">
-                        Tiền được giữ tại tài khoản trung gian của FoodSaver. Sau khi bạn nhận món và bấm <strong>&ldquo;Xác nhận đã nhận đủ món&rdquo;</strong>, tiền mới được giải ngân cho quán. Bạn được hoàn tiền 100% nếu đơn hàng bị hủy hoặc không đảm bảo chất lượng.
-                      </p>
-                    </div>
-                  </div>
                 </div>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-white border border-emerald-200 px-2.5 py-1 rounded-full shrink-0 shadow-2xs">
+                  <ShieldCheck className="size-3 text-emerald-700" />
+                  <span>Ký quỹ Escrow 100%</span>
+                </span>
               </div>
             )}
           </div>
@@ -796,6 +789,178 @@ export default function CheckoutPage({
           </button>
         </form>
       </div>
+
+      {/* Modal Popup Thanh Toán Trực Tuyến VietQR */}
+      {paymentModalOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => {}}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isPaidSuccess ? (
+              <div className="py-8 text-center space-y-4">
+                <div className="size-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto animate-bounce">
+                  <CheckCircle2 className="size-10" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-stone-900">Thanh Toán Thành Công!</h3>
+                  <p className="text-xs sm:text-sm text-stone-500 mt-1">
+                    Hệ thống đã nhận được tiền từ ngân hàng BIDV và ký quỹ đơn hàng #{paymentModalOrder.orderNumber}.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#00615f]">
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Đang chuyển hướng tới chi tiết đơn hàng...</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Header Modal */}
+                <div className="flex items-start justify-between pb-3 border-b border-stone-100">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <div className="size-8 rounded-xl bg-[#00615f] text-white flex items-center justify-center shadow-xs">
+                        <QrCode className="size-4" />
+                      </div>
+                      <h3 className="font-black text-base sm:text-lg text-stone-900">
+                        Thanh toán đơn hàng
+                      </h3>
+                    </div>
+                    <p className="text-xs text-stone-500 font-medium">
+                      Mã đơn: <strong className="font-mono text-stone-900">#{paymentModalOrder.orderNumber}</strong> • Ký quỹ Escrow an toàn
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push(`/orders/${paymentModalOrder.id}`);
+                    }}
+                    className="p-1.5 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                    title="Đóng và xem đơn hàng"
+                  >
+                    <X className="size-5" />
+                  </button>
+                </div>
+
+                {/* Body: VietQR + Bank Info */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                  {/* Cột trái: QR Code Image */}
+                  <div className="sm:col-span-5 flex flex-col items-center text-center p-3 bg-stone-50 rounded-2xl border border-stone-200">
+                    <div className="relative size-40 bg-white p-2 rounded-xl border border-stone-200 shadow-sm flex items-center justify-center">
+                      <img
+                        src={`https://api.vietqr.io/image/970418-6240247363-compact2.png?amount=${paymentModalOrder.totalPrice}&addInfo=${paymentModalOrder.orderNumber}&accountName=NGUYEN%20QUANG%20DUC`}
+                        alt="VietQR Payment Code"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-stone-500 mt-2">
+                      Quét bằng app mọi ngân hàng
+                    </span>
+                  </div>
+
+                  {/* Cột phải: Chi tiết tài khoản & nút copy */}
+                  <div className="sm:col-span-7 space-y-2 text-xs">
+                    <div className="p-2 rounded-xl bg-stone-50 border border-stone-200">
+                      <span className="text-[10px] text-stone-400 font-bold block">NGÂN HÀNG THỤ HƯỞNG</span>
+                      <span className="font-black text-stone-900 text-xs">BIDV (Chi nhánh Đà Nẵng)</span>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-stone-400 font-bold block">SỐ TÀI KHOẢN</span>
+                        <span className="font-mono font-black text-[#00615f] text-xs">6240247363</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy("6240247363", "Số tài khoản")}
+                        className="px-2 py-0.5 rounded-lg bg-white border border-stone-200 hover:bg-stone-100 text-stone-700 font-bold text-[10px] transition cursor-pointer"
+                      >
+                        {copiedField === "Số tài khoản" ? "Đã chép ✓" : "Sao chép"}
+                      </button>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-stone-50 border border-stone-200">
+                      <span className="text-[10px] text-stone-400 font-bold block">CHỦ TÀI KHOẢN</span>
+                      <span className="font-bold text-stone-900 text-xs">NGUYEN QUANG DUC</span>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-stone-400 font-bold block">SỐ TIỀN CẦN CHUYỂN</span>
+                        <span className="font-black text-emerald-700 text-xs sm:text-sm">
+                          {paymentModalOrder.totalPrice.toLocaleString("vi-VN")}đ
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(String(paymentModalOrder.totalPrice), "Số tiền")}
+                        className="px-2 py-0.5 rounded-lg bg-white border border-stone-200 hover:bg-stone-100 text-stone-700 font-bold text-[10px] transition cursor-pointer"
+                      >
+                        {copiedField === "Số tiền" ? "Đã chép ✓" : "Sao chép"}
+                      </button>
+                    </div>
+
+                    <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-amber-700 font-bold block">NỘI DUNG CHUYỂN KHOẢN</span>
+                        <span className="font-mono font-black text-amber-900 text-xs sm:text-sm">
+                          {paymentModalOrder.orderNumber}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(paymentModalOrder.orderNumber, "Nội dung")}
+                        className="px-2 py-0.5 rounded-lg bg-amber-200/80 hover:bg-amber-300 text-amber-900 font-bold text-[10px] transition cursor-pointer"
+                      >
+                        {copiedField === "Nội dung" ? "Đã chép ✓" : "Sao chép"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hướng dẫn & Nút hành động */}
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/70 text-[11px] text-emerald-950 flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <span>
+                    Hệ thống tự động kiểm tra giao dịch 2-5 giây qua xGate. Khi tiền vào tài khoản, hệ thống sẽ tự động chuyển hướng.
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={isVerifyingModalPayment}
+                    onClick={handleManualVerifyInModal}
+                    className="w-full sm:flex-1 py-3 px-4 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white text-xs font-black shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  >
+                    {isVerifyingModalPayment ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="size-4" />
+                    )}
+                    <span>{isVerifyingModalPayment ? "Đang kiểm tra giao dịch..." : "Tôi đã chuyển tiền - Kiểm tra ngay"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      router.push(`/orders/${paymentModalOrder.id}`);
+                    }}
+                    className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-bold transition cursor-pointer"
+                  >
+                    Xem đơn hàng
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
