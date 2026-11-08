@@ -228,7 +228,7 @@ jobs:
           sleep 4
           HEALTHY=false
           for attempt in 1 2 3 4 5; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000 || echo "000")
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:4000 || echo "000")
             echo "Health check attempt $attempt: HTTP $HTTP_CODE"
             if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
               HEALTHY=true
