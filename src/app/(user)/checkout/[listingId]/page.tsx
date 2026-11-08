@@ -227,6 +227,7 @@ export default function CheckoutPage({
   const currentShippingFee = fulfillmentType === "DELIVERY" ? finalAgreedFee : 0;
   const finalTotalPrice = Math.max(0, itemSubtotal + currentShippingFee - (appliedCoupon?.discountAmount || 0));
   const totalPrice = finalTotalPrice;
+  const isOutOfStock = (listing?.quantity ?? 0) <= 0 || (listing?.status !== "AVAILABLE" && listing?.status !== "EXPIRING_SOON");
 
   
   const handleApplyCoupon = async (e: React.FormEvent) => {
@@ -286,6 +287,11 @@ export default function CheckoutPage({
   const handleConfirmOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isOutOfStock) {
+      toast.error("Món ăn này hiện không còn khả dụng để đặt!", { id: "checkout-order-error" });
+      return;
+    }
+
     if (!currentUser) {
       toast.error("Vui lòng đăng nhập trước khi đặt đơn!");
       router.push(`/login?redirect=/checkout/${listing.id}`);
@@ -320,7 +326,7 @@ export default function CheckoutPage({
         ? error.data.errors.map((e: any) => e.message || `${e.field}: ${e.message}`).join(", ")
         : null;
       const msg = errDetails || error?.data?.message || "Đặt món thất bại. Vui lòng thử lại.";
-      toast.error(msg);
+      toast.error(msg, { id: "checkout-order-error" });
     }
   };
 
@@ -388,6 +394,16 @@ export default function CheckoutPage({
               </div>
             </div>
           </div>
+
+          {/* Cảnh báo nếu món đã hết suất */}
+          {isOutOfStock && (
+            <div className="p-4 rounded-3xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm font-bold flex items-center gap-3 animate-in fade-in duration-200">
+              <AlertCircle className="size-5 text-rose-600 shrink-0" />
+              <span>
+                Món ăn này hiện đã hết suất đặt giữ hoặc tạm thời không khả dụng. Bạn vui lòng quay lại để chọn món ăn khác!
+              </span>
+            </div>
+          )}
 
           {/* Card 2: Hình thức giao nhận (2 loại: Tự đến lấy vs Ship) */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-stone-200/90 shadow-sm space-y-4">
@@ -795,14 +811,19 @@ export default function CheckoutPage({
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isCreatingOrder}
-            className="w-full py-4 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transition-all active:scale-98 disabled:opacity-60"
+            disabled={isCreatingOrder || isOutOfStock}
+            className="w-full py-4 rounded-2xl bg-[#00615f] hover:bg-[#089184] text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transition-all active:scale-98 disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
           >
             {isCreatingOrder ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="size-5 animate-spin" />
                 <span>Đang tạo đơn hàng...</span>
               </span>
+            ) : isOutOfStock ? (
+              <>
+                <AlertCircle className="size-5" />
+                <span>Món Ăn Đã Hết Suất (Không Thể Đặt)</span>
+              </>
             ) : (
               <>
                 <CheckCircle2 className="size-5" />
