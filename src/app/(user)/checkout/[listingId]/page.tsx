@@ -230,7 +230,10 @@ export default function CheckoutPage({
       toast.success("Tạo đơn hàng thành công!");
       router.push(`/orders/${result.id}`);
     } catch (error: any) {
-      const msg = error?.data?.message || "Đặt món thất bại. Vui lòng thử lại.";
+      const errDetails = Array.isArray(error?.data?.errors)
+        ? error.data.errors.map((e: any) => e.message || `${e.field}: ${e.message}`).join(", ")
+        : null;
+      const msg = errDetails || error?.data?.message || "Đặt món thất bại. Vui lòng thử lại.";
       toast.error(msg);
     }
   };
