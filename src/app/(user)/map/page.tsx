@@ -126,6 +126,7 @@ export default function FoodMapPage() {
   const [radiusKm, setRadiusKm] = useState<number>(3);
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const ITEMS_PER_PAGE = 6;
 
@@ -366,29 +367,47 @@ export default function FoodMapPage() {
 
   // Initialize Mapbox map
   useEffect(() => {
-    if (!mapContainerRef.current || !MAPBOX_TOKEN) return;
+    if (!mapContainerRef.current) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    if (!MAPBOX_TOKEN) {
+      setMapError("Thiếu Mapbox Token. Vui lòng cấu hình NEXT_PUBLIC_MAPBOX_TOKEN trong .env.local.");
+      return;
+    }
 
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
-      center: [deliveryLoc.lng, deliveryLoc.lat],
-      zoom: 14,
-      pitch: 35,
-    });
+    try {
+      mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
+      const map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: "mapbox://styles/mapbox/streets-v12",
+        center: [deliveryLoc.lng, deliveryLoc.lat],
+        zoom: 14,
+        pitch: 35,
+      });
 
-    map.on("load", () => {
-      setMapLoaded(true);
-    });
+      map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), "top-right");
 
-    mapRef.current = map;
+      map.on("load", () => {
+        setMapLoaded(true);
+        setMapError(null);
+      });
 
-    return () => {
-      map.remove();
-    };
+      map.on("error", (e) => {
+        console.error("[Mapbox] Error:", e);
+        if (e.error?.message?.includes("Forbidden") || e.error?.message?.includes("Unauthorized")) {
+          setMapError("Token Mapbox không hợp lệ hoặc đã hết hạn quyền truy cập.");
+        }
+      });
+
+      mapRef.current = map;
+
+      return () => {
+        map.remove();
+      };
+    } catch (err: any) {
+      console.error("[Mapbox] Initialization failed:", err);
+      setMapError("Không thể khởi tạo bản đồ Mapbox. Trình duyệt có thể cần bật tính năng WebGL.");
+    }
   }, []);
 
   // Smoothly center map when confirmed delivery location changes
@@ -901,8 +920,25 @@ export default function FoodMapPage() {
               {/* Mapbox Map Render Element */}
               <div
                 ref={mapContainerRef}
-                className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px]"
-              />
+                className="aspect-[16/10] sm:aspect-[16/9] w-full min-h-[420px] relative bg-stone-100 overflow-hidden"
+              >
+                {!mapLoaded && !mapError && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-stone-100/90 z-10 text-stone-500 text-xs font-bold gap-2">
+                    <div className="size-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                    <span>Đang kết nối bản đồ vệ tinh Mapbox...</span>
+                  </div>
+                )}
+                {mapError && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-amber-50/95 p-6 z-10 text-center space-y-2">
+                    <Compass className="size-8 text-amber-600 mx-auto" />
+                    <h4 className="text-sm font-bold text-stone-900">Không thể tải bản đồ Mapbox</h4>
+                    <p className="text-xs text-stone-600 max-w-sm">{mapError}</p>
+                    <p className="text-[11px] text-stone-500">
+                      Hãy đảm bảo biến môi trường <code className="bg-white px-1.5 py-0.5 rounded border text-stone-800">NEXT_PUBLIC_MAPBOX_TOKEN</code> đã được cấu hình trong <code className="bg-white px-1.5 py-0.5 rounded border text-stone-800">.env.local</code>.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* Floating Route HUD on Map Canvas */}
               {activeRoute && selectedListing && (
